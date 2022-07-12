@@ -11,18 +11,65 @@ import tensorflow as tf
 import pickle
 import matplotlib.pyplot as plt
 import cv2
+from tensorflow.keras.models import Model
+from tensorflow.keras import layers, losses
+
+
 
 reconstruction_model = keras.models.load_model('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/models/model_75')
 volume_dim=(512,1000,100)
+
+def make_video(volume,name):
+    
+    height, width,depth = volume.shape
+    size = (width,height)
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+
+    video = cv2.VideoWriter(name+'.avi',fourcc, 10, size)
+    for b in range(depth):
+        image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
+        video.write(image_for_video)
+    video.release()
+
+def build_model_for_reconstruction(trained_model):
+    kernel_and_biases_weights=[]
+    for super_layers in trained_model.layers:
+        for sub_layers in super_layers.layers:
+            kernel_and_biases_weights.append(sub_layers.get_weights())
+            
+    
+    
+    class Denoise_for_reconstruction(Model):
+      def __init__(self):
+        super(Denoise_for_reconstruction, self).__init__()
+        self.encoder = tf.keras.Sequential([
+          layers.Input(shape=(512,400, 100,1)),
+          layers.Conv3D(16, 3, activation='relu', padding='same', strides=2,use_bias=True,weights=kernel_and_biases_weights[0]),
+          layers.Conv3D(8, 3, activation='relu', padding='same', strides=2,use_bias=True,weights=kernel_and_biases_weights[1])])
+    
+        self.decoder = tf.keras.Sequential([
+          layers.Conv3DTranspose(8, kernel_size=3, strides=2, activation='relu', padding='same',use_bias=True,weights=kernel_and_biases_weights[2]),
+          layers.Conv3DTranspose(16, kernel_size=3, strides=2, activation='relu', padding='same',use_bias=True,weights=kernel_and_biases_weights[3]),
+          layers.Conv3D(1, kernel_size=3, activation='sigmoid', padding='same',use_bias=True,weights=kernel_and_biases_weights[4])])
+    
+      def call(self, x):
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+        return decoded
+    
+    
+    
+    reconstruction_model=Denoise_for_reconstruction()
+    return reconstruction_model
+
 
 def load_obj(name):
     with open( name, 'rb') as f:
         return pickle.load(f)
 
 
-def reconstruct_volume(volume,reconstruction_model):
-    w_div_factor = 64
-    h_div_factor = 64
+def reconstruct_volume(volume,reconstruction_model,w_div_factor,h_div_factor):
     w_end=0
     reconstructed_volume = np.zeros(volume_dim)
     for w in range(int(np.ceil(volume.shape[1]/w_div_factor))):
@@ -58,23 +105,38 @@ def reconstruct_volume(volume,reconstruction_model):
 
 
 
-sub_sampled_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/subsampled_75/test/Farsiu_Ophthalmology_2013_AMD_Subject_1001_subsampled_75.pkl')
-original_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/test/Farsiu_Ophthalmology_2013_AMD_Subject_1001.pkl')
+sub_sampled_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/subsampled_23/subsapled_Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
+original_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/test/Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
 
-reconstructed_volume=reconstruct_volume(sub_sampled_volume,reconstruction_model)
 
+
+sub_sampled_volume=sub_sampled_volume/255
+reconstructed_volume=reconstruct_volume(sub_sampled_volume,reconstruction_model,64,64)
+
+
+
+
+
+
+reconstruction_model=build_model_for_reconstruction(trained_model=reconstruction_model)
+sub_sampled_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/subsampled_23/subsapled_Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
+sub_sampled_volume=sub_sampled_volume/255
+decoded_volume=reconstruct_volume(sub_sampled_volume,reconstruction_model,400,512)
+
+
+
+
+
+sub_sampled_volume=sub_sampled_volume*255
+sub_sampled_volume=sub_sampled_volume.astype('uint8')
 
 reconstructed_volume=reconstructed_volume*255
 reconstructed_volume=reconstructed_volume.astype('uint8')
 
+decoded_volume=decoded_volume*255
+decoded_volume=decoded_volume.astype('uint8')
 
-cv2.imshow('Original Volume',original_volume[:,:,0])
-cv2.imshow('Subsampled Volume',sub_sampled_volume[:,:,0])
-for i in range(100):
-    cv2.imshow('Reconstructed Volume',reconstructed_volume[:,:,i])
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-
-
-
+# make_video(original_volume,'original volume 23%')
+# make_video(sub_sampled_volume,'subsampled volume 23%')
+# make_video(reconstructed_volume,'reconstructed volume 23% 64x64')
+# make_video(decoded_volume,'reconstructed volume 23% 512x400')

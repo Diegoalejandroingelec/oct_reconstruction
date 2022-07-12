@@ -1,3 +1,5 @@
 *.pkl
 *.png
 /models
+*.avi
+

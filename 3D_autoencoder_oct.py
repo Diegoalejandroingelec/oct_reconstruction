@@ -22,10 +22,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow.keras.models import Model
 from tensorflow.keras import layers, losses
-
 from datetime import datetime
 
-datetime.now()
+
 
 
 
@@ -100,7 +99,7 @@ def make_dataset(path,target_path, batch_size):
 path_train='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampled_sub_volumes/subsampled_75/train'
 target_path_train='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampled_sub_volumes/original_75/train'
 
-batch_size=16
+batch_size=1
 data_set=make_dataset(path_train,target_path_train, batch_size)
 
 path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampled_sub_volumes/subsampled_75/test'
@@ -121,12 +120,16 @@ class Denoise(Model):
     super(Denoise, self).__init__()
     self.encoder = tf.keras.Sequential([
       layers.Input(shape=(64, 64, 100,1)),
+      layers.Conv3D(8, 3, activation='relu', padding='same', strides=2),
       layers.Conv3D(16, 3, activation='relu', padding='same', strides=2),
-      layers.Conv3D(8, 3, activation='relu', padding='same', strides=2)])
+      layers.Conv3D(32, 3, activation='relu', padding='same'),
+      layers.Conv3D(64, 3, activation='relu', padding='same')])
 
     self.decoder = tf.keras.Sequential([
-      layers.Conv3DTranspose(8, kernel_size=3, strides=2, activation='relu', padding='same'),
+      layers.Conv3DTranspose(64, kernel_size=3, activation='relu', padding='same'),
+      layers.Conv3DTranspose(32, kernel_size=3, activation='relu', padding='same'),
       layers.Conv3DTranspose(16, kernel_size=3, strides=2, activation='relu', padding='same'),
+      layers.Conv3DTranspose(8, kernel_size=3, strides=2, activation='relu', padding='same'),
       layers.Conv3D(1, kernel_size=3, activation='sigmoid', padding='same')])
 
   def call(self, x):
@@ -164,77 +167,21 @@ autoencoder.decoder.summary()
 
 
 
-# data = test_data_set.take(1)
-# volume,target_volume= list(data)[0]
+
+# from tensorflow import keras
+# autoencoder=keras.models.load_model('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/models/model_75_2022-07-11 20:44:01.035347')
+
+# data = test_data_set.take(9)
+# volume,target_volume= list(data)[6]
 # volume=volume.numpy()
 # target_volume=target_volume.numpy()
-# plt.imshow(np.squeeze(volume[0,:,:,90,0]), cmap="gray")
-# plt.imshow(np.squeeze(target_volume[0,:,:,90,0]), cmap="gray")
+# plt.imshow(np.squeeze(volume[0,:,:,1,0]), cmap="gray")
+# plt.imshow(np.squeeze(target_volume[0,:,:,1,0]), cmap="gray")
 
 # encoded_imgs = autoencoder.encoder(volume).numpy()
 # decoded_imgs = autoencoder.decoder(encoded_imgs).numpy()
 
+# for i in range(100):
+#     plt.imshow(np.squeeze(decoded_imgs[0,:,:,i,0]), cmap="gray")
 
-# plt.imshow(np.squeeze(decoded_imgs[0,:,:,90,0]), cmap="gray")
-from tensorflow import keras
-autoencoder = keras.models.load_model('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/models/model_75')
-
-kernel_and_biases_weights=[]
-for super_layers in autoencoder.layers:
-    for sub_layers in super_layers.layers:
-        kernel_and_biases_weights.append(sub_layers.get_weights())
-        
-
-
-class Denoise_for_reconstruction(Model):
-  def __init__(self):
-    super(Denoise_for_reconstruction, self).__init__()
-    self.encoder = tf.keras.Sequential([
-      layers.Input(shape=(512,400, 100,1)),
-      layers.Conv3D(16, 3, activation='relu', padding='same', strides=2,use_bias=True,weights=kernel_and_biases_weights[0]),
-      layers.Conv3D(8, 3, activation='relu', padding='same', strides=2,use_bias=True,weights=kernel_and_biases_weights[1])])
-
-    self.decoder = tf.keras.Sequential([
-      layers.Conv3DTranspose(8, kernel_size=3, strides=2, activation='relu', padding='same',use_bias=True,weights=kernel_and_biases_weights[2]),
-      layers.Conv3DTranspose(16, kernel_size=3, strides=2, activation='relu', padding='same',use_bias=True,weights=kernel_and_biases_weights[3]),
-      layers.Conv3D(1, kernel_size=3, activation='sigmoid', padding='same',use_bias=True,weights=kernel_and_biases_weights[4])])
-
-  def call(self, x):
-    encoded = self.encoder(x)
-    decoded = self.decoder(encoded)
-    return decoded
-
-
-
-
-# Denoise_for_reconstruction.build()
-
-reconstruction_model=Denoise_for_reconstruction()
-
-
-def load_obj(name):
-    with open( name, 'rb') as f:
-        return pickle.load(f)
-    
-sub_sampled_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/subsampled_75/test/Farsiu_Ophthalmology_2013_AMD_Subject_1001_subsampled_75.pkl')
-original_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/test/Farsiu_Ophthalmology_2013_AMD_Subject_1001.pkl')
-
-sub_sampled_volume=np.expand_dims(sub_sampled_volume[:,0:400,:], axis=0)
-sub_sampled_volume=np.expand_dims(sub_sampled_volume, axis=4)
-
-
-encoded_volume = reconstruction_model.encoder(sub_sampled_volume).numpy()
-decoded_volume = reconstruction_model.decoder(encoded_volume).numpy()
-decoded_volume=np.squeeze(decoded_volume)
-
-
-
-import cv2
-decoded_volume=decoded_volume*255
-decoded_volume=decoded_volume.astype('uint8')
-
-
-cv2.imshow('Reconstructed Volume',decoded_volume[:,:,0])
-cv2.waitKey(0)
-cv2.destroyAllWindows()
 
