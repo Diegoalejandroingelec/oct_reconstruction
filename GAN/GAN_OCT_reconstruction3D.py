@@ -9,7 +9,6 @@ Created on Thu Jul 14 14:03:10 2022
 import h5py
 
 import numpy as np
-from pathlib import Path
 import torch
 from torch.utils import data
 import matplotlib.pyplot as plt
@@ -258,7 +257,7 @@ print("Starting Training Loop...")
 # For each epoch
 for epoch in range(num_epochs):
     # For each batch in the dataloader
-    for i, data in enumerate(dataloader, 0):
+    for i, train_data in enumerate(dataloader, 0):
 
         ############################
         # (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
@@ -266,7 +265,7 @@ for epoch in range(num_epochs):
         ## Train with all-real batch
         netD.zero_grad()
         # Format batch
-        real_cpu = data[1].to(device)
+        real_cpu = train_data[1].to(device)
         b_size = real_cpu.size(0)
         label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
         # Forward pass real batch through D
@@ -278,7 +277,7 @@ for epoch in range(num_epochs):
         D_x = output.mean().item()
 
         ## Train with all-fake batch
-        sub_sampled_volumes = data[0].to(device)
+        sub_sampled_volumes = train_data[0].to(device)
         # Generate fake image batch with G
         fake = netG(sub_sampled_volumes)
         label.fill_(fake_label)
