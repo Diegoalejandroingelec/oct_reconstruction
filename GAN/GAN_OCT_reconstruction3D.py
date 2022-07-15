@@ -266,7 +266,7 @@ for epoch in range(num_epochs):
         ## Train with all-real batch
         netD.zero_grad()
         # Format batch
-        real_cpu = train_data[1].to(device)
+        real_cpu = train_data[1].to(device, dtype=torch.float)
         b_size = real_cpu.size(0)
         label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
         # Forward pass real batch through D
@@ -278,7 +278,7 @@ for epoch in range(num_epochs):
         D_x = output.mean().item()
 
         ## Train with all-fake batch
-        sub_sampled_volumes = train_data[0].to(device)
+        sub_sampled_volumes = train_data[0].to(device, dtype=torch.float)
         # Generate fake image batch with G
         fake = netG(sub_sampled_volumes)
         label.fill_(fake_label)
