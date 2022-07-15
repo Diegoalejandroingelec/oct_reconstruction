@@ -38,8 +38,7 @@ ngpu = 1
 
 sub_volumes_dim=(512,64,16)
 
-# Size of feature maps in discriminator
-ndf = 64
+
 
 class HDF5Dataset(data.Dataset):
 
@@ -182,6 +181,8 @@ netG.apply(weights_init)
 
 summary(netG, sub_volumes_dim)
 
+# Size of feature maps in discriminator
+ndf = 64
 
 class Discriminator(nn.Module):
     def __init__(self, ngpu):
@@ -189,28 +190,37 @@ class Discriminator(nn.Module):
         self.ngpu = ngpu
         self.main = nn.Sequential(
 
-            nn.Conv3d(1, ndf, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.Conv3d(1, ndf, kernel_size=3, padding='same'),
             nn.LeakyReLU(0.2, inplace=True),
 
-            nn.Conv3d(ndf, ndf * 2, kernel_size=3, stride=2, padding=1, bias=False),
+
+            nn.Conv3d(ndf, ndf * 2, kernel_size=3, padding='same'),
             nn.BatchNorm3d(ndf * 2),
-            
             nn.LeakyReLU(0.2, inplace=True),
+            
 
-            nn.Conv3d(ndf * 2, ndf * 4, kernel_size=1, stride=2, padding=1, bias=False),
+            nn.Conv3d(ndf * 2, ndf * 4, kernel_size=3, padding='same'),
             nn.BatchNorm3d(ndf * 4),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool3d(2),
+            
 
-            nn.Conv3d(ndf * 4, ndf * 8, kernel_size=1, stride=2, padding=1, bias=False),
+            nn.Conv3d(ndf * 4, ndf * 8, kernel_size=3, padding='same'),
             nn.BatchNorm3d(ndf * 8),
             nn.LeakyReLU(0.2, inplace=True),
-
+            nn.MaxPool3d(2),
+            
+            nn.Conv3d(ndf * 8, ndf * 16, kernel_size=3, padding='same'),
+            nn.BatchNorm3d(ndf * 16),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool3d(2),
 
             nn.Flatten(),
-            nn.Linear(in_features = 313344, out_features = 512),
+            nn.Linear(in_features = 1048576, out_features = 524288),
             nn.LeakyReLU(0.2, inplace=True),
             
-            nn.Linear(in_features = 512, out_features = 1),
+            
+            nn.Linear(in_features = 524288, out_features = 1),
             nn.Sigmoid()
         )
 
@@ -232,7 +242,7 @@ netD.apply(weights_init)
 
 summary(netD, sub_volumes_dim)
 
-
+'''
 # Initialize BCELoss function
 criterion = nn.BCELoss()
 
@@ -322,5 +332,5 @@ for epoch in range(num_epochs):
 
         iters += 1
 
-
+'''
 
