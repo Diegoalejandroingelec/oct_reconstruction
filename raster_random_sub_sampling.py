@@ -8,11 +8,12 @@ Created on Wed Jul  6 13:30:43 2022
 from scipy.io import loadmat
 from glob import glob
 import numpy as np
-import cv2
+# import cv2
 import random
 import pickle
+import h5py
 
-sub_sampling_percentage=23
+sub_sampling_percentage=75
 
 def read_data(path):
     data = loadmat(path)
@@ -81,34 +82,61 @@ def load_obj(name):
     with open( name, 'rb') as f:
         return pickle.load(f)
 
-def extract_sub_volumes(volume,name):
+def extract_sub_volumes(volume,name,h5_file):
     w_div_factor = 64
-    h_div_factor = 64
-    w_end=0
+    h_div_factor = 512
+    d_div_factor = 16
+    
+    overlap_pixels_w=w_div_factor//2
+    overlap_pixels_h=0
+    overlap_pixels_d=d_div_factor//2
+    
     index=0
-    for w in range(int(np.ceil(volume.shape[1]/w_div_factor))):
-        h_end=0
-        for h in range(int(np.ceil(volume.shape[0]/h_div_factor))):
-            
-
-            sub_volume=volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,:]
-            save_obj(sub_volume,name+'_'+str(index))
-            index+=1
-            
-            h_end=h_end+h_div_factor
-            
-            
-            if(h_end+h_div_factor>volume.shape[0]):
-                h_end=volume.shape[0]-h_div_factor
+    d_end=0
+    can_iterate_over_d=True
+    
+    while can_iterate_over_d:
+    #for d in range(int(np.ceil(volume.shape[2]/d_div_factor))):
+        w_end=0
+        can_iterate_over_w=True
+        while can_iterate_over_w:
+        #for w in range(int(np.ceil(volume.shape[1]/w_div_factor))):
+            h_end=0
+            can_iterate_over_h=True
+            while can_iterate_over_h:
+            #for h in range(int(np.ceil(volume.shape[0]/h_div_factor))):
                 
-            
-            
-        w_end=w_end+w_div_factor
-        if(w_end+w_div_factor>volume.shape[1]):
-            w_end=volume.shape[1]-w_div_factor
+                # print('heigh: ',(h_end,h_end+h_div_factor))
+                # print('width: ',(w_end,w_end+w_div_factor))
+                # print('depth: ',(d_end,d_end+d_div_factor))
+                sub_volume=volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]
+                if(sub_volume.shape!=(512,64,16)):
+                    raise Exception("ERROR GENERATING SUB VOLUMES")
+                    
+                    
+                h5_file.create_dataset(name+'_'+str(index), data=sub_volume)
+                #save_obj(sub_volume,name+'_'+str(index))
+                index+=1
+                
+                h_end=h_end+h_div_factor-overlap_pixels_h
+                if(h_end+h_div_factor>=volume.shape[0]):
+                    h_end=volume.shape[0]-h_div_factor
+                    can_iterate_over_h=False
+                
+            w_end=w_end+w_div_factor-overlap_pixels_w
+            if(w_end+w_div_factor>=volume.shape[1]):
+                w_end=volume.shape[1]-w_div_factor
+                can_iterate_over_w=False
+                
+        d_end=d_end+d_div_factor-overlap_pixels_d
+        if(d_end+d_div_factor>=volume.shape[2]):
+            d_end=volume.shape[2]-d_div_factor
+            can_iterate_over_d=False
+         
+    # print(index)
     
 mask = generate_mask(percentage=sub_sampling_percentage/100,volume_x=1000,volume_y=512,volume_z=100)
-save_obj(mask,'/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/masks/mask_'+str(sub_sampling_percentage))
+save_obj(mask,'/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/masks/mask_GAN_'+str(sub_sampling_percentage))
 
 def get_volume_paths():
     amd_eyes_paths = glob("/home/diego/Downloads/oct_images/AMD/*.mat", recursive = True)
@@ -128,62 +156,81 @@ def generate_dataset(mask):
     
     
     volume_number=0
+    subsampled_volumes_dataset_train = h5py.File('training_subsampled_volumes.h5', 'w')
+    volumes_dataset_train = h5py.File('training_ground_truth.h5', 'w')
     for volume_path in train_volumes_paths:
-        try:
-            print(volume_path)
-    
+
+        print(volume_path)
+        try: 
             volume = read_data(volume_path)
-            name='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampled_sub_volumes/original_'+str(sub_sampling_percentage)+'/train/original_train_vol_'+str(volume_number)
-            extract_sub_volumes(volume,name)
-                                
-                                
+        
             subsampled_image = np.multiply(mask,volume)
-            name='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampled_sub_volumes/subsampled_'+str(sub_sampling_percentage)+'/train/subsampled_train_vol_'+str(volume_number)
-            extract_sub_volumes(subsampled_image,name)
+
+            
+            name='original_train_vol_'+str(volume_number)
+            extract_sub_volumes(volume,name,volumes_dataset_train)
+                
+            name='subsampled_train_vol_'+str(volume_number)
+            extract_sub_volumes(subsampled_image,name,subsampled_volumes_dataset_train)
             
             volume_number+=1
-    
+        
         except:
             print('WRONG dimentions'+volume_path)
+
+    
+    
+    subsampled_volumes_dataset_train.close()  
+    volumes_dataset_train.close()
+    
     
     
     
     volume_number=0
+    subsampled_volumes_dataset_test = h5py.File('testing_subsampled_volumes.h5', 'w')
+    volumes_dataset_test = h5py.File('testing_ground_truth.h5', 'w')
     for volume_path in test_volumes_paths:
-        try:
-            print(volume_path)
-    
-            volume = read_data(volume_path)
-            name='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampled_sub_volumes/original_'+str(sub_sampling_percentage)+'/test/original_test_vol_'+str(volume_number)
-            extract_sub_volumes(volume,name)
             
-            
-            subsampled_image = np.multiply(mask,volume)
-            name='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampled_sub_volumes/subsampled_'+str(sub_sampling_percentage)+'/test/subsampled_test_vol_'+str(volume_number)
-            extract_sub_volumes(subsampled_image,name)
-            
-            volume_number+=1
-            
-            
-        except:
-            print('WRONG dimentions'+volume_path)
+            try:
+                print(volume_path)
         
-        
-#generate_dataset(mask)   
+                volume = read_data(volume_path)
+                
+                subsampled_image = np.multiply(mask,volume)
+                
+                
+                name='original_test_vol_'+str(volume_number)
+                extract_sub_volumes(volume,name,volumes_dataset_test)
+                
+                name='subsampled_test_vol_'+str(volume_number)
+                extract_sub_volumes(subsampled_image,name,subsampled_volumes_dataset_test)
+                
+                volume_number+=1
+            
+            except:
+                print('WRONG dimentions'+volume_path)
+            
 
-all_paths=get_volume_paths()
-for volume_path in all_paths:
-    try:
-        volume = read_data(volume_path)
-        subsampled_image = np.multiply(mask,volume)
-        save_obj(subsampled_image,'/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/subsampled_'+str(sub_sampling_percentage)+'/subsapled_'+volume_path.split('/')[-1].split('.')[0])
-    except:
-        print('WRONG dimentions'+volume_path)
+            
+            
+    subsampled_volumes_dataset_test.close()  
+    volumes_dataset_test.close()
+        
+generate_dataset(mask)   
+
+# all_paths=get_volume_paths()
+# for volume_path in all_paths:
+#     try:
+#         volume = read_data(volume_path)
+#         subsampled_image = np.multiply(mask,volume)
+#         save_obj(subsampled_image,'/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/subsampled_'+str(sub_sampling_percentage)+'/subsapled_'+volume_path.split('/')[-1].split('.')[0])
+#     except:
+#         print('WRONG dimentions'+volume_path)
         
         
         
-subsampled_image=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/subsampled_23/subsapled_Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
-original_volume =load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/test/Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
+# subsampled_image=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/subsampled_23/subsapled_Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
+# original_volume =load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/test/Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
 
 
 # for i in range(100):

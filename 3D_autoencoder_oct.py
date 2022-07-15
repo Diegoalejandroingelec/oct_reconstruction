@@ -121,17 +121,17 @@ class Denoise(Model):
     super(Denoise, self).__init__()
     self.encoder = tf.keras.Sequential([
       layers.Input(shape=(64, 64, 96,1)),
-      layers.Conv3D(60, 7, activation='relu', padding='same'),
+      layers.Conv3D(32, 7, activation='relu', padding='same'),
       layers.MaxPool3D(pool_size=2),
-      layers.Conv3D(40, 5, activation='relu', padding='same'),
+      layers.Conv3D(16, 5, activation='relu', padding='same'),
       layers.MaxPool3D(pool_size=2),
-      layers.Conv3D(20, 3, activation='relu', padding='same'),
+      layers.Conv3D(8, 3, activation='relu', padding='same'),
       layers.MaxPool3D(pool_size=2)])
 
     self.decoder = tf.keras.Sequential([
-      layers.Conv3DTranspose(20, kernel_size=3, strides=2, activation='relu', padding='same'),
-      layers.Conv3DTranspose(40, kernel_size=5, strides=2, activation='relu', padding='same'),
-      layers.Conv3DTranspose(60, kernel_size=7, strides=2, activation='relu', padding='same'),
+      layers.Conv3DTranspose(8, kernel_size=3, strides=2, activation='relu', padding='same'),
+      layers.Conv3DTranspose(16, kernel_size=5, strides=2, activation='relu', padding='same'),
+      layers.Conv3DTranspose(32, kernel_size=7, strides=2, activation='relu', padding='same'),
       layers.Conv3D(1, kernel_size=3, activation='sigmoid', padding='same')])
 
   def call(self, x):

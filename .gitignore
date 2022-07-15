@@ -2,4 +2,8 @@
 *.png
 /models
 *.avi
+*.h5
+*.jpg
+*.jpeg
+
 
