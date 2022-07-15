@@ -242,7 +242,7 @@ netD.apply(weights_init)
 
 summary(netD, sub_volumes_dim)
 
-'''
+
 # Initialize BCELoss function
 criterion = nn.BCELoss()
 
@@ -332,5 +332,5 @@ for epoch in range(num_epochs):
 
         iters += 1
 
-'''
+
 
