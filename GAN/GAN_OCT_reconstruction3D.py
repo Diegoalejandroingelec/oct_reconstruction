@@ -214,8 +214,9 @@ class Discriminator(nn.Module):
             nn.Sigmoid()
         )
 
-    def forward(self, input):
-        return self.main(input)
+    def forward(self, x):
+        x = torch.unsqueeze(x,1)
+        return self.main(x)
 
 
 # Create the Discriminator
@@ -229,7 +230,7 @@ if (device.type == 'cuda') and (ngpu > 1):
 #  to mean=0, stdev=0.2.
 netD.apply(weights_init)
 
-summary(netD, (1,512,64,16))
+summary(netD, sub_volumes_dim)
 
 
 # Initialize BCELoss function
