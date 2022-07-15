@@ -197,7 +197,7 @@ class Discriminator(nn.Module):
             nn.Conv3d(ndf, ndf * 2, kernel_size=3, padding='same'),
             nn.BatchNorm3d(ndf * 2),
             nn.LeakyReLU(0.2, inplace=True),
-            
+            nn.MaxPool3d(2),
 
             nn.Conv3d(ndf * 2, ndf * 4, kernel_size=3, padding='same'),
             nn.BatchNorm3d(ndf * 4),
@@ -216,11 +216,11 @@ class Discriminator(nn.Module):
             nn.MaxPool3d(2),
 
             nn.Flatten(),
-            nn.Linear(in_features = 1048576, out_features = 524288),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.Linear(in_features = 131072, out_features = 1),
+            #nn.LeakyReLU(0.2, inplace=True),
             
             
-            nn.Linear(in_features = 524288, out_features = 1),
+            # nn.Linear(in_features = 524288, out_features = 1),
             nn.Sigmoid()
         )
 
