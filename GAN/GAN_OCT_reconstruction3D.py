@@ -152,7 +152,8 @@ class Generator(nn.Module):
         )
 
         self.output = nn.Sequential(
-            nn.Conv3d(layers[0],1,kernel_size=3,padding='same')
+            nn.Conv3d(layers[0],1,kernel_size=3,padding='same'),
+            nn.Tanh()
         )
 
 
