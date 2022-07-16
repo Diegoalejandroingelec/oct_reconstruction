@@ -336,21 +336,21 @@ for epoch in range(num_epochs):
 
         iters += 1
         
-        state = {
-        'epoch': epoch,
-        'state_dict': netG.module.state_dict(),
-        'optimizer': optimizerG.state_dict(),
-        }
-        savepath='checkpoint_netG_'+str(epoch)+'.t7'
-        torch.save(state,savepath)
-        
-        state = {
-        'epoch': epoch,
-        'state_dict': netD.module.state_dict(),
-        'optimizer': optimizerD.state_dict(),
-        }
-        savepath='checkpoint_netD_'+str(epoch)+'.t7'
-        torch.save(state,savepath)
+    state = {
+    'epoch': epoch,
+    'state_dict': netG.module.state_dict(),
+    'optimizer': optimizerG.state_dict(),
+    }
+    savepath='checkpoint_netG_'+str(epoch)+'.t7'
+    torch.save(state,savepath)
+    
+    state = {
+    'epoch': epoch,
+    'state_dict': netD.module.state_dict(),
+    'optimizer': optimizerD.state_dict(),
+    }
+    savepath='checkpoint_netD_'+str(epoch)+'.t7'
+    torch.save(state,savepath)
 
 
 torch.save(netG, 'generator.pth')
