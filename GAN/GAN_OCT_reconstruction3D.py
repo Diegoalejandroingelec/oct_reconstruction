@@ -94,7 +94,7 @@ def normalize(volume):
 subsampled_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/training_subsampled_volumes.h5'
 original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/training_ground_truth.h5'
 
-h5_dataset=HDF5Dataset(subsampled_volumes_path,original_volumes_path,normalize)
+h5_dataset=HDF5Dataset(subsampled_volumes_path,original_volumes_path)
 
 # Create the dataloader
 dataloader = torch.utils.data.DataLoader(h5_dataset, batch_size=batch_size, shuffle=True, num_workers=workers)
@@ -112,6 +112,9 @@ def weights_init(m):
     if classname.find('Conv') != -1:
         nn.init.normal_(m.weight.data, 0.0, 0.02)
     elif classname.find('LayerNorm') != -1:
+        nn.init.normal_(m.weight.data, 1.0, 0.02)
+        nn.init.constant_(m.bias.data, 0)
+    elif classname.find('BatchNorm') != -1:
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0)
 
