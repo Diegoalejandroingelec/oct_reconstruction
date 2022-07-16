@@ -120,7 +120,7 @@ class Autoencoder(nn.Module):
     def __init__(self,ngpu):
         super(Autoencoder,self).__init__()
 
-        layers = [32,16,16,8]
+        layers = [32,32,16,16]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(

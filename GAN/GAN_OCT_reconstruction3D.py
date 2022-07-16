@@ -89,12 +89,12 @@ class HDF5Dataset(data.Dataset):
         return info
     
 def normalize(volume):
-    return volume/np.max(volume)
+    return (volume-np.max(volume))/np.max(volume)
 
 subsampled_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/training_subsampled_volumes.h5'
 original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/training_ground_truth.h5'
 
-h5_dataset=HDF5Dataset(subsampled_volumes_path,original_volumes_path)
+h5_dataset=HDF5Dataset(subsampled_volumes_path,original_volumes_path,normalize)
 
 # Create the dataloader
 dataloader = torch.utils.data.DataLoader(h5_dataset, batch_size=batch_size, shuffle=True, num_workers=workers)
@@ -193,30 +193,30 @@ class Discriminator(nn.Module):
         self.ngpu = ngpu
         self.main = nn.Sequential(
 
-            nn.Conv3d(1, ndf, kernel_size=3, padding='same'),
+            nn.Conv3d(1, ndf, kernel_size=3, stride=2),
             nn.LeakyReLU(0.2, inplace=True),
 
 
-            nn.Conv3d(ndf, ndf * 2, kernel_size=3, padding='same'),
+            nn.Conv3d(ndf, ndf * 2, kernel_size=3, stride=2),
             nn.BatchNorm3d(ndf * 2),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.MaxPool3d(2),
+            #nn.MaxPool3d(2),
 
-            nn.Conv3d(ndf * 2, ndf * 4, kernel_size=3, padding='same'),
+            nn.Conv3d(ndf * 2, ndf * 4, kernel_size=3, stride=2),
             nn.BatchNorm3d(ndf * 4),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.MaxPool3d(2),
+            #nn.MaxPool3d(2),
             
 
-            nn.Conv3d(ndf * 4, ndf * 8, kernel_size=3, padding='same'),
+            nn.Conv3d(ndf * 4, ndf * 8, kernel_size=3, stride=2),
             nn.BatchNorm3d(ndf * 8),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.MaxPool3d(2),
+            #nn.MaxPool3d(2),
             
-            nn.Conv3d(ndf * 8, ndf * 16, kernel_size=3, padding='same'),
+            nn.Conv3d(ndf * 8, ndf * 16, kernel_size=3, stride=2),
             nn.BatchNorm3d(ndf * 16),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.MaxPool3d(2),
+            #nn.MaxPool3d(2),
 
             nn.Flatten(),
             nn.Linear(in_features = 131072, out_features = 1),
@@ -334,6 +334,23 @@ for epoch in range(num_epochs):
 
 
         iters += 1
+        
+        state = {
+        'epoch': epoch,
+        'state_dict': netG.module.state_dict(),
+        'optimizer': optimizerG.state_dict(),
+        }
+        savepath='checkpoint_netG_'+str(epoch)+'.t7'
+        torch.save(state,savepath)
+        
+        state = {
+        'epoch': epoch,
+        'state_dict': netD.module.state_dict(),
+        'optimizer': optimizerD.state_dict(),
+        }
+        savepath='checkpoint_netD_'+str(epoch)+'.t7'
+        torch.save(state,savepath)
 
 
+torch.save(netG, 'generator.pth')
 
