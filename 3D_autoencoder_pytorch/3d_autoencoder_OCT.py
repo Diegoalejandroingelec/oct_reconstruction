@@ -208,3 +208,74 @@ for epoch in range(num_epochs):
             print('[%d/%d][%d/%d]\tLoss: %.4f' % (epoch, num_epochs, i, len(dataloader),loss.item()))
             
         losses.append(loss.item())
+        
+torch.save(netG, 'autoencoder_for_reconstruction.pth')
+
+
+plt.figure(figsize=(10,5))
+plt.title("Autoencoder Loss During Training")
+plt.plot(losses,label="autoencoder")
+
+plt.xlabel("iterations")
+plt.ylabel("Loss")
+plt.legend()
+plt.show()
+
+###############################################################################
+###################                                         ###################
+###################                                         ###################
+###################                                         ###################
+###################          TESTING                        ###################
+###################                                         ###################
+###################                                         ###################
+###################                                         ###################
+###############################################################################                   
+
+subsampled_volumes_path_testing='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/testing_subsampled_volumes.h5'
+original_volumes_path_testing='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/testing_ground_truth.h5'
+
+
+h5_dataset_test=HDF5Dataset(subsampled_volumes_path_testing,original_volumes_path_testing)
+# Create the dataloader
+dataloader_test = torch.utils.data.DataLoader(h5_dataset_test, batch_size=2, shuffle=True, num_workers=1)
+
+
+real_batch = next(iter(dataloader_test))
+
+test_losses=[]
+for flo in dataloader_test:  
+    print(flo)
+    break
+    inputs = data[0].to(device, dtype=torch.float)
+    targets = data[1].to(device, dtype=torch.float)
+    # compute the model output
+    reconstructions_test = netG(inputs)
+    # calculate loss
+    loss_test = criterion(reconstructions_test, targets)
+    test_losses.append(loss_test.toitem())
+    if i % 50 == 0:
+        print(i)
+
+np.mean(test_losses)
+
+
+# import cv2
+
+# t=np.array(targets[0,:,:,:].cpu()).astype(np.uint8)
+# inp=np.array(inputs[0,:,:,:].cpu()).astype(np.uint8)
+# resul=model_loaded(inputs)
+# resul=resul[0,:,:,:].cpu().detach().numpy().astype(np.uint8)
+
+
+# t = t[:,:,3]
+# inp=inp[:,:,3]
+# resul=resul[:,:,3]
+
+
+# cv2.imshow('Original Image',t)
+# cv2.imshow('subsampled',inp)
+# cv2.imshow('Reconstruction',resul)
+
+
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
