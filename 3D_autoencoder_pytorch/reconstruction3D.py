@@ -87,7 +87,55 @@ device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else 
 
 
 
+class Generator(nn.Module):
+    def __init__(self,ngpu):
+        super(Generator,self).__init__()
 
+        layers = [32,32,32,32]
+        self.ngpu = ngpu
+        
+        self.input = nn.Sequential(
+            nn.Conv3d(1,layers[0],kernel_size=3,padding='same'),
+            nn.ReLU(),
+            nn.LayerNorm([layers[0],sub_volumes_dim[0],sub_volumes_dim[1],sub_volumes_dim[2]])
+        )
+
+        self.encoder = nn.ModuleList(
+            nn.Sequential(
+                nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
+                nn.ReLU(),
+                nn.LayerNorm([layers[s+1],sub_volumes_dim[0]-2*(s+1),sub_volumes_dim[1]-2*(s+1),sub_volumes_dim[2]-2*(s+1)])
+            ) for s in range(len(layers) - 1)
+        )
+
+        self.decoder = nn.ModuleList(
+            nn.Sequential(
+                nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
+                nn.ReLU(),
+                nn.LayerNorm([layers[len(layers)-2-s],sub_volumes_dim[0]-2*(len(layers)-2-s),sub_volumes_dim[1]-2*(len(layers)-2-s),sub_volumes_dim[2]-2*(len(layers)-2-s)])
+            ) for s in range(len(layers) - 1)
+        )
+
+        self.output = nn.Sequential(
+            nn.Conv3d(layers[0],1,kernel_size=3,padding='same'),
+            nn.Tanh()
+        )
+
+
+    def forward(self,x):
+        x = torch.unsqueeze(x,1)
+        x = self.input(x)
+
+        for i,j in enumerate(self.encoder):
+            x = self.encoder[i](x)
+
+        for i,j in enumerate(self.decoder):
+            x = self.decoder[i](x)
+        
+        x = self.output(x)
+
+        x = torch.squeeze(x)
+        return x
 
 
 
@@ -142,7 +190,9 @@ class Autoencoder(nn.Module):
         return x
 
 # Then later:
-model_loaded= torch.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/3D_autoencoder_pytorch/autoencoder_for_reconstruction.pth')
+#model_loaded= torch.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/3D_autoencoder_pytorch/autoencoder_for_reconstruction.pth')
+model_loaded= torch.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/GAN/generator.pth')
+
 volume_dim=(512,1000,100)
 
 def reconstruct_volume(volume,reconstruction_model,w_div_factor,h_div_factor,d_div_factor):
@@ -160,7 +210,7 @@ def reconstruct_volume(volume,reconstruction_model,w_div_factor,h_div_factor,d_d
                 sub_volume=np.expand_dims(sub_volume, axis=0)
                 sub_volume=torch.from_numpy(sub_volume).to(device, dtype=torch.float)
                 
-                decoded_volume =  reconstruction_model(sub_volume).cpu().detach().numpy().astype(np.uint8)
+                decoded_volume =  reconstruction_model(sub_volume).cpu().detach().numpy()
                 
                 reconstructed_volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]=decoded_volume
                 
@@ -180,13 +230,21 @@ def reconstruct_volume(volume,reconstruction_model,w_div_factor,h_div_factor,d_d
     return reconstructed_volume
 
 
-
-
-
 sub_sampled_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/subsampled_23/subsapled_Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
 original_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/test/Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
+
+def normalize(volume):
+    return (volume-np.max(volume))#/np.max(volume)
+
+sub_sampled_volume_normalized=normalize(sub_sampled_volume)
 reconstructed_volume_supreme=reconstruct_volume(sub_sampled_volume,model_loaded,64,512,16)
+reconstructed_volume_supreme=(reconstructed_volume_supreme*255)
 reconstructed_volume_supreme=reconstructed_volume_supreme.astype(np.uint8)
+
+sub_sampled_volume=sub_sampled_volume*255
+sub_sampled_volume=sub_sampled_volume.astype(np.uint8)
+
+#reconstructed_volume_supreme=reconstructed_volume_supreme.astype(np.uint8)
 import cv2
 def make_video(volume,name):
     
@@ -201,9 +259,9 @@ def make_video(volume,name):
         video.write(image_for_video)
     video.release()
 
-make_video(original_volume,'original_volume_75%')
-make_video(sub_sampled_volume,'subsampled_volume_75%')
-make_video(reconstructed_volume_supreme,'reconstructed volume 75% 512x64x16')
+# make_video(original_volume,'original_volume_75%')
+# make_video(sub_sampled_volume,'subsampled_volume_75%')
+# make_video(reconstructed_volume_supreme,'reconstructed_volume_75%_512x64x16_GAN')
 
 
 

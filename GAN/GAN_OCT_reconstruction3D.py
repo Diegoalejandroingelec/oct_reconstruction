@@ -16,7 +16,7 @@ import torch.nn as nn
 from torchsummary import summary
 import torch.optim as optim
 import torchvision.utils as vutils
-
+import pickle
 # Number of training epochs
 num_epochs = 5
 
@@ -38,7 +38,9 @@ ngpu = 1
 
 sub_volumes_dim=(512,64,16)
 
-
+def save_obj(obj,path ):
+    with open(path + '.pkl', 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 class HDF5Dataset(data.Dataset):
 
@@ -362,7 +364,9 @@ for epoch in range(num_epochs):
     }
     savepath='checkpoint_netD_'+str(epoch)+'.t7'
     torch.save(state,savepath)
-
+    torch.save(netG, 'generator_'+str(epoch)+'.pth')
+    save_obj(G_losses,'G_losses' )
+    save_obj(G_losses,'D_losses' )
 
 torch.save(netG, 'generator.pth')
 
