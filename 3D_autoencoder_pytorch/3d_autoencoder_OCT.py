@@ -29,7 +29,7 @@ beta1 = 0.5
 workers = 1
 
 # Batch size during training
-batch_size = 2
+batch_size = 7
 
 # Number of GPUs available. Use 0 for CPU mode.
 ngpu = 1
@@ -137,7 +137,7 @@ class Autoencoder(nn.Module):
     def __init__(self,ngpu):
         super(Autoencoder,self).__init__()
 
-        layers = [32,32,32,32,32,32]
+        layers = [32,32,32,32]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
@@ -151,12 +151,7 @@ class Autoencoder(nn.Module):
                 nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.BatchNorm3d(layers[s+1])
-            ) if s%2!=0 else nn.Sequential(
-                nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.BatchNorm3d(layers[s+1]),
-                nn.Dropout(p=0.25)
-            ) for s in range(len(layers) - 1)
+            )  for s in range(len(layers) - 1)
         )
 
         self.decoder = nn.ModuleList(
@@ -164,11 +159,6 @@ class Autoencoder(nn.Module):
                 nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.BatchNorm3d(layers[len(layers)-2-s]),
-            ) if s%2!=0 else nn.Sequential(
-                nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.BatchNorm3d(layers[len(layers)-2-s]),
-                nn.Dropout(p=0.25)
             )  for s in range(len(layers) - 1)
         )
 
