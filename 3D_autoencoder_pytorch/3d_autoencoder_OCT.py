@@ -14,7 +14,7 @@ import torch.nn as nn
 from torchsummary import summary
 import torch.optim as optim
 import matplotlib.pyplot as plt
-
+import pickle
 # Number of training epochs
 num_epochs = 5
 
@@ -37,7 +37,9 @@ ngpu = 1
 sub_volumes_dim=(512,64,16)
 
 
-
+def save_obj(obj,path ):
+    with open(path + '.pkl', 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 
 class HDF5Dataset(data.Dataset):
@@ -96,6 +98,11 @@ def normalize(volume):
 subsampled_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_subsampled_volumes.h5'
 original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_ground_truth.h5'
 
+# subsampled_volumes_path='../../oct_data_blue_noise/training_blue_noise_subsampled_volumes.h5'
+# original_volumes_path='../../oct_data_blue_noise/training_blue_noise_ground_truth.h5'
+
+
+
 h5_dataset=HDF5Dataset(subsampled_volumes_path,original_volumes_path,'original_train',normalize)
 # Create the dataloader
 dataloader = torch.utils.data.DataLoader(h5_dataset, batch_size=batch_size, shuffle=True, num_workers=workers)
@@ -107,6 +114,10 @@ dataloader = torch.utils.data.DataLoader(h5_dataset, batch_size=batch_size, shuf
 
 subsampled_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/testing_blue_noise_subsampled_volumes.h5'
 original_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/testing_blue_noise_ground_truth.h5'
+
+
+# subsampled_volumes_path_test='../../oct_data_blue_noise/testing_blue_noise_subsampled_volumes.h5'
+# original_volumes_path_test='../../oct_data_blue_noise/testing_blue_noise_ground_truth.h5'
 
 h5_dataset_test=HDF5Dataset(subsampled_volumes_path_test,original_volumes_path_test,'original_test',normalize)
 # Create the dataloader
@@ -137,7 +148,7 @@ class Autoencoder(nn.Module):
     def __init__(self,ngpu):
         super(Autoencoder,self).__init__()
 
-        layers = [32,32,32,32]
+        layers = [32,32,32,32,32,32]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
@@ -255,7 +266,8 @@ for epoch in range(num_epochs):
     losses_val.append(current_loss)
     
     
-      
+save_obj(losses,'train_losses' )
+save_obj(losses_val,'test_losses' )      
       
       
 torch.save(netG, 'autoencoder_for_reconstruction_last_epoch.pth')
