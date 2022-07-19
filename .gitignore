@@ -7,3 +7,6 @@
 *.jpeg
 *.t7
 *.pth
+*.txt
+*.npy
+

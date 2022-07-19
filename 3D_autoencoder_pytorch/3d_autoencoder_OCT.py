@@ -7,15 +7,13 @@ Created on Sat Jul 16 12:53:40 2022
 """
 
 import h5py
-
 import numpy as np
 import torch
 from torch.utils import data
-import matplotlib.pyplot as plt
 import torch.nn as nn
 from torchsummary import summary
 import torch.optim as optim
-import torchvision.utils as vutils
+import matplotlib.pyplot as plt
 
 # Number of training epochs
 num_epochs = 5
@@ -31,7 +29,7 @@ beta1 = 0.5
 workers = 1
 
 # Batch size during training
-batch_size = 4
+batch_size = 2
 
 # Number of GPUs available. Use 0 for CPU mode.
 ngpu = 1
@@ -40,14 +38,17 @@ sub_volumes_dim=(512,64,16)
 
 
 
+
+
 class HDF5Dataset(data.Dataset):
 
-    def __init__(self, file_path, ground_truth_path, transform=None):
+    def __init__(self, file_path, ground_truth_path,prefix_for_test, transform=None):
         super().__init__()
         self.file_path = file_path
         self.ground_truth_path = ground_truth_path
         self.transform = transform
-
+        self.prefix_for_test=prefix_for_test
+        
     def __getitem__(self, index):
         # get data
         x,name = self.get_data(index)
@@ -67,7 +68,7 @@ class HDF5Dataset(data.Dataset):
     
     def get_ground_truth(self,reference_name):
         f_gt = h5py.File(self.ground_truth_path, 'r')
-        name = 'original_train_'+ '_'.join(reference_name.split('_')[-3:])
+        name = self.prefix_for_test+'_'+ '_'.join(reference_name.split('_')[-3:])
         value=np.array(f_gt.get(name))
         f_gt.close()
         return value
@@ -89,18 +90,32 @@ class HDF5Dataset(data.Dataset):
         return info
     
 def normalize(volume):
-    return volume/np.max(volume)
+    return (volume.astype(np.float32)-(np.max(volume.astype(np.float32))/2))/(np.max(volume.astype(np.float32))/2)
 
-subsampled_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/training_subsampled_volumes.h5'
-original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/training_ground_truth.h5'
 
-h5_dataset=HDF5Dataset(subsampled_volumes_path,original_volumes_path)
+subsampled_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_subsampled_volumes.h5'
+original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_ground_truth.h5'
 
+h5_dataset=HDF5Dataset(subsampled_volumes_path,original_volumes_path,'original_train',normalize)
 # Create the dataloader
 dataloader = torch.utils.data.DataLoader(h5_dataset, batch_size=batch_size, shuffle=True, num_workers=workers)
 
+# train_batch = next(iter(dataloader))
 
+# plt.imshow(np.squeeze(np.array(train_batch[1][0,:,:,0].cpu())), cmap="gray")
+# plt.imshow(np.squeeze(np.array(train_batch[0][0,:,:,0].cpu())), cmap="gray")
 
+subsampled_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/testing_blue_noise_subsampled_volumes.h5'
+original_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/testing_blue_noise_ground_truth.h5'
+
+h5_dataset_test=HDF5Dataset(subsampled_volumes_path_test,original_volumes_path_test,'original_test',normalize)
+# Create the dataloader
+dataloader_test = torch.utils.data.DataLoader(h5_dataset_test, batch_size=1, shuffle=True, num_workers=workers)
+
+# test_batch = next(iter(dataloader_test))
+
+# plt.imshow(np.squeeze(np.array(test_batch[1][0,:,:,0].cpu())), cmap="gray")
+# plt.imshow(np.squeeze(np.array(test_batch[0][0,:,:,0].cpu())), cmap="gray")
 
 
 # Decide which device we want to run on
@@ -109,9 +124,11 @@ device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else 
 # custom weights initialization called on netG and netD
 def weights_init(m):
     classname = m.__class__.__name__
-    if classname.find('Conv') != -1:
+    if classname.find('ConvTranspose') != -1:
         nn.init.normal_(m.weight.data, 0.0, 0.02)
-    elif classname.find('LayerNorm') != -1:
+    elif classname.find('Conv') != -1:
+        nn.init.normal_(m.weight.data, 0.0, 0.02)
+    elif classname.find('BatchNorm') != -1:
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0)
         
@@ -120,33 +137,44 @@ class Autoencoder(nn.Module):
     def __init__(self,ngpu):
         super(Autoencoder,self).__init__()
 
-        layers = [32,32,16,16]
+        layers = [32,32,32,32,32,32]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
             nn.Conv3d(1,layers[0],kernel_size=3,padding='same'),
-            nn.ReLU(),
-            nn.LayerNorm([layers[0],sub_volumes_dim[0],sub_volumes_dim[1],sub_volumes_dim[2]])
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm3d(layers[0])
         )
 
         self.encoder = nn.ModuleList(
             nn.Sequential(
                 nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
-                nn.ReLU(),
-                nn.LayerNorm([layers[s+1],sub_volumes_dim[0]-2*(s+1),sub_volumes_dim[1]-2*(s+1),sub_volumes_dim[2]-2*(s+1)])
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[s+1])
+            ) if s%2!=0 else nn.Sequential(
+                nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[s+1]),
+                nn.Dropout(p=0.25)
             ) for s in range(len(layers) - 1)
         )
 
         self.decoder = nn.ModuleList(
             nn.Sequential(
                 nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
-                nn.ReLU(),
-                nn.LayerNorm([layers[len(layers)-2-s],sub_volumes_dim[0]-2*(len(layers)-2-s),sub_volumes_dim[1]-2*(len(layers)-2-s),sub_volumes_dim[2]-2*(len(layers)-2-s)])
-            ) for s in range(len(layers) - 1)
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[len(layers)-2-s]),
+            ) if s%2!=0 else nn.Sequential(
+                nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[len(layers)-2-s]),
+                nn.Dropout(p=0.25)
+            )  for s in range(len(layers) - 1)
         )
 
         self.output = nn.Sequential(
-            nn.Conv3d(layers[0],1,kernel_size=3,padding='same')
+            nn.Conv3d(layers[0],1,kernel_size=3,padding='same'),
+            nn.Tanh()
         )
 
 
@@ -162,7 +190,6 @@ class Autoencoder(nn.Module):
         
         x = self.output(x)
 
-        x = torch.squeeze(x)
         return x
 
 # Create the generator
@@ -179,25 +206,28 @@ netG.apply(weights_init)
 summary(netG, sub_volumes_dim)
 
 
-criterion = nn.MSELoss()
+criterion = nn.L1Loss()
+
+criterion_for_testing=nn.L1Loss()
 optimizer = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
 
 
 print("Starting Training Loop...")
 # For each epoch
 losses = []
+losses_val=[]
 for epoch in range(num_epochs):
     # For each batch in the dataloader
-    for i, data in enumerate(dataloader, 0):  
-        inputs = data[0].to(device, dtype=torch.float)
-        targets = data[1].to(device, dtype=torch.float)
+    for i, data_train in enumerate(dataloader, 0):  
+        inputs = data_train[0].to(device, dtype=torch.float)
+        targets = data_train[1].to(device, dtype=torch.float)
         
         # clear the gradients
         optimizer.zero_grad()
         # compute the model output
         reconstructions = netG(inputs)
         # calculate loss
-        loss = criterion(reconstructions, targets)
+        loss = criterion(reconstructions, torch.unsqueeze(targets,1))
         # credit assignment
         loss.backward()
         # update model weights
@@ -208,18 +238,47 @@ for epoch in range(num_epochs):
             print('[%d/%d][%d/%d]\tLoss: %.4f' % (epoch, num_epochs, i, len(dataloader),loss.item()))
             
         losses.append(loss.item())
+
         
-torch.save(netG, 'autoencoder_for_reconstruction.pth')
+    test_losses=[]
+    print('Evaluation...')
+    for j, data_test in enumerate(dataloader_test, 0):  
+         inputs_test = data_test[0].to(device, dtype=torch.float)
+         targets_test = data_test[1].to(device, dtype=torch.float)
+         # compute the model output
+         reconstructions_test = netG(inputs_test)
+         # calculate loss
+         loss_test = criterion_for_testing(reconstructions_test, torch.unsqueeze(targets_test,1))
+         test_losses.append(loss_test.item())
+         if j % 5000 == 0:
+             print(i)
+
+    current_loss=np.mean(test_losses)
+    print('VALIDATION LOSS: ',current_loss)
+    if(len(losses_val)>0):
+        min_val_loss=np.min(losses_val)
+        if(current_loss<min_val_loss):
+            torch.save(netG, 'autoencoder_for_reconstruction_BEST_MODEL.pth')
+    else:
+        torch.save(netG, 'autoencoder_for_reconstruction_first_epoch.pth')
+        
+    losses_val.append(current_loss)
+    
+    
+      
+      
+      
+torch.save(netG, 'autoencoder_for_reconstruction_last_epoch.pth')
 
 
-plt.figure(figsize=(10,5))
-plt.title("Autoencoder Loss During Training")
-plt.plot(losses,label="autoencoder")
+# plt.figure(figsize=(10,5))
+# plt.title("Autoencoder Loss During Training")
+# plt.plot(losses,label="autoencoder")
 
-plt.xlabel("iterations")
-plt.ylabel("Loss")
-plt.legend()
-plt.show()
+# plt.xlabel("iterations")
+# plt.ylabel("Loss")
+# plt.legend()
+# plt.show()
 
 ###############################################################################
 ###################                                         ###################
@@ -231,32 +290,32 @@ plt.show()
 ###################                                         ###################
 ###############################################################################                   
 
-subsampled_volumes_path_testing='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/testing_subsampled_volumes.h5'
-original_volumes_path_testing='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/testing_ground_truth.h5'
+# subsampled_volumes_path_testing='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/testing_subsampled_volumes.h5'
+# original_volumes_path_testing='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/testing_ground_truth.h5'
 
 
-h5_dataset_test=HDF5Dataset(subsampled_volumes_path_testing,original_volumes_path_testing)
-# Create the dataloader
-dataloader_test = torch.utils.data.DataLoader(h5_dataset_test, batch_size=2, shuffle=True, num_workers=1)
+# h5_dataset_test=HDF5Dataset(subsampled_volumes_path_testing,original_volumes_path_testing)
+# # Create the dataloader
+# dataloader_test = torch.utils.data.DataLoader(h5_dataset_test, batch_size=2, shuffle=True, num_workers=1)
 
 
-real_batch = next(iter(dataloader_test))
+# real_batch = next(iter(dataloader_test))
 
-test_losses=[]
-for flo in dataloader_test:  
-    print(flo)
-    break
-    inputs = data[0].to(device, dtype=torch.float)
-    targets = data[1].to(device, dtype=torch.float)
-    # compute the model output
-    reconstructions_test = netG(inputs)
-    # calculate loss
-    loss_test = criterion(reconstructions_test, targets)
-    test_losses.append(loss_test.toitem())
-    if i % 50 == 0:
-        print(i)
+# test_losses=[]
+# for flo in dataloader_test:  
+#     print(flo)
+#     break
+#     inputs = data[0].to(device, dtype=torch.float)
+#     targets = data[1].to(device, dtype=torch.float)
+#     # compute the model output
+#     reconstructions_test = netG(inputs)
+#     # calculate loss
+#     loss_test = criterion(reconstructions_test, targets)
+#     test_losses.append(loss_test.toitem())
+#     if i % 50 == 0:
+#         print(i)
 
-np.mean(test_losses)
+# np.mean(test_losses)
 
 
 # import cv2

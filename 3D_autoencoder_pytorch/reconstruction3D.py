@@ -91,29 +91,39 @@ class Generator(nn.Module):
     def __init__(self,ngpu):
         super(Generator,self).__init__()
 
-        layers = [32,32,32,32]
+        layers = [32,32,32,32,32,32]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
             nn.Conv3d(1,layers[0],kernel_size=3,padding='same'),
-            nn.ReLU(),
-            nn.LayerNorm([layers[0],sub_volumes_dim[0],sub_volumes_dim[1],sub_volumes_dim[2]])
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm3d(layers[0])
         )
 
         self.encoder = nn.ModuleList(
             nn.Sequential(
                 nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
-                nn.ReLU(),
-                nn.LayerNorm([layers[s+1],sub_volumes_dim[0]-2*(s+1),sub_volumes_dim[1]-2*(s+1),sub_volumes_dim[2]-2*(s+1)])
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[s+1])
+            ) if s%2!=0 else nn.Sequential(
+                nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[s+1]),
+                nn.Dropout(p=0.5)
             ) for s in range(len(layers) - 1)
         )
 
         self.decoder = nn.ModuleList(
             nn.Sequential(
                 nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
-                nn.ReLU(),
-                nn.LayerNorm([layers[len(layers)-2-s],sub_volumes_dim[0]-2*(len(layers)-2-s),sub_volumes_dim[1]-2*(len(layers)-2-s),sub_volumes_dim[2]-2*(len(layers)-2-s)])
-            ) for s in range(len(layers) - 1)
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[len(layers)-2-s]),
+            ) if s%2!=0 else nn.Sequential(
+                nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[len(layers)-2-s]),
+                nn.Dropout(p=0.5)
+            )  for s in range(len(layers) - 1)
         )
 
         self.output = nn.Sequential(
@@ -136,7 +146,6 @@ class Generator(nn.Module):
 
         x = torch.squeeze(x)
         return x
-
 
 
 
@@ -191,7 +200,7 @@ class Autoencoder(nn.Module):
 
 # Then later:
 #model_loaded= torch.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/3D_autoencoder_pytorch/autoencoder_for_reconstruction.pth')
-model_loaded= torch.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/GAN/generator.pth')
+model_loaded= torch.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/GAN/generator_1.pth')
 
 volume_dim=(512,1000,100)
 
@@ -234,17 +243,21 @@ sub_sampled_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_
 original_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/test/Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
 
 def normalize(volume):
-    return (volume-np.max(volume))#/np.max(volume)
+    return (volume.astype(np.float32)-(np.max(volume.astype(np.float32))/2))/(np.max(volume.astype(np.float32))/2)
 
+
+######## Normalize matrix###############################
 sub_sampled_volume_normalized=normalize(sub_sampled_volume)
-reconstructed_volume_supreme=reconstruct_volume(sub_sampled_volume,model_loaded,64,512,16)
-reconstructed_volume_supreme=(reconstructed_volume_supreme*255)
-reconstructed_volume_supreme=reconstructed_volume_supreme.astype(np.uint8)
 
-sub_sampled_volume=sub_sampled_volume*255
-sub_sampled_volume=sub_sampled_volume.astype(np.uint8)
 
-#reconstructed_volume_supreme=reconstructed_volume_supreme.astype(np.uint8)
+reconstructed_volume_supreme=reconstruct_volume(sub_sampled_volume_normalized,model_loaded,64,512,16)
+
+######## Denormalize matrix###############################
+
+reconstructed_volume_supreme=(reconstructed_volume_supreme*127.5)+127.5
+
+reconstructed_volume_supreme = reconstructed_volume_supreme.astype(np.uint8)
+
 import cv2
 def make_video(volume,name):
     
@@ -261,7 +274,7 @@ def make_video(volume,name):
 
 # make_video(original_volume,'original_volume_75%')
 # make_video(sub_sampled_volume,'subsampled_volume_75%')
-# make_video(reconstructed_volume_supreme,'reconstructed_volume_75%_512x64x16_GAN')
+#make_video(reconstructed_volume_supreme,'reconstructed_volume_75%_512x64x16_GAN')
 
 
 
@@ -286,89 +299,113 @@ def make_video(volume,name):
 # summary(model_loaded, sub_volumes_dim)
 
 
-# model_params = model_loaded.parameters()
-# param_list=[]
-# for weights in model_params:
-#     param_list.append(weights) 
+model_params = model_loaded.parameters()
+param_list=[]
+for weights in model_params:
+    param_list.append(weights) 
 
-# global weights_index
+global weights_index
 
-# weights_index=2
-# def weights_init(m):
-#     global weights_index
-#     classname = m.__class__.__name__  
-#     if(classname=='Conv3d' or classname=='LayerNorm' or classname=='ConvTranspose3d'):
-#         print(classname)
-#         print(weights_index-2)
-#         m.weight=param_list[weights_index-2]
-#         print(weights_index-1)
-#         m.bias=param_list[weights_index-1]
-#         weights_index+=2
+weights_index=2
+def weights_init(m):
+    global weights_index
+    classname = m.__class__.__name__  
+    if(classname=='Conv3d' or classname=='ConvTranspose3d' or classname=='BatchNorm3d'):
+        print(classname)
+        print(weights_index-2)
+        m.weight=param_list[weights_index-2]
+        print(weights_index-1)
+        m.bias=param_list[weights_index-1]
+        weights_index+=2
         
         
 
-# class Autoencoder_for_reconstruction(nn.Module):
-#     def __init__(self,ngpu):
-#         super(Autoencoder_for_reconstruction,self).__init__()
+class Reconstruction_model(nn.Module):
+    def __init__(self,ngpu):
+        super(Reconstruction_model,self).__init__()
 
-#         layers = [32,32,16,16]
-#         self.ngpu = ngpu
+        layers = [32,32,32,32,32,32]
+        self.ngpu = ngpu
         
-#         self.input = nn.Sequential(
-#             nn.Conv3d(1,layers[0],kernel_size=3,padding='same'),
-#             nn.ReLU(),
-#             nn.LayerNorm([layers[0],sub_volumes_dim[0],sub_volumes_dim[1],sub_volumes_dim[2]])
-#         )
+        self.input = nn.Sequential(
+            nn.Conv3d(1,layers[0],kernel_size=3,padding='same'),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm3d(layers[0])
+        )
 
-#         self.encoder = nn.ModuleList(
-#             nn.Sequential(
-#                 nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
-#                 nn.ReLU(),
-#                 nn.LayerNorm([layers[s+1],sub_volumes_dim[0]-2*(s+1),sub_volumes_dim[1]-2*(s+1),sub_volumes_dim[2]-2*(s+1)])
-#             ) for s in range(len(layers) - 1)
-#         )
+        self.encoder = nn.ModuleList(
+            nn.Sequential(
+                nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[s+1])
+            ) if s%2!=0 else nn.Sequential(
+                nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[s+1]),
+                nn.Dropout(p=0.5)
+            ) for s in range(len(layers) - 1)
+        )
 
-#         self.decoder = nn.ModuleList(
-#             nn.Sequential(
-#                 nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
-#                 nn.ReLU(),
-#                 nn.LayerNorm([layers[len(layers)-2-s],sub_volumes_dim[0]-2*(len(layers)-2-s),sub_volumes_dim[1]-2*(len(layers)-2-s),sub_volumes_dim[2]-2*(len(layers)-2-s)])
-#             ) for s in range(len(layers) - 1)
-#         )
+        self.decoder = nn.ModuleList(
+            nn.Sequential(
+                nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[len(layers)-2-s]),
+            ) if s%2!=0 else nn.Sequential(
+                nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[len(layers)-2-s]),
+                nn.Dropout(p=0.5)
+            )  for s in range(len(layers) - 1)
+        )
 
-#         self.output = nn.Sequential(
-#             nn.Conv3d(layers[0],1,kernel_size=3,padding='same')
-#         )
+        self.output = nn.Sequential(
+            nn.Conv3d(layers[0],1,kernel_size=3,padding='same'),
+            nn.Tanh()
+        )
 
 
-#     def forward(self,x):
-#         x = torch.unsqueeze(x,1)
-#         x = self.input(x)
+    def forward(self,x):
+        x = torch.unsqueeze(x,1)
+        x = self.input(x)
 
-#         for i,j in enumerate(self.encoder):
-#             x = self.encoder[i](x)
+        for i,j in enumerate(self.encoder):
+            x = self.encoder[i](x)
 
-#         for i,j in enumerate(self.decoder):
-#             x = self.decoder[i](x)
+        for i,j in enumerate(self.decoder):
+            x = self.decoder[i](x)
         
-#         x = self.output(x)
+        x = self.output(x)
 
-#         x = torch.squeeze(x)
-#         return x
-
-
-# # Create the Discriminator
-# reconstruction_model = Autoencoder_for_reconstruction(ngpu).to(device)
+        x = torch.squeeze(x)
+        return x
 
 
+# Create the Discriminator
+reconstruction_model = Reconstruction_model(ngpu).to(device)
 
-# # Apply the weights_init function to randomly initialize all weights
-# #  to mean=0, stdev=0.2.
-# reconstruction_model.apply(weights_init)
+summary(reconstruction_model, sub_volumes_dim)
+
+# Apply the weights_init function to randomly initialize all weights
+#  to mean=0, stdev=0.2.
+reconstruction_model.apply(weights_init)
 
 
 
-# reconstruction_model = reconstruction_model.parameters()
+# reconstruction_model_params = reconstruction_model.parameters()
 # param_list1=[]
-# for weights1 in reconstruction_model:
+# for weights1 in reconstruction_model_params:
 #     param_list1.append(weights1) 
+
+summary(reconstruction_model, (512,100,16))
+
+
+bigger_reconstruction=reconstruct_volume(sub_sampled_volume_normalized,reconstruction_model,100,512,16)
+
+######## Denormalize matrix###############################
+
+bigger_reconstruction=(bigger_reconstruction*127.5)+127.5
+
+bigger_reconstruction = bigger_reconstruction.astype(np.uint8)
+
+make_video(bigger_reconstruction,'bigger_reconstruction_GAN')

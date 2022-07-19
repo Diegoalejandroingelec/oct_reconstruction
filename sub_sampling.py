@@ -14,12 +14,42 @@ import pickle
 import h5py
 
 sub_sampling_percentage=75
-
+blue_noise_subsampling = True
+raster_subsampling=False
 def read_data(path):
     data = loadmat(path)
     oct_volume = data['images']
     return oct_volume
 
+def create_blue_noise_mask(expected_dims,kernel,subsampling_percentage):
+    
+    blue_noise_cube_normalized=kernel/np.max(kernel)
+    blue_noise_cube_normalized_shape=blue_noise_cube_normalized.shape
+    
+    axis_0=int(np.ceil(expected_dims[0]/blue_noise_cube_normalized_shape[0]))
+    axis_1=int(np.ceil(expected_dims[1]/blue_noise_cube_normalized_shape[1]))
+    axis_2=int(np.ceil(expected_dims[2]/blue_noise_cube_normalized_shape[2]))
+    
+    
+    
+    
+    concat1 = np.concatenate(tuple([blue_noise_cube_normalized for i in range(axis_0)]), axis=0)
+    concat2 =np.concatenate(tuple([concat1 for i in range(axis_1)]),axis=1)
+    concat3 =np. concatenate(tuple([concat2 for i in range(axis_2)]),axis=2)
+    
+    blue_noise_mask = concat3[0:expected_dims[0],0:expected_dims[1],0:expected_dims[2]]
+    
+    
+    
+    binary_blue_noise_mask = blue_noise_mask > subsampling_percentage
+    binary_blue_noise_mask = binary_blue_noise_mask*1
+    total = binary_blue_noise_mask.sum()
+    
+    
+    missing_data=(100-(total*100)/(blue_noise_mask.shape[0]*blue_noise_mask.shape[1]*blue_noise_mask.shape[2]))
+    print(missing_data)
+    
+    return blue_noise_mask,binary_blue_noise_mask
 
 
 def generate_mask(percentage,volume_x,volume_y,volume_z):
@@ -134,9 +164,19 @@ def extract_sub_volumes(volume,name,h5_file):
             can_iterate_over_d=False
          
     # print(index)
+if(raster_subsampling):
+    mask = generate_mask(percentage=sub_sampling_percentage/100,volume_x=1000,volume_y=512,volume_z=100)
     
-mask = generate_mask(percentage=sub_sampling_percentage/100,volume_x=1000,volume_y=512,volume_z=100)
-save_obj(mask,'/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/masks/mask_GAN_'+str(sub_sampling_percentage))
+if(blue_noise_subsampling):
+    blue_noise_cube = np.load('./3D_autoencoder_pytorch/bluenoisecube.npy')
+
+    blue_noise_mask,mask= create_blue_noise_mask(expected_dims=(512,1000,100),
+                                                                   kernel=blue_noise_cube,
+                                                                   subsampling_percentage=0.75)
+    
+    
+    
+save_obj(mask,'/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/masks/mask_blue_noise_75'+str(sub_sampling_percentage))
 
 def get_volume_paths():
     amd_eyes_paths = glob("/home/diego/Downloads/oct_images/AMD/*.mat", recursive = True)
@@ -156,15 +196,19 @@ def generate_dataset(mask):
     
     
     volume_number=0
-    subsampled_volumes_dataset_train = h5py.File('training_subsampled_volumes.h5', 'w')
-    volumes_dataset_train = h5py.File('training_ground_truth.h5', 'w')
+    subsampled_volumes_dataset_train = h5py.File('training_blue_noise_subsampled_volumes.h5', 'w')
+    volumes_dataset_train = h5py.File('training_blue_noise_ground_truth.h5', 'w')
+    
+    with open('train_volumes_paths.txt', 'w') as f:
+        f.write('\n'.join(train_volumes_paths))
+        
     for volume_path in train_volumes_paths:
 
         print(volume_path)
         try: 
             volume = read_data(volume_path)
         
-            subsampled_image = np.multiply(mask,volume)
+            subsampled_image = np.multiply(mask,volume).astype(np.uint8)
 
             
             name='original_train_vol_'+str(volume_number)
@@ -187,8 +231,13 @@ def generate_dataset(mask):
     
     
     volume_number=0
-    subsampled_volumes_dataset_test = h5py.File('testing_subsampled_volumes.h5', 'w')
-    volumes_dataset_test = h5py.File('testing_ground_truth.h5', 'w')
+    subsampled_volumes_dataset_test = h5py.File('testing_blue_noise_subsampled_volumes.h5', 'w')
+    volumes_dataset_test = h5py.File('testing_blue_noise_ground_truth.h5', 'w')
+    
+    with open('test_volumes_paths.txt', 'w') as f:
+        f.write('\n'.join(test_volumes_paths))
+        
+        
     for volume_path in test_volumes_paths:
             
             try:
@@ -196,7 +245,7 @@ def generate_dataset(mask):
         
                 volume = read_data(volume_path)
                 
-                subsampled_image = np.multiply(mask,volume)
+                subsampled_image = np.multiply(mask,volume).astype(np.uint8)
                 
                 
                 name='original_test_vol_'+str(volume_number)
