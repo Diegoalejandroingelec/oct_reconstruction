@@ -34,7 +34,7 @@ workers = 2
 batch_size = 8
 
 # Number of GPUs available. Use 0 for CPU mode.
-ngpu = 2
+ngpu = 1
 
 sub_volumes_dim=(512,64,16)
 
@@ -89,10 +89,10 @@ class HDF5Dataset(data.Dataset):
         return info
     
 def normalize(volume):
-    return (volume-np.max(volume))/np.max(volume)
+    return (volume.astype(np.float32)-(np.max(volume.astype(np.float32))/2))/(np.max(volume.astype(np.float32))/2)
 
-subsampled_volumes_path='../../oct_data/training_subsampled_volumes.h5'
-original_volumes_path='../../oct_data/training_ground_truth.h5'
+subsampled_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/training_subsampled_volumes.h5'
+original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/training_ground_truth.h5'
 
 
 h5_dataset=HDF5Dataset(subsampled_volumes_path,original_volumes_path,normalize)
@@ -100,7 +100,7 @@ h5_dataset=HDF5Dataset(subsampled_volumes_path,original_volumes_path,normalize)
 # Create the dataloader
 dataloader = torch.utils.data.DataLoader(h5_dataset, batch_size=batch_size, shuffle=True, num_workers=workers)
 
-
+real_batch = next(iter(dataloader))
 
 
 
@@ -127,29 +127,39 @@ class Generator(nn.Module):
     def __init__(self,ngpu):
         super(Generator,self).__init__()
 
-        layers = [32,32,32,32]
+        layers = [32,32,32,32,32,32]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
             nn.Conv3d(1,layers[0],kernel_size=3,padding='same'),
-            nn.ReLU(),
-            nn.LayerNorm([layers[0],sub_volumes_dim[0],sub_volumes_dim[1],sub_volumes_dim[2]])
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm3d(layers[0])
         )
 
         self.encoder = nn.ModuleList(
             nn.Sequential(
                 nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
-                nn.ReLU(),
-                nn.LayerNorm([layers[s+1],sub_volumes_dim[0]-2*(s+1),sub_volumes_dim[1]-2*(s+1),sub_volumes_dim[2]-2*(s+1)])
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[s+1])
+            ) if s%2!=0 else nn.Sequential(
+                nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[s+1]),
+                nn.Dropout(p=0.5)
             ) for s in range(len(layers) - 1)
         )
 
         self.decoder = nn.ModuleList(
             nn.Sequential(
                 nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
-                nn.ReLU(),
-                nn.LayerNorm([layers[len(layers)-2-s],sub_volumes_dim[0]-2*(len(layers)-2-s),sub_volumes_dim[1]-2*(len(layers)-2-s),sub_volumes_dim[2]-2*(len(layers)-2-s)])
-            ) for s in range(len(layers) - 1)
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[len(layers)-2-s]),
+            ) if s%2!=0 else nn.Sequential(
+                nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[len(layers)-2-s]),
+                nn.Dropout(p=0.5)
+            )  for s in range(len(layers) - 1)
         )
 
         self.output = nn.Sequential(
