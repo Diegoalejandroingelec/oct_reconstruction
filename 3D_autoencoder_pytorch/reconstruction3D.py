@@ -224,6 +224,7 @@ def reconstruct_volume(volume,reconstruction_model,sub_volumes_dim):
                 sub_volume=torch.from_numpy(sub_volume).to(device, dtype=torch.float)
                 
                 decoded_volume =  reconstruction_model(sub_volume).cpu().detach().numpy()
+                print(decoded_volume.shape)
                 if(not overlap_w):
                     reconstructed_volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]=decoded_volume
                 else:
