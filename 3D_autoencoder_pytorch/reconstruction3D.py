@@ -16,7 +16,7 @@ import torch.nn as nn
 from torchsummary import summary
 
 sub_volumes_dim=(512,64,16)
-bigger_sub_volumes_dim=(512,900,16)
+bigger_sub_volumes_dim=(512,700,16)
 
 def load_obj(name):
     with open( name, 'rb') as f:
