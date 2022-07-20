@@ -26,13 +26,13 @@ beta1 = 0.5
 
 
 # Number of workers for dataloader
-workers = 1
+workers = 2
 
 # Batch size during training
-batch_size = 7
+batch_size = 16
 
 # Number of GPUs available. Use 0 for CPU mode.
-ngpu = 1
+ngpu = 2
 
 sub_volumes_dim=(512,64,16)
 
@@ -98,8 +98,8 @@ def normalize(volume):
 subsampled_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_subsampled_volumes.h5'
 original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_ground_truth.h5'
 
-# subsampled_volumes_path='../../oct_data_blue_noise/training_blue_noise_subsampled_volumes.h5'
-# original_volumes_path='../../oct_data_blue_noise/training_blue_noise_ground_truth.h5'
+# subsampled_volumes_path='../oct_data_blue_noise/training_blue_noise_subsampled_volumes.h5'
+# original_volumes_path='../oct_data_blue_noise/training_blue_noise_ground_truth.h5'
 
 
 
@@ -116,8 +116,8 @@ subsampled_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training
 original_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/testing_blue_noise_ground_truth.h5'
 
 
-# subsampled_volumes_path_test='../../oct_data_blue_noise/testing_blue_noise_subsampled_volumes.h5'
-# original_volumes_path_test='../../oct_data_blue_noise/testing_blue_noise_ground_truth.h5'
+# subsampled_volumes_path_test='../oct_data_blue_noise/testing_blue_noise_subsampled_volumes.h5'
+# original_volumes_path_test='../oct_data_blue_noise/testing_blue_noise_ground_truth.h5'
 
 h5_dataset_test=HDF5Dataset(subsampled_volumes_path_test,original_volumes_path_test,'original_test',normalize)
 # Create the dataloader
@@ -252,7 +252,7 @@ for epoch in range(num_epochs):
          loss_test = criterion_for_testing(reconstructions_test, torch.unsqueeze(targets_test,1))
          test_losses.append(loss_test.item())
          if j % 5000 == 0:
-             print(i)
+             print(j)
 
     current_loss=np.mean(test_losses)
     print('VALIDATION LOSS: ',current_loss)
