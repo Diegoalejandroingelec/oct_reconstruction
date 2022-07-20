@@ -14,10 +14,9 @@ from torch.utils import data
 import matplotlib.pyplot as plt
 import torch.nn as nn
 from torchsummary import summary
-import torch.optim as optim
-import torchvision.utils as vutils
-sub_volumes_dim=(512,64,16)
 
+sub_volumes_dim=(512,64,16)
+bigger_sub_volumes_dim=(512,100,64)
 
 def load_obj(name):
     with open( name, 'rb') as f:
@@ -153,33 +152,34 @@ class Autoencoder(nn.Module):
     def __init__(self,ngpu):
         super(Autoencoder,self).__init__()
 
-        layers = [32,32,16,16]
+        layers = [32,32,32,32,32,32]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
             nn.Conv3d(1,layers[0],kernel_size=3,padding='same'),
-            nn.ReLU(),
-            nn.LayerNorm([layers[0],sub_volumes_dim[0],sub_volumes_dim[1],sub_volumes_dim[2]])
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm3d(layers[0])
         )
 
         self.encoder = nn.ModuleList(
             nn.Sequential(
                 nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
-                nn.ReLU(),
-                nn.LayerNorm([layers[s+1],sub_volumes_dim[0]-2*(s+1),sub_volumes_dim[1]-2*(s+1),sub_volumes_dim[2]-2*(s+1)])
-            ) for s in range(len(layers) - 1)
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[s+1])
+            )  for s in range(len(layers) - 1)
         )
 
         self.decoder = nn.ModuleList(
             nn.Sequential(
                 nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
-                nn.ReLU(),
-                nn.LayerNorm([layers[len(layers)-2-s],sub_volumes_dim[0]-2*(len(layers)-2-s),sub_volumes_dim[1]-2*(len(layers)-2-s),sub_volumes_dim[2]-2*(len(layers)-2-s)])
-            ) for s in range(len(layers) - 1)
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.BatchNorm3d(layers[len(layers)-2-s]),
+            )  for s in range(len(layers) - 1)
         )
 
         self.output = nn.Sequential(
-            nn.Conv3d(layers[0],1,kernel_size=3,padding='same')
+            nn.Conv3d(layers[0],1,kernel_size=3,padding='same'),
+            nn.Tanh()
         )
 
 
@@ -195,16 +195,19 @@ class Autoencoder(nn.Module):
         
         x = self.output(x)
 
-        x = torch.squeeze(x)
         return x
 
 # Then later:
-#model_loaded= torch.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/3D_autoencoder_pytorch/autoencoder_for_reconstruction.pth')
-model_loaded= torch.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/GAN/generator_1.pth')
+model_loaded= torch.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/3D_autoencoder_pytorch/autoencoder_for_reconstruction_BEST_MODEL.pth')
+#model_loaded= torch.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/GAN/generator_1.pth')
 
 volume_dim=(512,1000,100)
 
-def reconstruct_volume(volume,reconstruction_model,w_div_factor,h_div_factor,d_div_factor):
+def reconstruct_volume(volume,reconstruction_model,sub_volumes_dim):
+    
+    h_div_factor = sub_volumes_dim[0]
+    w_div_factor = sub_volumes_dim[1]
+    d_div_factor = sub_volumes_dim[2]
     reconstructed_volume = np.zeros(volume_dim)
     
     d_end=0
@@ -239,22 +242,27 @@ def reconstruct_volume(volume,reconstruction_model,w_div_factor,h_div_factor,d_d
     return reconstructed_volume
 
 
-sub_sampled_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/subsampled_23/subsapled_Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
-original_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/test/Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
 
+original_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/train/Farsiu_Ophthalmology_2013_AMD_Subject_1101.pkl')
+mask_blue_noise=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/masks/mask_blue_noise_7575.pkl')
+
+#original_volume=load_obj('Farsiu_Ophthalmology_2013_AMD_Subject_1101.pkl')
+#mask_blue_noise=load_obj('mask_blue_noise_7575.pkl')
+
+
+sub_sampled_volume=np.multiply(mask_blue_noise,original_volume).astype(np.uint8)
 def normalize(volume):
     return (volume.astype(np.float32)-(np.max(volume.astype(np.float32))/2))/(np.max(volume.astype(np.float32))/2)
-
 
 ######## Normalize matrix###############################
 sub_sampled_volume_normalized=normalize(sub_sampled_volume)
 
-
-reconstructed_volume_supreme=reconstruct_volume(sub_sampled_volume_normalized,model_loaded,64,512,16)
+reconstructed_volume_supreme=reconstruct_volume(sub_sampled_volume_normalized,model_loaded,sub_volumes_dim)
 
 ######## Denormalize matrix###############################
 
-reconstructed_volume_supreme=(reconstructed_volume_supreme*127.5)+127.5
+
+reconstructed_volume_supreme=(reconstructed_volume_supreme*127)+127
 
 reconstructed_volume_supreme = reconstructed_volume_supreme.astype(np.uint8)
 
@@ -271,13 +279,26 @@ def make_video(volume,name):
         image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
         video.write(image_for_video)
     video.release()
+    
+    
+#make_video(sub_sampled_volume,'sub_sampled_blue_boise_23%')
+make_video(reconstructed_volume_supreme,'reconstructed_volume_75%_512x64x16_without')
 
-# make_video(original_volume,'original_volume_75%')
-# make_video(sub_sampled_volume,'subsampled_volume_75%')
-#make_video(reconstructed_volume_supreme,'reconstructed_volume_75%_512x64x16_GAN')
+#make_video(original_volume,'ORIGINAL_TEST_75%')
+#make_video(sub_sampled_volume,'sub_sampled_blue_boise_75%')
+#make_video(reconstructed_volume_supreme,'reconstructed_volume_75%_512x64x16_blue_noise')
 
 
 
+# signal=np.mean(original_volume)
+# noise=np.std(original_volume)
+# SNR_original=20*np.log10(signal/noise)
+
+
+# signal_reconstructed=np.mean(reconstructed_volume_supreme)
+# noise_reconstructed=np.std(reconstructed_volume_supreme)
+# SNR_reconstructed=20*np.log10(signal_reconstructed/noise_reconstructed)
+# print('SNR_RECONSTRUCTION:', SNR_reconstructed)
 
 
 
@@ -338,12 +359,7 @@ class Reconstruction_model(nn.Module):
                 nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.BatchNorm3d(layers[s+1])
-            ) if s%2!=0 else nn.Sequential(
-                nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.BatchNorm3d(layers[s+1]),
-                nn.Dropout(p=0.5)
-            ) for s in range(len(layers) - 1)
+            )  for s in range(len(layers) - 1)
         )
 
         self.decoder = nn.ModuleList(
@@ -351,11 +367,6 @@ class Reconstruction_model(nn.Module):
                 nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.BatchNorm3d(layers[len(layers)-2-s]),
-            ) if s%2!=0 else nn.Sequential(
-                nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.BatchNorm3d(layers[len(layers)-2-s]),
-                nn.Dropout(p=0.5)
             )  for s in range(len(layers) - 1)
         )
 
@@ -377,17 +388,15 @@ class Reconstruction_model(nn.Module):
         
         x = self.output(x)
 
-        x = torch.squeeze(x)
         return x
 
 
 # Create the Discriminator
 reconstruction_model = Reconstruction_model(ngpu).to(device)
 
-summary(reconstruction_model, sub_volumes_dim)
 
-# Apply the weights_init function to randomly initialize all weights
-#  to mean=0, stdev=0.2.
+
+# Apply the trained weights_init 
 reconstruction_model.apply(weights_init)
 
 
@@ -397,10 +406,13 @@ reconstruction_model.apply(weights_init)
 # for weights1 in reconstruction_model_params:
 #     param_list1.append(weights1) 
 
-summary(reconstruction_model, (512,100,16))
+summary(reconstruction_model, bigger_sub_volumes_dim)
 
 
-bigger_reconstruction=reconstruct_volume(sub_sampled_volume_normalized,reconstruction_model,100,512,16)
+######## Normalize matrix###############################
+sub_sampled_volume_normalized=normalize(sub_sampled_volume)
+
+bigger_reconstruction=reconstruct_volume(sub_sampled_volume_normalized,reconstruction_model,bigger_sub_volumes_dim)
 
 ######## Denormalize matrix###############################
 
@@ -408,4 +420,4 @@ bigger_reconstruction=(bigger_reconstruction*127.5)+127.5
 
 bigger_reconstruction = bigger_reconstruction.astype(np.uint8)
 
-make_video(bigger_reconstruction,'bigger_reconstruction_GAN')
+make_video(bigger_reconstruction,'bigger_reconstruction_blue_noise_75')
