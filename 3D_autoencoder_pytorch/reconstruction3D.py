@@ -16,7 +16,7 @@ import torch.nn as nn
 from torchsummary import summary
 
 sub_volumes_dim=(512,64,16)
-bigger_sub_volumes_dim=(512,100,64)
+bigger_sub_volumes_dim=(512,950,16)
 
 def load_obj(name):
     with open( name, 'rb') as f:
@@ -76,7 +76,7 @@ class HDF5Dataset(data.Dataset):
 subsampled_volumes_path_testing='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/testing_subsampled_volumes.h5'
 original_volumes_path_testing='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/testing_ground_truth.h5'
 
-ngpu=1
+ngpu=2
 # Decide which device we want to run on
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
@@ -198,7 +198,7 @@ class Autoencoder(nn.Module):
         return x
 
 # Then later:
-model_loaded= torch.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/3D_autoencoder_pytorch/autoencoder_for_reconstruction_BEST_MODEL.pth')
+model_loaded= torch.load('autoencoder_for_reconstruction_BEST_MODEL.pth')
 #model_loaded= torch.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/GAN/generator_1.pth')
 
 volume_dim=(512,1000,100)
@@ -243,11 +243,11 @@ def reconstruct_volume(volume,reconstruction_model,sub_volumes_dim):
 
 
 
-original_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/train/Farsiu_Ophthalmology_2013_AMD_Subject_1101.pkl')
-mask_blue_noise=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/masks/mask_blue_noise_7575.pkl')
+#original_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/train/Farsiu_Ophthalmology_2013_AMD_Subject_1101.pkl')
+#mask_blue_noise=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/masks/mask_blue_noise_7575.pkl')
 
-#original_volume=load_obj('Farsiu_Ophthalmology_2013_AMD_Subject_1101.pkl')
-#mask_blue_noise=load_obj('mask_blue_noise_7575.pkl')
+original_volume=load_obj('Farsiu_Ophthalmology_2013_AMD_Subject_1101.pkl')
+mask_blue_noise=load_obj('mask_blue_noise_7575.pkl')
 
 
 sub_sampled_volume=np.multiply(mask_blue_noise,original_volume).astype(np.uint8)
@@ -393,7 +393,9 @@ class Reconstruction_model(nn.Module):
 
 # Create the Discriminator
 reconstruction_model = Reconstruction_model(ngpu).to(device)
-
+# Handle multi-gpu if desired
+if (device.type == 'cuda') and (ngpu > 1):
+    reconstruction_model = nn.DataParallel(reconstruction_model, list(range(ngpu)))
 
 
 # Apply the trained weights_init 
