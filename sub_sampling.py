@@ -8,19 +8,45 @@ Created on Wed Jul  6 13:30:43 2022
 from scipy.io import loadmat
 from glob import glob
 import numpy as np
-# import cv2
+import cv2
 import random
 import pickle
 import h5py
 
 sub_sampling_percentage=75
-blue_noise_subsampling = True
-raster_subsampling=False
+
+#'blue_noise_subsampling'
+#'raster_subsampling'
+#'random_subsampling'
+
+subsampling_method='random_subsampling'
+
 def read_data(path):
     data = loadmat(path)
     oct_volume = data['images']
     return oct_volume
 
+########################################################################################
+#######################
+#######################
+#######################                   RANDOM MASK
+#######################
+#######################
+########################################################################################
+
+def create_random_mask(sub_sampling_percentage,expected_dims):
+    random_mask= np.random.choice([1, 0], size=expected_dims, p=[1-sub_sampling_percentage, sub_sampling_percentage])
+    total=random_mask.sum()
+    missing_data=(100-(total*100)/(random_mask.shape[0]*random_mask.shape[1]*random_mask.shape[2]))
+    print(missing_data)
+    return random_mask
+########################################################################################
+#######################
+#######################
+#######################                   BLUE NOISE MASK
+#######################
+#######################
+########################################################################################
 def create_blue_noise_mask(expected_dims,kernel,subsampling_percentage):
     
     blue_noise_cube_normalized=kernel/np.max(kernel)
@@ -51,7 +77,13 @@ def create_blue_noise_mask(expected_dims,kernel,subsampling_percentage):
     
     return blue_noise_mask,binary_blue_noise_mask
 
-
+########################################################################################
+#######################
+#######################
+#######################                   RASTER SCAN MASK
+#######################
+#######################
+########################################################################################
 def generate_mask(percentage,volume_x,volume_y,volume_z):
     volume_dim= (volume_x,volume_y,volume_z)
     
@@ -103,7 +135,13 @@ def generate_mask(percentage,volume_x,volume_y,volume_z):
     volume_mask= np.transpose(volume_mask,(1,2,0)) 
         
     return volume_mask
-
+########################################################################################
+#######################
+#######################
+#######################                   UTILS
+#######################
+#######################
+########################################################################################
 def save_obj(obj,path ):
     with open(path + '.pkl', 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
@@ -111,6 +149,15 @@ def save_obj(obj,path ):
 def load_obj(name):
     with open( name, 'rb') as f:
         return pickle.load(f)
+    
+    
+########################################################################################
+#######################
+#######################
+#######################                   EXTRACT SUB VOLUMES FOR TRAINING AND TESTING
+#######################
+#######################
+########################################################################################
 
 def extract_sub_volumes(volume,name,h5_file):
     w_div_factor = 64
@@ -164,19 +211,44 @@ def extract_sub_volumes(volume,name,h5_file):
             can_iterate_over_d=False
          
     # print(index)
-if(raster_subsampling):
-    mask = generate_mask(percentage=sub_sampling_percentage/100,volume_x=1000,volume_y=512,volume_z=100)
     
-if(blue_noise_subsampling):
-    blue_noise_cube = np.load('./3D_autoencoder_pytorch/bluenoisecube.npy')
+    
+########################################################################################
+#######################
+#######################
+#######################                   SELECT SUBSAMPLING METHOD
+#######################
+#######################
+########################################################################################
 
+
+
+if(subsampling_method=='raster_subsampling'):
+
+    mask = generate_mask(percentage=sub_sampling_percentage/100,volume_x=1000,volume_y=512,volume_z=100)
+elif(subsampling_method=='blue_noise_subsampling'):
+    blue_noise_cube = np.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/3D_autoencoder_pytorch/bluenoisecube.npy')
+    
     blue_noise_mask,mask= create_blue_noise_mask(expected_dims=(512,1000,100),
                                                                    kernel=blue_noise_cube,
-                                                                   subsampling_percentage=0.75)
+                                                                   subsampling_percentage=sub_sampling_percentage/100)
+elif(subsampling_method== 'random_subsampling'):
+    mask=create_random_mask(sub_sampling_percentage/100,expected_dims=(512,1000,100))
+    
+    
+# original_volume =load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/test/Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
+# subsampled_image = np.multiply(mask,original_volume).astype(np.uint8)
     
     
     
-save_obj(mask,'/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/masks/mask_blue_noise_75'+str(sub_sampling_percentage))
+########################################################################################
+#######################
+#######################
+#######################                   SAVE MASK
+#######################
+#######################
+########################################################################################   
+save_obj(mask,'/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/masks/mask_random'+str(sub_sampling_percentage))
 
 def get_volume_paths():
     amd_eyes_paths = glob("/home/diego/Downloads/oct_images/AMD/*.mat", recursive = True)
@@ -185,6 +257,13 @@ def get_volume_paths():
     random.shuffle(all_paths)
     return all_paths
 
+########################################################################################
+#######################
+#######################
+#######################                   GENERATE DATASET
+#######################
+#######################
+########################################################################################
 
 def generate_dataset(mask):
     all_paths=get_volume_paths()
@@ -196,8 +275,8 @@ def generate_dataset(mask):
     
     
     volume_number=0
-    subsampled_volumes_dataset_train = h5py.File('training_blue_noise_subsampled_volumes.h5', 'w')
-    volumes_dataset_train = h5py.File('training_blue_noise_ground_truth.h5', 'w')
+    subsampled_volumes_dataset_train = h5py.File('training_random_subsampled_volumes.h5', 'w')
+    volumes_dataset_train = h5py.File('training_random_ground_truth.h5', 'w')
     
     with open('train_volumes_paths.txt', 'w') as f:
         f.write('\n'.join(train_volumes_paths))
@@ -231,8 +310,8 @@ def generate_dataset(mask):
     
     
     volume_number=0
-    subsampled_volumes_dataset_test = h5py.File('testing_blue_noise_subsampled_volumes.h5', 'w')
-    volumes_dataset_test = h5py.File('testing_blue_noise_ground_truth.h5', 'w')
+    subsampled_volumes_dataset_test = h5py.File('testing_random_subsampled_volumes.h5', 'w')
+    volumes_dataset_test = h5py.File('testing_random_ground_truth.h5', 'w')
     
     with open('test_volumes_paths.txt', 'w') as f:
         f.write('\n'.join(test_volumes_paths))
@@ -287,6 +366,3 @@ generate_dataset(mask)
 #     cv2.imshow('Sumbsampled Image',subsampled_image[:,:,i])
 #     cv2.waitKey(0)
 #     cv2.destroyAllWindows()
-
-
-    
