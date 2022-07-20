@@ -228,7 +228,8 @@ def reconstruct_volume(volume,reconstruction_model,sub_volumes_dim):
                 if(not overlap_w):
                     reconstructed_volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]=decoded_volume
                 else:
-                    reconstructed_volume[h_end:h_end+h_div_factor,w_end+50:w_end+w_div_factor,d_end:d_end+d_div_factor]=np.squeeze(decoded_volume[:,50:,:])
+                    squeezed_volume=np.squeeze(decoded_volume)
+                    reconstructed_volume[h_end:h_end+h_div_factor,w_end+50:w_end+w_div_factor,d_end:d_end+d_div_factor]=squeezed_volume[:,50:,:]
                 
                 h_end=h_end+h_div_factor
                 if(h_end+h_div_factor>volume.shape[0]):
