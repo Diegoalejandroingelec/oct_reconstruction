@@ -428,3 +428,5 @@ bigger_reconstruction=(bigger_reconstruction*127.5)+127.5
 bigger_reconstruction = bigger_reconstruction.astype(np.uint8)
 
 make_video(bigger_reconstruction,'bigger_reconstruction_blue_noise_75')
+make_video(original_volume,'ORIGINAL_TEST_75%')
+make_video(sub_sampled_volume,'sub_sampled_blue_boise_75%')
