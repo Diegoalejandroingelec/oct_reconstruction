@@ -95,11 +95,11 @@ def normalize(volume):
     return (volume.astype(np.float32)-(np.max(volume.astype(np.float32))/2))/(np.max(volume.astype(np.float32))/2)
 
 
-subsampled_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_subsampled_volumes.h5'
-original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_ground_truth.h5'
+#subsampled_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_subsampled_volumes.h5'
+#original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_ground_truth.h5'
 
-# subsampled_volumes_path='../oct_data_blue_noise/training_blue_noise_subsampled_volumes.h5'
-# original_volumes_path='../oct_data_blue_noise/training_blue_noise_ground_truth.h5'
+subsampled_volumes_path='../training_random_subsampled_volumes.h5'
+original_volumes_path='../training_random_ground_truth.h5'
 
 
 
@@ -112,12 +112,12 @@ dataloader = torch.utils.data.DataLoader(h5_dataset, batch_size=batch_size, shuf
 # plt.imshow(np.squeeze(np.array(train_batch[1][0,:,:,0].cpu())), cmap="gray")
 # plt.imshow(np.squeeze(np.array(train_batch[0][0,:,:,0].cpu())), cmap="gray")
 
-subsampled_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/testing_blue_noise_subsampled_volumes.h5'
-original_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/testing_blue_noise_ground_truth.h5'
+#subsampled_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/testing_blue_noise_subsampled_volumes.h5'
+#original_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/testing_blue_noise_ground_truth.h5'
 
 
-# subsampled_volumes_path_test='../oct_data_blue_noise/testing_blue_noise_subsampled_volumes.h5'
-# original_volumes_path_test='../oct_data_blue_noise/testing_blue_noise_ground_truth.h5'
+subsampled_volumes_path_test='../testing_random_subsampled_volumes.h5'
+original_volumes_path_test='../testing_random_ground_truth.h5'
 
 h5_dataset_test=HDF5Dataset(subsampled_volumes_path_test,original_volumes_path_test,'original_test',normalize)
 # Create the dataloader
