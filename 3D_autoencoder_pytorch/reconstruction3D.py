@@ -16,7 +16,7 @@ import torch.nn as nn
 from torchsummary import summary
 
 sub_volumes_dim=(512,64,16)
-bigger_sub_volumes_dim=(512,950,16)
+bigger_sub_volumes_dim=(512,900,16)
 
 def load_obj(name):
     with open( name, 'rb') as f:
@@ -213,6 +213,7 @@ def reconstruct_volume(volume,reconstruction_model,sub_volumes_dim):
     d_end=0
     for d in range(int(np.ceil(volume.shape[2]/d_div_factor))):
         w_end=0
+        overlap_w=False
         for w in range(int(np.ceil(volume.shape[1]/w_div_factor))):
             h_end=0
             for h in range(int(np.ceil(volume.shape[0]/h_div_factor))):
@@ -223,9 +224,10 @@ def reconstruct_volume(volume,reconstruction_model,sub_volumes_dim):
                 sub_volume=torch.from_numpy(sub_volume).to(device, dtype=torch.float)
                 
                 decoded_volume =  reconstruction_model(sub_volume).cpu().detach().numpy()
-                
-                reconstructed_volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]=decoded_volume
-                
+                if(not overlap_w):
+                    reconstructed_volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]=decoded_volume
+                else:
+                    reconstructed_volume[h_end+50:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]=decoded_volume[50:,:,:]
                 
                 h_end=h_end+h_div_factor
                 if(h_end+h_div_factor>volume.shape[0]):
@@ -234,6 +236,7 @@ def reconstruct_volume(volume,reconstruction_model,sub_volumes_dim):
             w_end=w_end+w_div_factor
             if(w_end+w_div_factor>volume.shape[1]):
                 w_end=volume.shape[1]-w_div_factor
+                overlap_w=True
                 
         d_end=d_end+d_div_factor
         if(d_end+d_div_factor>volume.shape[2]):
