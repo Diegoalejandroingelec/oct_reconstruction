@@ -259,16 +259,16 @@ def normalize(volume):
     return (volume.astype(np.float32)-(np.max(volume.astype(np.float32))/2))/(np.max(volume.astype(np.float32))/2)
 
 ######## Normalize matrix###############################
-sub_sampled_volume_normalized=normalize(sub_sampled_volume)
+# sub_sampled_volume_normalized=normalize(sub_sampled_volume)
 
-reconstructed_volume_supreme=reconstruct_volume(sub_sampled_volume_normalized,model_loaded,sub_volumes_dim)
+# reconstructed_volume_supreme=reconstruct_volume(sub_sampled_volume_normalized,model_loaded,sub_volumes_dim)
 
 ######## Denormalize matrix###############################
 
 
-reconstructed_volume_supreme=(reconstructed_volume_supreme*127)+127
+# reconstructed_volume_supreme=(reconstructed_volume_supreme*127)+127
 
-reconstructed_volume_supreme = reconstructed_volume_supreme.astype(np.uint8)
+# reconstructed_volume_supreme = reconstructed_volume_supreme.astype(np.uint8)
 
 import cv2
 def make_video(volume,name):
@@ -286,7 +286,7 @@ def make_video(volume,name):
     
     
 #make_video(sub_sampled_volume,'sub_sampled_blue_boise_23%')
-make_video(reconstructed_volume_supreme,'reconstructed_volume_75%_512x64x16_without')
+#make_video(reconstructed_volume_supreme,'reconstructed_volume_75%_512x64x16_without')
 
 #make_video(original_volume,'ORIGINAL_TEST_75%')
 #make_video(sub_sampled_volume,'sub_sampled_blue_boise_75%')
