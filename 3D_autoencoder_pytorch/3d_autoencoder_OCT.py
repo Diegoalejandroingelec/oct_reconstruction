@@ -29,10 +29,10 @@ beta1 = 0.5
 workers = 2
 
 # Batch size during training
-batch_size = 16
+batch_size = 4
 
 # Number of GPUs available. Use 0 for CPU mode.
-ngpu = 2
+ngpu = 1
 
 sub_volumes_dim=(512,64,16)
 
@@ -98,8 +98,8 @@ def normalize(volume):
 #subsampled_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_subsampled_volumes.h5'
 #original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_ground_truth.h5'
 
-subsampled_volumes_path='../training_random_subsampled_volumes.h5'
-original_volumes_path='../training_random_ground_truth.h5'
+subsampled_volumes_path='../../oct_data_blue_noise/training_blue_noise_subsampled_volumes.h5'
+original_volumes_path='../../oct_data_blue_noise/training_blue_noise_ground_truth.h5'
 
 
 
@@ -116,8 +116,8 @@ dataloader = torch.utils.data.DataLoader(h5_dataset, batch_size=batch_size, shuf
 #original_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/testing_blue_noise_ground_truth.h5'
 
 
-subsampled_volumes_path_test='../testing_random_subsampled_volumes.h5'
-original_volumes_path_test='../testing_random_ground_truth.h5'
+subsampled_volumes_path_test='../../oct_data_blue_noise/testing_blue_noise_subsampled_volumes.h5'
+original_volumes_path_test='../../oct_data_blue_noise/testing_blue_noise_ground_truth.h5'
 
 h5_dataset_test=HDF5Dataset(subsampled_volumes_path_test,original_volumes_path_test,'original_test',normalize)
 # Create the dataloader
@@ -207,9 +207,10 @@ netG.apply(weights_init)
 summary(netG, sub_volumes_dim)
 
 
-criterion = nn.L1Loss()
+criterion = nn.MSELoss()
 
-criterion_for_testing=nn.L1Loss()
+criterion_for_testing=nn.MSELoss()
+
 optimizer = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
 
 
@@ -259,18 +260,18 @@ for epoch in range(num_epochs):
     if(len(losses_val)>0):
         min_val_loss=np.min(losses_val)
         if(current_loss<min_val_loss):
-            torch.save(netG, 'autoencoder_for_reconstruction_BEST_MODEL.pth')
+            torch.save(netG, 'autoencoder_for_reconstruction_BEST_MODEL_blue_noise_arch_1.pth')
     else:
-        torch.save(netG, 'autoencoder_for_reconstruction_first_epoch.pth')
+        torch.save(netG, 'autoencoder_for_reconstruction_first_epoch_blue_noise_arch_1.pth')
         
     losses_val.append(current_loss)
     
     
-save_obj(losses,'train_losses' )
-save_obj(losses_val,'test_losses' )      
+save_obj(losses,'train_losses_blue_noise_arch1' )
+save_obj(losses_val,'test_losses_blue_noise_arch1' )      
       
       
-torch.save(netG, 'autoencoder_for_reconstruction_last_epoch.pth')
+torch.save(netG, 'autoencoder_for_reconstruction_last_epoch_blue_noise_arch1.pth')
 
 # def load_obj(name):
 #     with open( name, 'rb') as f:
