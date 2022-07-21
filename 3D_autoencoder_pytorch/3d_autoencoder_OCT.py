@@ -272,10 +272,14 @@ save_obj(losses_val,'test_losses' )
       
 torch.save(netG, 'autoencoder_for_reconstruction_last_epoch.pth')
 
-
+# def load_obj(name):
+#     with open( name, 'rb') as f:
+#         return pickle.load(f)
+    
+# L=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/3D_autoencoder_pytorch/test_losses_random_sub.pkl')    
 # plt.figure(figsize=(10,5))
 # plt.title("Autoencoder Loss During Training")
-# plt.plot(losses,label="autoencoder")
+# plt.plot(L,label="autoencoder")
 
 # plt.xlabel("iterations")
 # plt.ylabel("Loss")

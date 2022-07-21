@@ -6,146 +6,43 @@ Created on Mon Jul 18 14:34:27 2022
 @author: diego
 """
 
-import h5py
+
 import pickle
 import numpy as np
 import torch
-from torch.utils import data
-import matplotlib.pyplot as plt
 import torch.nn as nn
 from torchsummary import summary
+from skimage.metrics import structural_similarity as ssim
+import cv2
 
-sub_volumes_dim=(512,64,16)
-bigger_sub_volumes_dim=(512,700,16)
+def make_video(volume,name):
+    
+    height, width,depth = volume.shape
+    size = (width,height)
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+
+    video = cv2.VideoWriter(name+'.avi',fourcc, 10, size)
+    for b in range(depth):
+        image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
+        video.write(image_for_video)
+    video.release()
+
+bigger_sub_volumes_dim=(512,150,16)
+original_volume_dim=(512,1000,100)
+ngpu=1
+model_path='autoencoder_for_reconstruction_BEST_MODEL_random_sub.pth'
+mask_path='mask_random75.pkl'
+txt_test_path='test_volumes_paths.txt'
+original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_volumes/'
+
 
 def load_obj(name):
     with open( name, 'rb') as f:
         return pickle.load(f)
     
-    
-class HDF5Dataset(data.Dataset):
-
-    def __init__(self, file_path, ground_truth_path, prefix_for_test, transform=None):
-        super().__init__()
-        self.file_path = file_path
-        self.ground_truth_path = ground_truth_path
-        self.transform = transform
-        self.prefix_for_test=prefix_for_test
-
-    def __getitem__(self, index):
-        # get data
-        x,name = self.get_data(index)
-        if self.transform:
-            x = self.transform(x)
-        else:
-            x = torch.from_numpy(x)
-
-        # get label
-        y = self.get_ground_truth(name)
-        
-        if self.transform:
-            y = self.transform(y)
-        else:
-            y = torch.from_numpy(y)
-        return (x, y)
-    
-    def get_ground_truth(self,reference_name):
-        f_gt = h5py.File(self.ground_truth_path, 'r')
-        
-        name = self.prefix_for_test+'_'+'_'.join(reference_name.split('_')[-3:])
-        value=np.array(f_gt.get(name))
-        f_gt.close()
-        return value
-    
-    def __len__(self):
-        return self.get_info()
-    
-    def get_data(self,index):
-        f = h5py.File(self.file_path, 'r')
-        name=list(f.keys())[index]
-        value=np.array(f.get(name))
-        f.close()
-        return value,name
-    
-    def get_info(self):
-        f = h5py.File(self.file_path, 'r')
-        info=len(list(f.keys()))
-        f.close()
-        return info
-
-subsampled_volumes_path_testing='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/testing_subsampled_volumes.h5'
-original_volumes_path_testing='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/testing_ground_truth.h5'
-
-ngpu=2
 # Decide which device we want to run on
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
-
-# h5_dataset_test=HDF5Dataset(subsampled_volumes_path_testing,original_volumes_path_testing,'original_test')
-# # Create the dataloader
-# dataloader_test = torch.utils.data.DataLoader(h5_dataset_test, batch_size=1, shuffle=True, num_workers=1)
-
-
-
-class Generator(nn.Module):
-    def __init__(self,ngpu):
-        super(Generator,self).__init__()
-
-        layers = [32,32,32,32,32,32]
-        self.ngpu = ngpu
-        
-        self.input = nn.Sequential(
-            nn.Conv3d(1,layers[0],kernel_size=3,padding='same'),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.BatchNorm3d(layers[0])
-        )
-
-        self.encoder = nn.ModuleList(
-            nn.Sequential(
-                nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.BatchNorm3d(layers[s+1])
-            ) if s%2!=0 else nn.Sequential(
-                nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.BatchNorm3d(layers[s+1]),
-                nn.Dropout(p=0.5)
-            ) for s in range(len(layers) - 1)
-        )
-
-        self.decoder = nn.ModuleList(
-            nn.Sequential(
-                nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.BatchNorm3d(layers[len(layers)-2-s]),
-            ) if s%2!=0 else nn.Sequential(
-                nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.BatchNorm3d(layers[len(layers)-2-s]),
-                nn.Dropout(p=0.5)
-            )  for s in range(len(layers) - 1)
-        )
-
-        self.output = nn.Sequential(
-            nn.Conv3d(layers[0],1,kernel_size=3,padding='same'),
-            nn.Tanh()
-        )
-
-
-    def forward(self,x):
-        x = torch.unsqueeze(x,1)
-        x = self.input(x)
-
-        for i,j in enumerate(self.encoder):
-            x = self.encoder[i](x)
-
-        for i,j in enumerate(self.decoder):
-            x = self.decoder[i](x)
-        
-        x = self.output(x)
-
-        x = torch.squeeze(x)
-        return x
-
 
 
 class Autoencoder(nn.Module):
@@ -197,24 +94,24 @@ class Autoencoder(nn.Module):
 
         return x
 
-# Then later:
-model_loaded= torch.load('autoencoder_for_reconstruction_BEST_MODEL.pth')
-#model_loaded= torch.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/GAN/generator_1.pth')
 
-volume_dim=(512,1000,100)
+model_loaded= torch.load(model_path)
+
+
 
 def reconstruct_volume(volume,reconstruction_model,sub_volumes_dim):
     
     h_div_factor = sub_volumes_dim[0]
     w_div_factor = sub_volumes_dim[1]
     d_div_factor = sub_volumes_dim[2]
-    reconstructed_volume = np.zeros(volume_dim)
-    
+    reconstructed_volume = np.zeros(original_volume_dim)
+    overlap_pixels_w=50
     d_end=0
     for d in range(int(np.ceil(volume.shape[2]/d_div_factor))):
         w_end=0
-        overlap_w=False
-        for w in range(int(np.ceil(volume.shape[1]/w_div_factor))):
+        can_iterate_over_w=True
+        last_iteration_w = False
+        while can_iterate_over_w:
             h_end=0
             for h in range(int(np.ceil(volume.shape[0]/h_div_factor))):
                 
@@ -224,21 +121,23 @@ def reconstruct_volume(volume,reconstruction_model,sub_volumes_dim):
                 sub_volume=torch.from_numpy(sub_volume).to(device, dtype=torch.float)
                 
                 decoded_volume =  reconstruction_model(sub_volume).cpu().detach().numpy()
-                print(decoded_volume.shape)
-                if(not overlap_w):
-                    reconstructed_volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]=decoded_volume
+                squeezed_volume=np.squeeze(decoded_volume)
+                if(w_end==0):
+                    reconstructed_volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]=squeezed_volume[:,:,:]
                 else:
-                    squeezed_volume=np.squeeze(decoded_volume)
-                    reconstructed_volume[h_end:h_end+h_div_factor,w_end+50:w_end+w_div_factor,d_end:d_end+d_div_factor]=squeezed_volume[:,50:,:]
-                
+                    reconstructed_volume[h_end:h_end+h_div_factor,w_end+30:w_end+w_div_factor,d_end:d_end+d_div_factor]=squeezed_volume[:,30:,:]
+
                 h_end=h_end+h_div_factor
                 if(h_end+h_div_factor>volume.shape[0]):
                     h_end=volume.shape[0]-h_div_factor
                     
-            w_end=w_end+w_div_factor
-            if(w_end+w_div_factor>volume.shape[1]):
+            w_end=w_end+w_div_factor-overlap_pixels_w
+            if(last_iteration_w):
+                can_iterate_over_w=False
+            if(w_end+w_div_factor>=volume.shape[1]):
                 w_end=volume.shape[1]-w_div_factor
-                overlap_w=True
+                last_iteration_w = True
+
                 
         d_end=d_end+d_div_factor
         if(d_end+d_div_factor>volume.shape[2]):
@@ -248,82 +147,26 @@ def reconstruct_volume(volume,reconstruction_model,sub_volumes_dim):
 
 
 
-#original_volume=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/train/Farsiu_Ophthalmology_2013_AMD_Subject_1101.pkl')
-#mask_blue_noise=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/masks/mask_blue_noise_7575.pkl')
-
-original_volume=load_obj('Farsiu_Ophthalmology_2013_AMD_Subject_1101.pkl')
-mask_blue_noise=load_obj('mask_blue_noise_7575.pkl')
-
-
-sub_sampled_volume=np.multiply(mask_blue_noise,original_volume).astype(np.uint8)
 def normalize(volume):
-    return (volume.astype(np.float32)-(np.max(volume.astype(np.float32))/2))/(np.max(volume.astype(np.float32))/2)
+    max_value=(np.max(volume.astype(np.float32))/2)
+    normalized_volume=(volume.astype(np.float32)-max_value)/max_value
+    return normalized_volume,max_value
 
-######## Normalize matrix###############################
-# sub_sampled_volume_normalized=normalize(sub_sampled_volume)
-
-# reconstructed_volume_supreme=reconstruct_volume(sub_sampled_volume_normalized,model_loaded,sub_volumes_dim)
-
-######## Denormalize matrix###############################
-
-
-# reconstructed_volume_supreme=(reconstructed_volume_supreme*127)+127
-
-# reconstructed_volume_supreme = reconstructed_volume_supreme.astype(np.uint8)
-
-import cv2
-def make_video(volume,name):
     
-    height, width,depth = volume.shape
-    size = (width,height)
+def compute_MAE(original,reconstruction):
+    MAE=np.mean(np.abs(original - reconstruction))
+    return MAE
 
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
-
-    video = cv2.VideoWriter(name+'.avi',fourcc, 10, size)
-    for b in range(depth):
-        image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
-        video.write(image_for_video)
-    video.release()
+def compute_RMSE(original,reconstruction):
+    MSE=np.square(np.subtract(original,reconstruction)).mean()
+    RMSE= np.sqrt(MSE)
+    return RMSE
     
-    
-#make_video(sub_sampled_volume,'sub_sampled_blue_boise_23%')
-#make_video(reconstructed_volume_supreme,'reconstructed_volume_75%_512x64x16_without')
-
-#make_video(original_volume,'ORIGINAL_TEST_75%')
-#make_video(sub_sampled_volume,'sub_sampled_blue_boise_75%')
-#make_video(reconstructed_volume_supreme,'reconstructed_volume_75%_512x64x16_blue_noise')
-
-
-
-# signal=np.mean(original_volume)
-# noise=np.std(original_volume)
-# SNR_original=20*np.log10(signal/noise)
-
-
-# signal_reconstructed=np.mean(reconstructed_volume_supreme)
-# noise_reconstructed=np.std(reconstructed_volume_supreme)
-# SNR_reconstructed=20*np.log10(signal_reconstructed/noise_reconstructed)
-# print('SNR_RECONSTRUCTION:', SNR_reconstructed)
-
-
-
-# test_losses=[]
-# criterion = nn.MSELoss()
-# for i, data_test in enumerate(dataloader_test, 0):  
-#     inputs = data_test[0].to(device, dtype=torch.float)
-#     targets = data_test[1].to(device, dtype=torch.float)
-#     # compute the model output
-#     reconstructions_test = model_loaded(inputs)
-#     # calculate loss
-#     loss_test = criterion(reconstructions_test, torch.squeeze(targets))
-#     test_losses.append(loss_test.item())
-#     if i % 50 == 0:
-#         print(i)
-
-# np.mean(test_losses)
-
-# summary(model_loaded, sub_volumes_dim)
-
+def compute_PSNR(original,reconstruction,bit_representation=8):
+    MSE=np.square(np.subtract(original,reconstruction)).mean()
+    MAXI=np.power(2,bit_representation)-1
+    PSNR=20*np.log10(MAXI)-10*np.log10(MSE)
+    return PSNR
 
 model_params = model_loaded.parameters()
 param_list=[]
@@ -396,7 +239,7 @@ class Reconstruction_model(nn.Module):
         return x
 
 
-# Create the Discriminator
+
 reconstruction_model = Reconstruction_model(ngpu).to(device)
 # Handle multi-gpu if desired
 if (device.type == 'cuda') and (ngpu > 1):
@@ -406,27 +249,60 @@ if (device.type == 'cuda') and (ngpu > 1):
 # Apply the trained weights_init 
 reconstruction_model.apply(weights_init)
 
-
-
-# reconstruction_model_params = reconstruction_model.parameters()
-# param_list1=[]
-# for weights1 in reconstruction_model_params:
-#     param_list1.append(weights1) 
-
 summary(reconstruction_model, bigger_sub_volumes_dim)
 
 
-######## Normalize matrix###############################
-sub_sampled_volume_normalized=normalize(sub_sampled_volume)
 
-bigger_reconstruction=reconstruct_volume(sub_sampled_volume_normalized,reconstruction_model,bigger_sub_volumes_dim)
 
-######## Denormalize matrix###############################
+mask_blue_noise=load_obj(mask_path)
 
-bigger_reconstruction=(bigger_reconstruction*127.5)+127.5
 
-bigger_reconstruction = bigger_reconstruction.astype(np.uint8)
+with open(txt_test_path) as f:
+    lines = f.readlines()
+test_volume_paths=[ original_volumes_path+name.split('/')[-1].split('.')[0]+'.pkl' for name in lines]    
 
-make_video(bigger_reconstruction,'bigger_reconstruction_blue_noise_75')
-make_video(original_volume,'ORIGINAL_TEST_75%')
-make_video(sub_sampled_volume,'sub_sampled_blue_boise_75%')
+
+PSNR_list=[]
+RMSE_list=[]
+MAE_list=[]
+SSIM_list=[]
+for i,test_volume_path in enumerate(test_volume_paths):
+    try:
+        print(test_volume_path.split('/')[-1]+'---------->'+str(i))
+        original_volume=load_obj(test_volume_path)
+    
+    
+        sub_sampled_volume=np.multiply(mask_blue_noise,original_volume).astype(np.uint8)
+        
+        ######## Normalize matrix###############################
+        sub_sampled_volume_normalized,max_value=normalize(sub_sampled_volume)
+        
+        bigger_reconstruction=reconstruct_volume(sub_sampled_volume_normalized,reconstruction_model,bigger_sub_volumes_dim)
+        
+        ######## Denormalize matrix###############################
+        
+        bigger_reconstruction=(bigger_reconstruction*max_value)+max_value
+        bigger_reconstruction = bigger_reconstruction.astype(np.uint8)
+        
+        PSNR=compute_PSNR(original_volume,bigger_reconstruction)
+        RMSE=compute_RMSE(original_volume,bigger_reconstruction)
+        MAE=compute_MAE(original_volume,bigger_reconstruction)
+        SSIM=ssim(original_volume,bigger_reconstruction)
+        
+        PSNR_list.append(PSNR)
+        RMSE_list.append(RMSE)
+        MAE_list.append(MAE)
+        SSIM_list.append(SSIM)
+        if(i%10==0):
+            print('Generating video...')
+            gap=np.zeros((512,50,100)).astype(np.uint8)
+            comparative_volume=np.concatenate((original_volume,gap,bigger_reconstruction,gap,sub_sampled_volume),axis=1)
+            make_video(comparative_volume,'comparative_reconstruction_random_mask_'+str(i))
+    except:
+        print('Dimension ERROR...')
+        
+
+print('PSNR AVG: ',np.mean(PSNR_list))
+print('RMSE AVG: ',np.mean(RMSE_list))
+print('MAE AVG: ',np.mean(MAE_list))
+print('SSIM AVG: ',np.mean(SSIM_list))
