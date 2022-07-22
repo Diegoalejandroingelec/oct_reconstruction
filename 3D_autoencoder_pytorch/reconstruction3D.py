@@ -36,6 +36,9 @@ mask_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampl
 txt_test_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/test_volumes_paths.txt'
 original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_volumes/'
 
+# mask_path='mask_blue_noise_7575.pkl'
+# txt_test_path='../../oct_data_blue_noise/test_volumes_paths.txt'
+# original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 
 def load_obj(name):
     with open( name, 'rb') as f:
