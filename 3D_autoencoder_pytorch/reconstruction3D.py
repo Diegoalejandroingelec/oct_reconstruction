@@ -28,12 +28,12 @@ def make_video(volume,name):
         video.write(image_for_video)
     video.release()
 
-bigger_sub_volumes_dim=(512,150,16)
+bigger_sub_volumes_dim=(512,200,16)
 original_volume_dim=(512,1000,100)
 ngpu=1
-model_path='autoencoder_for_reconstruction_BEST_MODEL_random_sub.pth'
-mask_path='mask_random75.pkl'
-txt_test_path='test_volumes_paths.txt'
+model_path='autoencoder_for_reconstruction_BEST_MODEL_blue_noise_arch_1.pth'
+mask_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/masks/mask_blue_noise_7575.pkl'
+txt_test_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/test_volumes_paths.txt'
 original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_volumes/'
 
 
@@ -49,7 +49,7 @@ class Autoencoder(nn.Module):
     def __init__(self,ngpu):
         super(Autoencoder,self).__init__()
 
-        layers = [32,32,32,32,32,32]
+        layers = [32,32,16,16]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
@@ -193,7 +193,7 @@ class Reconstruction_model(nn.Module):
     def __init__(self,ngpu):
         super(Reconstruction_model,self).__init__()
 
-        layers = [32,32,32,32,32,32]
+        layers = [32,32,16,16]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
