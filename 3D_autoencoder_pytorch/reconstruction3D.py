@@ -13,20 +13,20 @@ import torch
 import torch.nn as nn
 from torchsummary import summary
 from skimage.metrics import structural_similarity as ssim
-import cv2
+# import cv2
 
-def make_video(volume,name):
+# def make_video(volume,name):
     
-    height, width,depth = volume.shape
-    size = (width,height)
+#     height, width,depth = volume.shape
+#     size = (width,height)
 
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+#     fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
 
-    video = cv2.VideoWriter(name+'.avi',fourcc, 10, size)
-    for b in range(depth):
-        image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
-        video.write(image_for_video)
-    video.release()
+#     video = cv2.VideoWriter(name+'.avi',fourcc, 10, size)
+#     for b in range(depth):
+#         image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
+#         video.write(image_for_video)
+#     video.release()
 
 bigger_sub_volumes_dim=(512,200,16)
 original_volume_dim=(512,1000,100)
@@ -154,16 +154,30 @@ def normalize(volume):
 
     
 def compute_MAE(original,reconstruction):
-    MAE=np.mean(np.abs(original - reconstruction))
+    mae = nn.L1Loss()
+    x=torch.from_numpy(original.astype('float'))
+    y=torch.from_numpy(reconstruction.astype('float'))
+    MAE= mae(x,y).item()
     return MAE
 
+
+
+
 def compute_RMSE(original,reconstruction):
-    MSE=np.square(np.subtract(original,reconstruction)).mean()
+    mse = nn.MSELoss()
+    x=torch.from_numpy(original.astype('float'))
+    y=torch.from_numpy(reconstruction.astype('float'))    
+    MSE=mse(x, y)
+    MSE=MSE.item()
     RMSE= np.sqrt(MSE)
     return RMSE
     
 def compute_PSNR(original,reconstruction,bit_representation=8):
-    MSE=np.square(np.subtract(original,reconstruction)).mean()
+    mse = nn.MSELoss()
+    x=torch.from_numpy(original.astype('float'))
+    y=torch.from_numpy(reconstruction.astype('float'))    
+    MSE=mse(x, y)
+    MSE=MSE.item()
     MAXI=np.power(2,bit_representation)-1
     PSNR=20*np.log10(MAXI)-10*np.log10(MSE)
     return PSNR
@@ -283,11 +297,10 @@ for i,test_volume_path in enumerate(test_volume_paths):
         
         bigger_reconstruction=(bigger_reconstruction*max_value)+max_value
         bigger_reconstruction = bigger_reconstruction.astype(np.uint8)
-        
         PSNR=compute_PSNR(original_volume,bigger_reconstruction)
         RMSE=compute_RMSE(original_volume,bigger_reconstruction)
         MAE=compute_MAE(original_volume,bigger_reconstruction)
-        SSIM=ssim(original_volume,bigger_reconstruction)
+        SSIM=ssim(original_volume.astype(np.uint8),bigger_reconstruction.astype(np.uint8))
         
         PSNR_list.append(PSNR)
         RMSE_list.append(RMSE)
@@ -297,7 +310,7 @@ for i,test_volume_path in enumerate(test_volume_paths):
             print('Generating video...')
             gap=np.zeros((512,50,100)).astype(np.uint8)
             comparative_volume=np.concatenate((original_volume,gap,bigger_reconstruction,gap,sub_sampled_volume),axis=1)
-            make_video(comparative_volume,'comparative_reconstruction_random_mask_'+str(i))
+            #make_video(comparative_volume,'comparative_reconstruction_random_mask_'+str(i))
     except:
         print('Dimension ERROR...')
         

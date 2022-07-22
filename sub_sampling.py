@@ -19,13 +19,43 @@ sub_sampling_percentage=75
 #'raster_subsampling'
 #'random_subsampling'
 
-subsampling_method='random_subsampling'
+subsampling_method='blue_noise_subsampling_1'
 
 def read_data(path):
     data = loadmat(path)
     oct_volume = data['images']
     return oct_volume
 
+########################################################################################
+#######################
+#######################
+#######################                   BLUE NOISE MASK 1
+#######################
+#######################
+########################################################################################
+
+def create_blue_noise_mask_1(expected_dims,subsampling_percentage):
+    blue_noise_cube1 = np.transpose(np.load('blue_noise_cubes/bluenoisecube.npy'), (2,1,0))
+    blue_noise_cube2 = np.transpose(np.load('blue_noise_cubes/bluenoisecube2.npy'), (2,1,0))
+    blue_noise_cube3 = np.transpose(np.load('blue_noise_cubes/bluenoisecube3.npy'), (2,1,0))
+    blue_noise_cube4 = np.transpose(np.load('blue_noise_cubes/bluenoisecube4.npy'), (2,1,0))
+    concat1=np.concatenate((blue_noise_cube1,blue_noise_cube2),axis=0)
+    concat2=  np.concatenate((blue_noise_cube3,blue_noise_cube4),axis=0)
+    concat3=np.concatenate((concat1,concat2,concat1,concat2),axis=1)
+    
+    blue_noise_mask = concat3[0:expected_dims[0],0:expected_dims[1],0:expected_dims[2]]
+    
+    blue_noise_mask=blue_noise_mask/np.max(blue_noise_mask)
+    
+    binary_blue_noise_mask = blue_noise_mask > subsampling_percentage
+    binary_blue_noise_mask = binary_blue_noise_mask*1
+    total = binary_blue_noise_mask.sum()
+    
+    
+    missing_data=(100-(total*100)/(blue_noise_mask.shape[0]*blue_noise_mask.shape[1]*blue_noise_mask.shape[2]))
+    print(missing_data)
+    
+    return blue_noise_mask,binary_blue_noise_mask
 ########################################################################################
 #######################
 #######################
@@ -234,8 +264,9 @@ elif(subsampling_method=='blue_noise_subsampling'):
                                                                    subsampling_percentage=sub_sampling_percentage/100)
 elif(subsampling_method== 'random_subsampling'):
     mask=create_random_mask(sub_sampling_percentage/100,expected_dims=(512,1000,100))
-    
-    
+
+elif(subsampling_method=='blue_noise_subsampling_1'):    
+    blue_noise_mask,mask=create_blue_noise_mask_1((512,1000,100),sub_sampling_percentage/100)
 # original_volume =load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/test/Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
 # subsampled_image = np.multiply(mask,original_volume).astype(np.uint8)
     
@@ -248,11 +279,11 @@ elif(subsampling_method== 'random_subsampling'):
 #######################
 #######################
 ########################################################################################   
-save_obj(mask,'/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/masks/mask_random'+str(sub_sampling_percentage))
+save_obj(mask,'mask_random_blue_noise1'+str(sub_sampling_percentage))
 
 def get_volume_paths():
-    amd_eyes_paths = glob("/home/diego/Downloads/oct_images/AMD/*.mat", recursive = True)
-    control_eyes_paths= glob("/home/diego/Downloads/oct_images/Control/*.mat", recursive = True)
+    amd_eyes_paths = glob("../oct_original_volumes/AMD/*.mat", recursive = True)
+    control_eyes_paths= glob("../oct_original_volumes/Control/*.mat", recursive = True)
     all_paths = amd_eyes_paths+control_eyes_paths
     random.shuffle(all_paths)
     return all_paths
@@ -275,10 +306,10 @@ def generate_dataset(mask):
     
     
     volume_number=0
-    subsampled_volumes_dataset_train = h5py.File('training_random_subsampled_volumes.h5', 'w')
-    volumes_dataset_train = h5py.File('training_random_ground_truth.h5', 'w')
+    subsampled_volumes_dataset_train = h5py.File('training_blue_noise1_subsampled_volumes.h5', 'w')
+    volumes_dataset_train = h5py.File('training_blue_noise1_ground_truth.h5', 'w')
     
-    with open('train_volumes_paths.txt', 'w') as f:
+    with open('train_volumes_paths_blue_noise1.txt', 'w') as f:
         f.write('\n'.join(train_volumes_paths))
         
     for volume_path in train_volumes_paths:
@@ -310,10 +341,10 @@ def generate_dataset(mask):
     
     
     volume_number=0
-    subsampled_volumes_dataset_test = h5py.File('testing_random_subsampled_volumes.h5', 'w')
-    volumes_dataset_test = h5py.File('testing_random_ground_truth.h5', 'w')
+    subsampled_volumes_dataset_test = h5py.File('testing_blue_noise1_subsampled_volumes.h5', 'w')
+    volumes_dataset_test = h5py.File('testing_blue_noise1_ground_truth.h5', 'w')
     
-    with open('test_volumes_paths.txt', 'w') as f:
+    with open('test_volumes_paths_blue_noise1.txt', 'w') as f:
         f.write('\n'.join(test_volumes_paths))
         
         
