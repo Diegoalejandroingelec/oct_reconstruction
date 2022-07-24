@@ -13,22 +13,22 @@ import torch
 import torch.nn as nn
 from torchsummary import summary
 from skimage.metrics import structural_similarity as ssim
-# import cv2
+import cv2
 
-# def make_video(volume,name):
+def make_video(volume,name):
     
-#     height, width,depth = volume.shape
-#     size = (width,height)
+    height, width,depth = volume.shape
+    size = (width,height)
 
-#     fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
 
-#     video = cv2.VideoWriter(name+'.avi',fourcc, 10, size)
-#     for b in range(depth):
-#         image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
-#         video.write(image_for_video)
-#     video.release()
+    video = cv2.VideoWriter(name+'.avi',fourcc, 10, size)
+    for b in range(depth):
+        image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
+        video.write(image_for_video)
+    video.release()
 
-bigger_sub_volumes_dim=(512,200,16)
+bigger_sub_volumes_dim=(512,100,16)
 original_volume_dim=(512,1000,100)
 ngpu=1
 model_path='autoencoder_for_reconstruction_BEST_MODEL_blue_noise_arch_1.pth'
@@ -100,6 +100,115 @@ class Autoencoder(nn.Module):
 
 model_loaded= torch.load(model_path)
 
+def reconstruct_volume_batches(volume,reconstruction_model,sub_volumes_dim):
+    batch_size_for_inference=4
+    batch_for_inference=[]
+    batch_metadata_for_reconstruction=[]
+    h_div_factor = sub_volumes_dim[0]
+    w_div_factor = sub_volumes_dim[1]
+    d_div_factor = sub_volumes_dim[2]
+    reconstructed_volume = np.zeros(original_volume_dim)
+    overlap_pixels_w=30
+    d_end=0
+    for d in range(int(np.ceil(volume.shape[2]/d_div_factor))):
+        w_end=0
+        can_iterate_over_w=True
+        last_iteration_w = False
+        while can_iterate_over_w:
+            h_end=0
+            for h in range(int(np.ceil(volume.shape[0]/h_div_factor))):
+        
+                sub_volume=volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]
+                batch_for_inference.append(sub_volume)
+       
+                if(w_end==0):
+                    
+                    data_for_reconstruction_by_chunks={
+                        "coordinates_reconstructed":{
+                            "h":(h_end,h_end+h_div_factor),
+                            "w":(w_end,w_end+w_div_factor),
+                            "d":(d_end,d_end+d_div_factor)
+                            }
+                        }
+                    batch_metadata_for_reconstruction.append(data_for_reconstruction_by_chunks)
+                    #reconstructed_volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]=squeezed_volume[:,:,:]
+                else:
+                    data_for_reconstruction_by_chunks={
+                        "coordinates_reconstructed":{
+                            "h":(h_end,h_end+h_div_factor),
+                            "w":(w_end+15,w_end+w_div_factor),
+                            "d":(d_end,d_end+d_div_factor)
+                            }
+                        }
+                    batch_metadata_for_reconstruction.append(data_for_reconstruction_by_chunks)
+                    
+
+                if len(batch_for_inference)==batch_size_for_inference:
+                    batch_for_inference=np.array(batch_for_inference)
+                    batch_for_inference=torch.from_numpy(batch_for_inference).to(device, dtype=torch.float)
+                    reconstructed_batch =  reconstruction_model(batch_for_inference).cpu().detach().numpy()
+                    
+                    
+                    squeezed_volumes=np.squeeze(reconstructed_batch,1)
+                    for index,vol in enumerate(squeezed_volumes):
+                        h_start=batch_metadata_for_reconstruction[index]['coordinates_reconstructed']['h'][0]
+                        h_finish=batch_metadata_for_reconstruction[index]['coordinates_reconstructed']['h'][1]
+                        
+                        w_start=batch_metadata_for_reconstruction[index]['coordinates_reconstructed']['w'][0]
+                        w_finish=batch_metadata_for_reconstruction[index]['coordinates_reconstructed']['w'][1]
+                        
+                        d_start=batch_metadata_for_reconstruction[index]['coordinates_reconstructed']['d'][0]
+                        d_finish=batch_metadata_for_reconstruction[index]['coordinates_reconstructed']['d'][1]
+                        
+                        if(w_start==0):
+                            reconstructed_volume[h_start:h_finish,w_start:w_finish,d_start:d_finish]=vol[:,:,:]
+                        else:
+                            reconstructed_volume[h_start:h_finish,w_start:w_finish,d_start:d_finish]=vol[:,15:,:]
+                    
+                    batch_metadata_for_reconstruction=[]
+                    batch_for_inference=[]
+
+                
+
+                h_end=h_end+h_div_factor
+                if(h_end+h_div_factor>volume.shape[0]):
+                    h_end=volume.shape[0]-h_div_factor
+                    
+            w_end=w_end+w_div_factor-overlap_pixels_w
+            if(last_iteration_w):
+                can_iterate_over_w=False
+            if(w_end+w_div_factor>=volume.shape[1]):
+                w_end=volume.shape[1]-w_div_factor
+                last_iteration_w = True
+
+                
+        d_end=d_end+d_div_factor
+        if(d_end+d_div_factor>volume.shape[2]):
+            d_end=volume.shape[2]-d_div_factor
+            
+    if len(batch_for_inference)>0:
+        batch_for_inference=np.array(batch_for_inference)
+        batch_for_inference=torch.from_numpy(batch_for_inference).to(device, dtype=torch.float)
+        reconstructed_batch =  reconstruction_model(batch_for_inference).cpu().detach().numpy()
+        
+        
+        squeezed_volumes=np.squeeze(reconstructed_batch)
+        for index,vol in enumerate(squeezed_volumes):
+            h_start=batch_metadata_for_reconstruction[index]['coordinates_reconstructed']['h'][0]
+            h_finish=batch_metadata_for_reconstruction[index]['coordinates_reconstructed']['h'][1]
+            
+            w_start=batch_metadata_for_reconstruction[index]['coordinates_reconstructed']['w'][0]
+            w_finish=batch_metadata_for_reconstruction[index]['coordinates_reconstructed']['w'][1]
+            
+            d_start=batch_metadata_for_reconstruction[index]['coordinates_reconstructed']['d'][0]
+            d_finish=batch_metadata_for_reconstruction[index]['coordinates_reconstructed']['d'][1]
+            
+            if(w_start==0):
+                reconstructed_volume[h_start:h_finish,w_start:w_finish,d_start:d_finish]=vol[:,:,:]
+            else:
+                reconstructed_volume[h_start:h_finish,w_start:w_finish,d_start:d_finish]=vol[:,15:,:]
+   
+    return reconstructed_volume
 
 
 def reconstruct_volume(volume,reconstruction_model,sub_volumes_dim):
@@ -126,8 +235,16 @@ def reconstruct_volume(volume,reconstruction_model,sub_volumes_dim):
                 decoded_volume =  reconstruction_model(sub_volume).cpu().detach().numpy()
                 squeezed_volume=np.squeeze(decoded_volume)
                 if(w_end==0):
+                    print('h: ', (h_end,h_end+h_div_factor))
+                    print('w: ', (w_end,w_end+w_div_factor))
+                    print('d: ', (d_end,d_end+d_div_factor))
+                    print('')
                     reconstructed_volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]=squeezed_volume[:,:,:]
                 else:
+                    print('h: ', (h_end,h_end+h_div_factor))
+                    print('w: ', (w_end+30,w_end+w_div_factor))
+                    print('d: ', (d_end,d_end+d_div_factor))
+                    print('')
                     reconstructed_volume[h_end:h_end+h_div_factor,w_end+30:w_end+w_div_factor,d_end:d_end+d_div_factor]=squeezed_volume[:,30:,:]
 
                 h_end=h_end+h_div_factor
@@ -294,7 +411,7 @@ for i,test_volume_path in enumerate(test_volume_paths):
         ######## Normalize matrix###############################
         sub_sampled_volume_normalized,max_value=normalize(sub_sampled_volume)
         
-        bigger_reconstruction=reconstruct_volume(sub_sampled_volume_normalized,reconstruction_model,bigger_sub_volumes_dim)
+        bigger_reconstruction=reconstruct_volume_batches(sub_sampled_volume_normalized,reconstruction_model,bigger_sub_volumes_dim)
         
         ######## Denormalize matrix###############################
         
@@ -313,7 +430,7 @@ for i,test_volume_path in enumerate(test_volume_paths):
             print('Generating video...')
             gap=np.zeros((512,50,100)).astype(np.uint8)
             comparative_volume=np.concatenate((original_volume,gap,bigger_reconstruction,gap,sub_sampled_volume),axis=1)
-            #make_video(comparative_volume,'comparative_reconstruction_random_mask_'+str(i))
+            make_video(comparative_volume,'comparative_reconstruction_random_mask_'+str(i))
     except:
         print('Dimension ERROR...')
         
