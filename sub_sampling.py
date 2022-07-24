@@ -19,7 +19,7 @@ sub_sampling_percentage=75
 #'raster_subsampling'
 #'random_subsampling'
 
-subsampling_method='blue_noise_subsampling_1'
+subsampling_method='random_subsampling'
 
 def read_data(path):
     data = loadmat(path)
@@ -254,18 +254,20 @@ def extract_sub_volumes(volume,name,h5_file):
 
 
 if(subsampling_method=='raster_subsampling'):
-
+    print('raster scan...')
     mask = generate_mask(percentage=sub_sampling_percentage/100,volume_x=1000,volume_y=512,volume_z=100)
 elif(subsampling_method=='blue_noise_subsampling'):
     blue_noise_cube = np.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/3D_autoencoder_pytorch/bluenoisecube.npy')
-    
+    print('ble noise small...')
     blue_noise_mask,mask= create_blue_noise_mask(expected_dims=(512,1000,100),
                                                                    kernel=blue_noise_cube,
                                                                    subsampling_percentage=sub_sampling_percentage/100)
 elif(subsampling_method== 'random_subsampling'):
+    print('random scan...')
     mask=create_random_mask(sub_sampling_percentage/100,expected_dims=(512,1000,100))
 
-elif(subsampling_method=='blue_noise_subsampling_1'):    
+elif(subsampling_method=='blue_noise_subsampling_1'):
+    print('blue nosise BIG...')    
     blue_noise_mask,mask=create_blue_noise_mask_1((512,1000,100),sub_sampling_percentage/100)
 # original_volume =load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/test/Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
 # subsampled_image = np.multiply(mask,original_volume).astype(np.uint8)
@@ -279,7 +281,7 @@ elif(subsampling_method=='blue_noise_subsampling_1'):
 #######################
 #######################
 ########################################################################################   
-save_obj(mask,'mask_random_blue_noise1'+str(sub_sampling_percentage))
+save_obj(mask,'mask_random'+str(sub_sampling_percentage))
 
 def get_volume_paths():
     amd_eyes_paths = glob("../oct_original_volumes/AMD/*.mat", recursive = True)
@@ -306,10 +308,10 @@ def generate_dataset(mask):
     
     
     volume_number=0
-    subsampled_volumes_dataset_train = h5py.File('training_blue_noise1_subsampled_volumes.h5', 'w')
-    volumes_dataset_train = h5py.File('training_blue_noise1_ground_truth.h5', 'w')
+    subsampled_volumes_dataset_train = h5py.File('training_random_subsampled_volumes.h5', 'w')
+    volumes_dataset_train = h5py.File('training_random_ground_truth.h5', 'w')
     
-    with open('train_volumes_paths_blue_noise1.txt', 'w') as f:
+    with open('train_volumes_paths_random.txt', 'w') as f:
         f.write('\n'.join(train_volumes_paths))
         
     for volume_path in train_volumes_paths:
@@ -341,10 +343,10 @@ def generate_dataset(mask):
     
     
     volume_number=0
-    subsampled_volumes_dataset_test = h5py.File('testing_blue_noise1_subsampled_volumes.h5', 'w')
-    volumes_dataset_test = h5py.File('testing_blue_noise1_ground_truth.h5', 'w')
+    subsampled_volumes_dataset_test = h5py.File('testing_random_subsampled_volumes.h5', 'w')
+    volumes_dataset_test = h5py.File('testing_random_ground_truth.h5', 'w')
     
-    with open('test_volumes_paths_blue_noise1.txt', 'w') as f:
+    with open('test_volumes_paths_random.txt', 'w') as f:
         f.write('\n'.join(test_volumes_paths))
         
         
