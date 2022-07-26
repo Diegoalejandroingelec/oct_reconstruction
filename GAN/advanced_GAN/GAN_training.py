@@ -11,7 +11,7 @@ import os
 import shutil
 import time
 from enum import Enum
-
+import numpy as np
 import torch
 from torch import nn
 from torch import optim
@@ -438,10 +438,13 @@ def validate(model: nn.Module,
             # Use the generator model to generate a fake sample
             with amp.autocast():
                 reconstructed = model(subsampled)
-
+                
+                        
+            reconstructed_8bit=np.squeeze((reconstructed.cpu().detach().numpy()*255).astype(np.uint8))
+            original_8bit=np.squeeze((original.cpu().detach().numpy()*255).astype(np.uint8))
             # Statistical loss value for terminal data output
-            psnr_value = compute_PSNR(reconstructed, original)
-            ssim_value = ssim(reconstructed, original)
+            psnr_value = compute_PSNR(reconstructed_8bit, original_8bit)
+            ssim_value = ssim(reconstructed_8bit, original_8bit)
             psnres.update(psnr_value.item(), subsampled.size(0))
             ssimes.update(ssim_value.item(), subsampled.size(0))
 
