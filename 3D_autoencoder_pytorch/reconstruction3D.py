@@ -13,20 +13,20 @@ import torch
 import torch.nn as nn
 from torchsummary import summary
 from skimage.metrics import structural_similarity as ssim
-import cv2
+# import cv2
 
-def make_video(volume,name):
+# def make_video(volume,name):
     
-    height, width,depth = volume.shape
-    size = (width,height)
+#     height, width,depth = volume.shape
+#     size = (width,height)
 
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+#     fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
 
-    video = cv2.VideoWriter(name+'.avi',fourcc, 10, size)
-    for b in range(depth):
-        image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
-        video.write(image_for_video)
-    video.release()
+#     video = cv2.VideoWriter(name+'.avi',fourcc, 10, size)
+#     for b in range(depth):
+#         image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
+#         video.write(image_for_video)
+#     video.release()
 
 bigger_sub_volumes_dim=(512,100,16)
 original_volume_dim=(512,1000,100)
@@ -101,7 +101,7 @@ class Autoencoder(nn.Module):
 model_loaded= torch.load(model_path)
 
 def reconstruct_volume_batches(volume,reconstruction_model,sub_volumes_dim):
-    batch_size_for_inference=4
+    batch_size_for_inference=1
     batch_for_inference=[]
     batch_metadata_for_reconstruction=[]
     h_div_factor = sub_volumes_dim[0]
