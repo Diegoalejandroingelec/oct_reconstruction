@@ -152,7 +152,7 @@ class Autoencoder(nn.Module):
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
-            nn.Conv3d(1,layers[0],kernel_size=3,padding='same'),
+            nn.Conv3d(1,layers[0],kernel_size=9,padding='same'),
             nn.LeakyReLU(0.2, inplace=True),
             nn.BatchNorm3d(layers[0])
         )
@@ -174,7 +174,7 @@ class Autoencoder(nn.Module):
         )
 
         self.output = nn.Sequential(
-            nn.Conv3d(layers[0],1,kernel_size=3,padding='same'),
+            nn.Conv3d(layers[0],1,kernel_size=9,padding='same'),
             nn.Tanh()
         )
 

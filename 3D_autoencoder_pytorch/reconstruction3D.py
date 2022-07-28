@@ -28,11 +28,11 @@ from skimage.metrics import structural_similarity as ssim
 #         video.write(image_for_video)
 #     video.release()
 
-bigger_sub_volumes_dim=(512,100,16)
+bigger_sub_volumes_dim=(512,150,16)
 original_volume_dim=(512,1000,100)
 ngpu=1
 model_path='autoencoder_for_reconstruction_BEST_MODEL_blue_noise_arch_1.pth'
-mask_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/masks/mask_blue_noise_7575.pkl'
+mask_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/masks/mask_random75.pkl'
 txt_test_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/test_volumes_paths.txt'
 original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_volumes/'
 
@@ -400,11 +400,19 @@ PSNR_list=[]
 RMSE_list=[]
 MAE_list=[]
 SSIM_list=[]
+
+
+PSNR_list_sub=[]
+RMSE_list_sub=[]
+MAE_list_sub=[]
+SSIM_list_sub=[]
+
+
 for i,test_volume_path in enumerate(test_volume_paths):
     try:
         print(test_volume_path.split('/')[-1]+'---------->'+str(i))
         original_volume=load_obj(test_volume_path)
-    
+        
     
         sub_sampled_volume=np.multiply(mask_blue_noise,original_volume).astype(np.uint8)
         
@@ -417,20 +425,36 @@ for i,test_volume_path in enumerate(test_volume_paths):
         
         bigger_reconstruction=(bigger_reconstruction*max_value)+max_value
         bigger_reconstruction = bigger_reconstruction.astype(np.uint8)
+        
         PSNR=compute_PSNR(original_volume,bigger_reconstruction)
         RMSE=compute_RMSE(original_volume,bigger_reconstruction)
         MAE=compute_MAE(original_volume,bigger_reconstruction)
         SSIM=ssim(original_volume.astype(np.uint8),bigger_reconstruction.astype(np.uint8))
         
+        # PSNR_sub=compute_PSNR(original_volume,sub_sampled_volume)
+        # RMSE_sub=compute_RMSE(original_volume,sub_sampled_volume)
+        # MAE_sub=compute_MAE(original_volume,sub_sampled_volume)
+        # SSIM_sub=ssim(original_volume.astype(np.uint8),sub_sampled_volume.astype(np.uint8))
+        
         PSNR_list.append(PSNR)
         RMSE_list.append(RMSE)
         MAE_list.append(MAE)
         SSIM_list.append(SSIM)
+        
+        # PSNR_list_sub.append(PSNR_sub)
+        # RMSE_list_sub.append(RMSE_sub)
+        # MAE_list_sub.append(MAE_sub)
+        # SSIM_list_sub.append(SSIM_sub)
         if(i%10==0):
-            print('Generating video...')
-            gap=np.zeros((512,50,100)).astype(np.uint8)
-            comparative_volume=np.concatenate((original_volume,gap,bigger_reconstruction,gap,sub_sampled_volume),axis=1)
-            make_video(comparative_volume,'comparative_reconstruction_random_mask_'+str(i))
+            print('PSNR AVG: ',np.mean(PSNR_list_sub))
+            print('RMSE AVG: ',np.mean(RMSE_list_sub))
+            print('MAE AVG: ',np.mean(MAE_list_sub))
+            print('SSIM AVG: ',np.mean(SSIM_list_sub))
+        # if(i%10==0):
+        #     print('Generating video...')
+        #     gap=np.zeros((512,50,100)).astype(np.uint8)
+        #     comparative_volume=np.concatenate((original_volume,gap,bigger_reconstruction,gap,sub_sampled_volume),axis=1)
+        #     make_video(comparative_volume,'comparative_reconstruction_random_mask_'+str(i))
     except:
         print('Dimension ERROR...')
         
@@ -439,3 +463,13 @@ print('PSNR AVG: ',np.mean(PSNR_list))
 print('RMSE AVG: ',np.mean(RMSE_list))
 print('MAE AVG: ',np.mean(MAE_list))
 print('SSIM AVG: ',np.mean(SSIM_list))
+
+
+# print('PSNR AVG: ',np.mean(PSNR_list_sub))
+# print('RMSE AVG: ',np.mean(RMSE_list_sub))
+# print('MAE AVG: ',np.mean(MAE_list_sub))
+# print('SSIM AVG: ',np.mean(SSIM_list_sub))
+
+
+
+
