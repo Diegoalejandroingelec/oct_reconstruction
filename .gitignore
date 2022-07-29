@@ -9,4 +9,6 @@
 *.pth
 *.txt
 *.npy
-
+/GAN/advanced_GAN/results
+/GAN/advanced_GAN/samples
+/GAN/advanced_GAN/__pycache__
