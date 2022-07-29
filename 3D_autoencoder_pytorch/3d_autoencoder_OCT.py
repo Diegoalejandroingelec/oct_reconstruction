@@ -15,6 +15,9 @@ from torchsummary import summary
 import torch.optim as optim
 import matplotlib.pyplot as plt
 import pickle
+from skimage.metrics import structural_similarity as ssim
+
+
 # Number of training epochs
 num_epochs = 5
 
@@ -29,13 +32,22 @@ beta1 = 0.5
 workers = 2
 
 # Batch size during training
-batch_size = 8
+batch_size = 4
 
 # Number of GPUs available. Use 0 for CPU mode.
 ngpu = 1
 
 sub_volumes_dim=(512,64,16)
 
+def compute_PSNR(original,reconstruction,bit_representation=8):
+    mse = nn.MSELoss()
+    x=torch.from_numpy(original.astype('float'))
+    y=torch.from_numpy(reconstruction.astype('float'))    
+    MSE=mse(x, y)
+    MSE=MSE.item()
+    MAXI=np.power(2,bit_representation)-1
+    PSNR=20*np.log10(MAXI)-10*np.log10(MSE)
+    return PSNR
 
 def save_obj(obj,path ):
     with open(path + '.pkl', 'wb') as f:
@@ -148,19 +160,19 @@ class Autoencoder(nn.Module):
     def __init__(self,ngpu):
         super(Autoencoder,self).__init__()
 
-        layers = [32,32,16,16]
+        layers = [16,16,16,16,16]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
             nn.Conv3d(1,layers[0],kernel_size=9,padding='same'),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.PReLU(),
             nn.BatchNorm3d(layers[0])
         )
 
         self.encoder = nn.ModuleList(
             nn.Sequential(
                 nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
-                nn.LeakyReLU(0.2, inplace=True),
+                nn.PReLU(),
                 nn.BatchNorm3d(layers[s+1])
             )  for s in range(len(layers) - 1)
         )
@@ -168,7 +180,7 @@ class Autoencoder(nn.Module):
         self.decoder = nn.ModuleList(
             nn.Sequential(
                 nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
-                nn.LeakyReLU(0.2, inplace=True),
+                nn.PReLU(),
                 nn.BatchNorm3d(layers[len(layers)-2-s]),
             )  for s in range(len(layers) - 1)
         )
@@ -183,12 +195,15 @@ class Autoencoder(nn.Module):
         x = torch.unsqueeze(x,1)
         x = self.input(x)
 
+        x_skip_connections=[]
         for i,j in enumerate(self.encoder):
             x = self.encoder[i](x)
+            x_skip_connections.append(x)
 
         for i,j in enumerate(self.decoder):
             x = self.decoder[i](x)
-        
+            if(i!=len(x_skip_connections)-1):
+                x = torch.add(x, x_skip_connections[len(x_skip_connections)-2-i])
         x = self.output(x)
 
         return x
@@ -207,9 +222,9 @@ netG.apply(weights_init)
 summary(netG, sub_volumes_dim)
 
 
-criterion = nn.MSELoss()
+criterion = nn.L1Loss()
 
-criterion_for_testing=nn.MSELoss()
+criterion_for_testing=nn.L1Loss()
 
 optimizer = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
 
@@ -218,6 +233,8 @@ print("Starting Training Loop...")
 # For each epoch
 losses = []
 losses_val=[]
+best_psnr=0
+best_ssim=0
 for epoch in range(num_epochs):
     # For each batch in the dataloader
     for i, data_train in enumerate(dataloader, 0):  
@@ -240,42 +257,63 @@ for epoch in range(num_epochs):
             print('[%d/%d][%d/%d]\tLoss: %.4f' % (epoch, num_epochs, i, len(dataloader),loss.item()))
             
         losses.append(loss.item())
+        break
 
         
     test_losses=[]
+    psnr_list=[]
+    ssim_list=[]
     print('Evaluation...')
+    
     for j, data_test in enumerate(dataloader_test, 0):  
          inputs_test = data_test[0].to(device, dtype=torch.float)
          targets_test = data_test[1].to(device, dtype=torch.float)
          # compute the model output
          reconstructions_test = netG(inputs_test)
          # calculate loss
+         
          loss_test = criterion_for_testing(reconstructions_test, torch.unsqueeze(targets_test,1))
          test_losses.append(loss_test.item())
+         
+         reconstructed_8bit=np.squeeze(((reconstructions_test.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
+         original_8bit=np.squeeze(((targets_test.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
+         # Statistical loss value for terminal data output
+         psnr_value = compute_PSNR(reconstructed_8bit, original_8bit)
+         ssim_value = ssim(reconstructed_8bit, original_8bit)
+         psnr_list.append(psnr_value)
+         ssim_list.append(ssim_value)
+         
+         
          if j % 5000 == 0:
              print(j)
 
     current_loss=np.mean(test_losses)
+    current_psnr=np.mean(psnr_list)
+    current_ssim=np.mean(ssim_list)
     print('VALIDATION LOSS: ',current_loss)
-    if(len(losses_val)>0):
-        min_val_loss=np.min(losses_val)
-        if(current_loss<min_val_loss):
-            torch.save(netG, 'autoencoder_for_reconstruction_BEST_MODEL_random_arch_1.pth')
-    else:
-        torch.save(netG, 'autoencoder_for_reconstruction_first_epoch_random_arch_1.pth')
+    print('VALIDATION SSIM: ',current_ssim)
+    print('VALIDATION PSNR: ',current_psnr)
+    
+    is_best=current_psnr>best_psnr and current_ssim>best_ssim
+    
+    if is_best:
+        best_psnr=current_psnr
+        best_ssim=current_ssim
+        torch.save(netG, 'BEST_MODEL.pth')
+        
         
     losses_val.append(current_loss)
     
     
-save_obj(losses,'train_losses_random_arch1' )
-save_obj(losses_val,'test_losses_random_arch1' )      
+save_obj(losses,'train_losses' )
+save_obj(losses_val,'test_losses' )      
       
       
-torch.save(netG, 'autoencoder_for_reconstruction_last_epoch_random_arch1.pth')
+torch.save(netG, 'last_epoch.pth')
 
-def load_obj(name):
-    with open( name, 'rb') as f:
-        return pickle.load(f)
+# def load_obj(name):
+#     with open( name, 'rb') as f:
+#         return pickle.load(f)
     
 # L=load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/3D_autoencoder_pytorch/train_losses_blue_noise.pkl')    
 # plt.figure(figsize=(10,5))
