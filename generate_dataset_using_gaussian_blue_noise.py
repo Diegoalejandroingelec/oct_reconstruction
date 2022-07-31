@@ -12,22 +12,18 @@ import numpy as np
 import random
 import pickle
 import h5py
+import os
 
-import numpy as np
 import matplotlib.pyplot as plt
-import pickle
+
 from scipy.signal import savgol_filter
-import random
+
 
 vol_dims=(512,1000,100)
 
 
 
-#'blue_noise_subsampling'
-#'raster_subsampling'
-#'random_subsampling'
 
-subsampling_method='random_subsampling'
 
 def read_data(path):
     data = loadmat(path)
@@ -141,7 +137,17 @@ def get_volume_paths():
 def generate_gaussian_blue_noise_mask(original_volume,desired_transmittance,sigma,plot_mask):
     def gaussian(x, a, x0, sigma):
         return a*np.exp(-(x-x0)**2/(2*sigma**2))
-        
+    
+    def create_random_mask(sub_sampling_percentage,expected_dims):
+        if(sub_sampling_percentage>0):
+            random_mask= np.random.choice([1, 0], size=expected_dims, p=[1-sub_sampling_percentage, sub_sampling_percentage])
+            total=random_mask.sum()
+            missing_data=(100-(total*100)/(random_mask.shape[0]*random_mask.shape[1]*random_mask.shape[2]))
+            print(missing_data)
+        else:
+            random_mask=np.ones(expected_dims)
+        return random_mask
+    
     def create_blue_noise_mask_1(expected_dims,subsampling_percentage):
         blue_noise_cube1 = np.transpose(np.load('blue_noise_cubes/bluenoisecube.npy'), (2,1,0))
         blue_noise_cube2 = np.transpose(np.load('blue_noise_cubes/bluenoisecube2.npy'), (2,1,0))
@@ -212,15 +218,15 @@ def generate_gaussian_blue_noise_mask(original_volume,desired_transmittance,sigm
     # print(gaussian_mask_transmittance)
 
 
-    desired_transmittance=0.25
+    #desired_transmittance=0.25
 
-    blue_noise_transmitance=desired_transmittance/gaussian_mask_transmittance
+    missing_transmitance=desired_transmittance/gaussian_mask_transmittance
 
-    _,blue_noise_mask=create_blue_noise_mask_1(vol_dims,subsampling_percentage=1-blue_noise_transmitance)
+    #_,mask=create_blue_noise_mask_1(vol_dims,subsampling_percentage=1-blue_noise_transmitance)
+    mask=create_random_mask(1-missing_transmitance,vol_dims)
 
 
-
-    mask = np.multiply(gaussian_mask.astype(np.uint8),blue_noise_mask.astype(np.uint8))
+    mask = np.multiply(gaussian_mask.astype(np.uint8),mask.astype(np.uint8))
 
     print('Missing Data: ', 100-(mask.sum()*100)/(vol_dims[0]*vol_dims[1]*vol_dims[2]))
     if(plot_mask):
@@ -235,9 +241,9 @@ def generate_gaussian_blue_noise_mask(original_volume,desired_transmittance,sigm
 #######################
 ########################################################################################
 
-def generate_dataset():
+def generate_dataset(dataset_folder):
     all_paths=get_volume_paths()
-    
+    os.mkdir(dataset_folder)
     training_total= int(np.floor(len(all_paths)*0.8))
     
     train_volumes_paths=all_paths[0:training_total]
@@ -245,10 +251,10 @@ def generate_dataset():
     
     
     volume_number=0
-    subsampled_volumes_dataset_train = h5py.File('training_random_subsampled_volumes.h5', 'w')
-    volumes_dataset_train = h5py.File('training_random_ground_truth.h5', 'w')
-    masks_dataset_train = h5py.File('masks_dataset_train.h5', 'w')
-    with open('train_volumes_paths_random.txt', 'w') as f:
+    subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_random_subsampled_volumes.h5', 'w')
+    volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_random_ground_truth.h5', 'w')
+    masks_dataset_train = h5py.File('./'+dataset_folder+'/masks_dataset_train.h5', 'w')
+    with open('./'+dataset_folder+'/train_volumes_paths_random.txt', 'w') as f:
         f.write('\n'.join(train_volumes_paths))
         
     for volume_path in train_volumes_paths:
@@ -256,7 +262,7 @@ def generate_dataset():
         print(volume_path)
         try: 
             volume = read_data(volume_path)
-            mask=generate_gaussian_blue_noise_mask(original_volume=volume,desired_transmittance=0.25,sigma=51,plot_mask=True)
+            mask=generate_gaussian_blue_noise_mask(original_volume=volume,desired_transmittance=0.25,sigma=150,plot_mask=True)
             name=volume_path.split('/')[-1].split('.')[0]
             masks_dataset_train.create_dataset(name, data=mask)
             subsampled_image = np.multiply(mask,volume).astype(np.uint8)
@@ -282,10 +288,10 @@ def generate_dataset():
     
     
     volume_number=0
-    subsampled_volumes_dataset_test = h5py.File('testing_random_subsampled_volumes.h5', 'w')
-    volumes_dataset_test = h5py.File('testing_random_ground_truth.h5', 'w')
-    masks_dataset_test = h5py.File('masks_dataset_test.h5', 'w')
-    with open('test_volumes_paths_random.txt', 'w') as f:
+    subsampled_volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_random_subsampled_volumes.h5', 'w')
+    volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_random_ground_truth.h5', 'w')
+    masks_dataset_test = h5py.File('./'+dataset_folder+'/masks_dataset_test.h5', 'w')
+    with open('./'+dataset_folder+'/test_volumes_paths_random.txt', 'w') as f:
         f.write('\n'.join(test_volumes_paths))
         
         
@@ -295,7 +301,7 @@ def generate_dataset():
                 print(volume_path)
         
                 volume = read_data(volume_path)
-                mask=generate_gaussian_blue_noise_mask(original_volume=volume,desired_transmittance=0.25,sigma=51,plot_mask=True)
+                mask=generate_gaussian_blue_noise_mask(original_volume=volume,desired_transmittance=0.25,sigma=150,plot_mask=True)
                 name=volume_path.split('/')[-1].split('.')[0]
                 masks_dataset_test.create_dataset(name, data=mask)
                 subsampled_image = np.multiply(mask,volume).astype(np.uint8)
@@ -319,4 +325,4 @@ def generate_dataset():
     volumes_dataset_test.close()
     masks_dataset_test.close()
     
-generate_dataset()  
+generate_dataset('GAUSSIAN_DATASET')  
