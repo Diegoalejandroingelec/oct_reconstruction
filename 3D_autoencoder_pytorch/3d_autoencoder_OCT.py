@@ -32,10 +32,10 @@ beta1 = 0.5
 workers = 2
 
 # Batch size during training
-batch_size = 4
+batch_size = 16
 
 # Number of GPUs available. Use 0 for CPU mode.
-ngpu = 1
+ngpu = 2
 
 sub_volumes_dim=(512,64,16)
 
@@ -110,8 +110,8 @@ def normalize(volume):
 #subsampled_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_subsampled_volumes.h5'
 #original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_ground_truth.h5'
 
-subsampled_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/random_sub_sampling_Data/training_random_subsampled_volumes.h5'
-original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/random_sub_sampling_Data/training_random_ground_truth.h5'
+subsampled_volumes_path='../GAUSSIAN_DATASET/training_subsampled_volumes.h5'
+original_volumes_path='../GAUSSIAN_DATASET/training_ground_truth.h5'
 
 
 
@@ -128,8 +128,8 @@ dataloader = torch.utils.data.DataLoader(h5_dataset, batch_size=batch_size, shuf
 #original_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/testing_blue_noise_ground_truth.h5'
 
 
-subsampled_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/random_sub_sampling_Data/testing_random_subsampled_volumes.h5'
-original_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/random_sub_sampling_Data/testing_random_ground_truth.h5'
+subsampled_volumes_path_test='../GAUSSIAN_DATASET/testing_subsampled_volumes.h5'
+original_volumes_path_test='../GAUSSIAN_DATASET/testing_ground_truth.h5'
 
 h5_dataset_test=HDF5Dataset(subsampled_volumes_path_test,original_volumes_path_test,'original_test',normalize)
 # Create the dataloader
@@ -160,19 +160,19 @@ class Autoencoder(nn.Module):
     def __init__(self,ngpu):
         super(Autoencoder,self).__init__()
 
-        layers = [16,16,16,16,16]
+        layers = [32,32,32,32]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
-            nn.Conv3d(1,layers[0],kernel_size=9,padding='same'),
-            nn.PReLU(),
+            nn.Conv3d(1,layers[0],kernel_size=3,padding='same'),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.BatchNorm3d(layers[0])
         )
 
         self.encoder = nn.ModuleList(
             nn.Sequential(
                 nn.Conv3d(layers[s],layers[s+1],kernel_size=3,padding=[0,0,0]),
-                nn.PReLU(),
+                nn.LeakyReLU(0.2, inplace=True),
                 nn.BatchNorm3d(layers[s+1])
             )  for s in range(len(layers) - 1)
         )
@@ -180,13 +180,13 @@ class Autoencoder(nn.Module):
         self.decoder = nn.ModuleList(
             nn.Sequential(
                 nn.ConvTranspose3d(layers[len(layers)-1-s],layers[len(layers)-2-s],kernel_size=3,padding=[0,0,0]),
-                nn.PReLU(),
+                nn.LeakyReLU(0.2, inplace=True),
                 nn.BatchNorm3d(layers[len(layers)-2-s]),
             )  for s in range(len(layers) - 1)
         )
 
         self.output = nn.Sequential(
-            nn.Conv3d(layers[0],1,kernel_size=9,padding='same'),
+            nn.Conv3d(layers[0],1,kernel_size=3,padding='same'),
             nn.Tanh()
         )
 
@@ -195,18 +195,16 @@ class Autoencoder(nn.Module):
         x = torch.unsqueeze(x,1)
         x = self.input(x)
 
-        x_skip_connections=[]
         for i,j in enumerate(self.encoder):
             x = self.encoder[i](x)
-            x_skip_connections.append(x)
 
         for i,j in enumerate(self.decoder):
             x = self.decoder[i](x)
-            if(i!=len(x_skip_connections)-1):
-                x = torch.add(x, x_skip_connections[len(x_skip_connections)-2-i])
+        
         x = self.output(x)
 
         return x
+
 
 # Create the generator
 netG = Autoencoder(ngpu).to(device)
@@ -257,7 +255,6 @@ for epoch in range(num_epochs):
             print('[%d/%d][%d/%d]\tLoss: %.4f' % (epoch, num_epochs, i, len(dataloader),loss.item()))
             
         losses.append(loss.item())
-        break
 
         
     test_losses=[]
@@ -299,17 +296,17 @@ for epoch in range(num_epochs):
     if is_best:
         best_psnr=current_psnr
         best_ssim=current_ssim
-        torch.save(netG, 'BEST_MODEL.pth')
+        torch.save(netG, 'BEST_MODEL_GAUSSIAN_RANDOM_75.pth')
         
         
     losses_val.append(current_loss)
     
     
-save_obj(losses,'train_losses' )
-save_obj(losses_val,'test_losses' )      
+save_obj(losses,'train_losses_GAUSSIAN_RANDOM_75' )
+save_obj(losses_val,'test_losses_GAUSSIAN_RANDOM_75' )      
       
       
-torch.save(netG, 'last_epoch.pth')
+torch.save(netG, 'last_epoch_GAUSSIAN_RANDOM_75.pth')
 
 # def load_obj(name):
 #     with open( name, 'rb') as f:
