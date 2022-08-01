@@ -239,6 +239,11 @@ for i,test_volume_path in enumerate(test_volume_paths[0:1]):
         bigger_reconstruction=(bigger_reconstruction*127.5)+127.5
         bigger_reconstruction = bigger_reconstruction.astype(np.uint8)
         
+        mask_blue_noise_prima= (~mask.astype(bool)).astype(int)
+
+        bigger_reconstruction=np.multiply(mask_blue_noise_prima,bigger_reconstruction).astype(np.uint8)
+        bigger_reconstruction=bigger_reconstruction+sub_sampled_volume
+        
         PSNR=compute_PSNR(original_volume,bigger_reconstruction)
         RMSE=compute_RMSE(original_volume,bigger_reconstruction)
         MAE=compute_MAE(original_volume,bigger_reconstruction)
