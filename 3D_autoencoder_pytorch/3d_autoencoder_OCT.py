@@ -68,16 +68,16 @@ class HDF5Dataset(data.Dataset):
         x,name = self.get_data(index)
         if self.transform:
             x = self.transform(x)
-        else:
-            x = torch.from_numpy(x)
+
+        x = torch.from_numpy(x)
 
         # get label
         y = self.get_ground_truth(name)
         
         if self.transform:
             y = self.transform(y)
-        else:
-            y = torch.from_numpy(y)
+        
+        y = torch.from_numpy(y)
         return (x, y)
     
     def get_ground_truth(self,reference_name):
