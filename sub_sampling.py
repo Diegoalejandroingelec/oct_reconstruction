@@ -13,7 +13,7 @@ import random
 import pickle
 import h5py
 
-sub_sampling_percentage=75
+sub_sampling_percentage=25
 
 #'blue_noise_subsampling'
 #'raster_subsampling'
@@ -281,7 +281,8 @@ elif(subsampling_method=='blue_noise_subsampling_1'):
 #######################
 #######################
 ########################################################################################   
-save_obj(mask,'mask_random'+str(sub_sampling_percentage))
+
+save_obj(mask,'mask_random25'+str(sub_sampling_percentage))
 
 def get_volume_paths():
     amd_eyes_paths = glob("../oct_original_volumes/AMD/*.mat", recursive = True)
@@ -308,10 +309,10 @@ def generate_dataset(mask):
     
     
     volume_number=0
-    subsampled_volumes_dataset_train = h5py.File('training_random_subsampled_volumes.h5', 'w')
-    volumes_dataset_train = h5py.File('training_random_ground_truth.h5', 'w')
+    subsampled_volumes_dataset_train = h5py.File('training_random25_subsampled_volumes.h5', 'w')
+    volumes_dataset_train = h5py.File('training_random25_ground_truth.h5', 'w')
     
-    with open('train_volumes_paths_random.txt', 'w') as f:
+    with open('train_volumes_paths_random25.txt', 'w') as f:
         f.write('\n'.join(train_volumes_paths))
         
     for volume_path in train_volumes_paths:
@@ -343,10 +344,10 @@ def generate_dataset(mask):
     
     
     volume_number=0
-    subsampled_volumes_dataset_test = h5py.File('testing_random_subsampled_volumes.h5', 'w')
-    volumes_dataset_test = h5py.File('testing_random_ground_truth.h5', 'w')
+    subsampled_volumes_dataset_test = h5py.File('testing_random25_subsampled_volumes.h5', 'w')
+    volumes_dataset_test = h5py.File('testing_random25_ground_truth.h5', 'w')
     
-    with open('test_volumes_paths_random.txt', 'w') as f:
+    with open('test_volumes_paths_random25.txt', 'w') as f:
         f.write('\n'.join(test_volumes_paths))
         
         
