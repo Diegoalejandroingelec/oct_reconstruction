@@ -29,15 +29,15 @@ def make_video(volume,name):
         video.write(image_for_video)
     video.release()
 
-bigger_sub_volumes_dim=(512,64,16)
+bigger_sub_volumes_dim=(512,150,16)
 original_volume_dim=(512,1000,100)
-ngpu=0
-model_path='BEST_MODEL.pth'
-mask_path='../masks/mask_random75.pkl'
-txt_test_path='../random_sub_sampling_Data/testing_random_ground_truth.h5'
-original_volumes_path='../sub_sampled_data/original_volumes/'
+ngpu=1
+model_path='BEST_MODEL_RANDOM_25.pth'
+mask_path='../RANDOM_SAMPLING_25_DATASET/mask_random2525.pkl'
+txt_test_path='../RANDOM_SAMPLING_25_DATASET/test_volumes_paths_random25.txt'
+original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 
-# mask_path='mask_blue_noise_7575.pkl'
+#mask_path='mask_blue_noise_7575.pkl'
 # txt_test_path='../../oct_data_blue_noise/test_volumes_paths.txt'
 # original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 
@@ -53,7 +53,7 @@ class Autoencoder(nn.Module):
     def __init__(self,ngpu):
         super(Autoencoder,self).__init__()
 
-        layers = [32,32,16,16]
+        layers = [32,32,32,32]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
@@ -109,7 +109,7 @@ def reconstruct_volume_batches(volume,reconstruction_model,sub_volumes_dim):
     w_div_factor = sub_volumes_dim[1]
     d_div_factor = sub_volumes_dim[2]
     reconstructed_volume = np.zeros(original_volume_dim)
-    overlap_pixels_w=30
+    overlap_pixels_w=50
     d_end=0
     for d in range(int(np.ceil(volume.shape[2]/d_div_factor))):
         w_end=0
@@ -137,7 +137,7 @@ def reconstruct_volume_batches(volume,reconstruction_model,sub_volumes_dim):
                     data_for_reconstruction_by_chunks={
                         "coordinates_reconstructed":{
                             "h":(h_end,h_end+h_div_factor),
-                            "w":(w_end+15,w_end+w_div_factor),
+                            "w":(w_end+30,w_end+w_div_factor),
                             "d":(d_end,d_end+d_div_factor)
                             }
                         }
@@ -164,7 +164,7 @@ def reconstruct_volume_batches(volume,reconstruction_model,sub_volumes_dim):
                         if(w_start==0):
                             reconstructed_volume[h_start:h_finish,w_start:w_finish,d_start:d_finish]=vol[:,:,:]
                         else:
-                            reconstructed_volume[h_start:h_finish,w_start:w_finish,d_start:d_finish]=vol[:,15:,:]
+                            reconstructed_volume[h_start:h_finish,w_start:w_finish,d_start:d_finish]=vol[:,30:,:]
                     
                     batch_metadata_for_reconstruction=[]
                     batch_for_inference=[]
@@ -328,7 +328,7 @@ class Reconstruction_model(nn.Module):
     def __init__(self,ngpu):
         super(Reconstruction_model,self).__init__()
 
-        layers = [32,32,16,16]
+        layers = [32,32,32,32]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
@@ -409,7 +409,7 @@ MAE_list_sub=[]
 SSIM_list_sub=[]
 
 
-for i,test_volume_path in enumerate(test_volume_paths[0:1]):
+for i,test_volume_path in enumerate(test_volume_paths):
     try:
         print(test_volume_path.split('/')[-1]+'---------->'+str(i))
         original_volume=load_obj(test_volume_path)
@@ -428,6 +428,7 @@ for i,test_volume_path in enumerate(test_volume_paths[0:1]):
         bigger_reconstruction = bigger_reconstruction.astype(np.uint8)
         
         mask_blue_noise_prima= (~mask_blue_noise.astype(bool)).astype(int)
+
         bigger_reconstruction=np.multiply(mask_blue_noise_prima,bigger_reconstruction).astype(np.uint8)
         bigger_reconstruction=bigger_reconstruction+sub_sampled_volume
         
