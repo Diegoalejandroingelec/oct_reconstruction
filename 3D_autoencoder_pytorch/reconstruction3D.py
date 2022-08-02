@@ -22,7 +22,7 @@ original_volume_dim=(512,1000,100)
 ngpu=2
 model_path='BEST_MODEL_random_sampling.pth'
 mask_path='../RANDOM_SAMPLING_DATASET/mask_random75.pkl'
-txt_test_path='../RRANDOM_SAMPLING_DATASET/test_volumes_paths_random.txt'
+txt_test_path='../RANDOM_SAMPLING_DATASET/test_volumes_paths_random.txt'
 original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 comparison_size=100
 compare_with_roi=True
@@ -393,4 +393,6 @@ evaluate_model(mask_path,
                bigger_sub_volumes_dim,
                comparison_size,
                compare_with_roi)
+
+
 
