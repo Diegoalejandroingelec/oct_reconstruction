@@ -170,62 +170,6 @@ def reconstruct_volume_batches(volume,reconstruction_model,sub_volumes_dim):
     return reconstructed_volume
 
 
-def reconstruct_volume(volume,reconstruction_model,sub_volumes_dim):
-    
-    h_div_factor = sub_volumes_dim[0]
-    w_div_factor = sub_volumes_dim[1]
-    d_div_factor = sub_volumes_dim[2]
-    reconstructed_volume = np.zeros(original_volume_dim)
-    overlap_pixels_w=50
-    d_end=0
-    for d in range(int(np.ceil(volume.shape[2]/d_div_factor))):
-        w_end=0
-        can_iterate_over_w=True
-        last_iteration_w = False
-        while can_iterate_over_w:
-            h_end=0
-            for h in range(int(np.ceil(volume.shape[0]/h_div_factor))):
-                
-    
-                sub_volume=volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]
-                sub_volume=np.expand_dims(sub_volume, axis=0)
-                sub_volume=torch.from_numpy(sub_volume).to(device, dtype=torch.float)
-                
-                decoded_volume =  reconstruction_model(sub_volume).cpu().detach().numpy()
-                squeezed_volume=np.squeeze(decoded_volume)
-                if(w_end==0):
-                    print('h: ', (h_end,h_end+h_div_factor))
-                    print('w: ', (w_end,w_end+w_div_factor))
-                    print('d: ', (d_end,d_end+d_div_factor))
-                    print('')
-                    reconstructed_volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]=squeezed_volume[:,:,:]
-                else:
-                    print('h: ', (h_end,h_end+h_div_factor))
-                    print('w: ', (w_end+30,w_end+w_div_factor))
-                    print('d: ', (d_end,d_end+d_div_factor))
-                    print('')
-                    reconstructed_volume[h_end:h_end+h_div_factor,w_end+30:w_end+w_div_factor,d_end:d_end+d_div_factor]=squeezed_volume[:,30:,:]
-
-                h_end=h_end+h_div_factor
-                if(h_end+h_div_factor>volume.shape[0]):
-                    h_end=volume.shape[0]-h_div_factor
-                    
-            w_end=w_end+w_div_factor-overlap_pixels_w
-            if(last_iteration_w):
-                can_iterate_over_w=False
-            if(w_end+w_div_factor>=volume.shape[1]):
-                w_end=volume.shape[1]-w_div_factor
-                last_iteration_w = True
-
-                
-        d_end=d_end+d_div_factor
-        if(d_end+d_div_factor>volume.shape[2]):
-            d_end=volume.shape[2]-d_div_factor
-            
-    return reconstructed_volume
-
-
-
 def normalize(volume):
     max_value=(np.max(volume.astype(np.float32))/2)
     normalized_volume=(volume.astype(np.float32)-max_value)/max_value
@@ -262,26 +206,32 @@ def compute_PSNR(original,reconstruction,bit_representation=8):
     return PSNR
 
 def initialize_reconstruction_model(model_path):
-    model_loaded= torch.load(model_path)
-    model_params = model_loaded.parameters()
-    param_list=[]
-    for weights in model_params:
-        param_list.append(weights) 
+    # model_loaded= torch.load(model_path)
+    # model_params = model_loaded.parameters()
+    # param_list=[]
+    # for weights in model_params:
+    #     param_list.append(weights) 
     
-    global weights_index
+    # global weights_index
     
-    weights_index=2
-    def weights_init(m):
-        global weights_index
-        classname = m.__class__.__name__  
-        if(classname=='Conv3d' or classname=='ConvTranspose3d' or classname=='BatchNorm3d'):
-            print(classname)
-            print(weights_index-2)
-            m.weight=param_list[weights_index-2]
-            print(weights_index-1)
-            m.bias=param_list[weights_index-1]
-            weights_index+=2
-            
+    # weights_index=0
+    # def weights_init(m):
+    #     global weights_index
+    #     classname = m.__class__.__name__  
+    #     if(classname=='Conv3d' or classname=='ConvTranspose3d' or classname=='BatchNorm3d'):
+    #         print(classname)
+    #         weights_index+=2
+    #         print(weights_index-2)
+    #         m.weight=param_list[weights_index-2]
+    #         print(weights_index-1)
+    #         m.bias=param_list[weights_index-1]
+    #     elif(classname=='PReLU'):
+    #         print(classname)
+    #         weights_index+=1
+    #         print(weights_index-1)
+    #         print(param_list[weights_index-1].shape)
+    #         m.weight=param_list[weights_index-1]
+
     
     reconstruction_model = Autoencoder(ngpu).to(device)
     # Handle multi-gpu if desired
@@ -289,12 +239,26 @@ def initialize_reconstruction_model(model_path):
         reconstruction_model = nn.DataParallel(reconstruction_model, list(range(ngpu)))
     
     
-    # Apply the trained weights_init 
-    reconstruction_model.apply(weights_init)
+    # # Apply the trained weights_init 
+    # reconstruction_model.apply(weights_init)
+    
+    # summary(reconstruction_model, bigger_sub_volumes_dim)
+    # return reconstruction_model
+    
+    # Load checkpoint model
+    checkpoint = torch.load(model_path, map_location=lambda storage, loc: storage)
+    # Restore the parameters in the training node to this point
+    
+    # Load checkpoint state dict. Extract the fitted model weights
+    model_state_dict = reconstruction_model.state_dict()
+    new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
+                      k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
+    # Overwrite the pretrained model weights to the current model
+    model_state_dict.update(new_state_dict)
+    reconstruction_model.load_state_dict(model_state_dict)
     
     summary(reconstruction_model, bigger_sub_volumes_dim)
     return reconstruction_model
-
 
 
 def evaluate_model(mask_path,

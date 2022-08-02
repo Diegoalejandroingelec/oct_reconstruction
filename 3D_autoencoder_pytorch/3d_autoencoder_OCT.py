@@ -5,7 +5,7 @@ Created on Sat Jul 16 12:53:40 2022
 
 @author: diego
 """
-
+import os
 import h5py
 import numpy as np
 import torch
@@ -17,27 +17,8 @@ import matplotlib.pyplot as plt
 import pickle
 from skimage.metrics import structural_similarity as ssim
 from Autoencoder_Architecture import Autoencoder,Autoencoder_skip_connections
-
-# Number of training epochs
-num_epochs = 5
-
-# Learning rate for optimizers
-lr = 0.0002
-
-# Beta1 hyperparam for Adam optimizers
-beta1 = 0.5
-
-
-# Number of workers for dataloader
-workers = 2
-
-# Batch size during training
-batch_size = 16
-
-# Number of GPUs available. Use 0 for CPU mode.
-ngpu = 2
-
-sub_volumes_dim=(512,64,16)
+import config_autoencoder
+from torch.optim import lr_scheduler
 
 def compute_PSNR(original,reconstruction,bit_representation=8):
     mse = nn.MSELoss()
@@ -107,33 +88,31 @@ def normalize(volume):
     return (volume.astype(np.float32)-(np.max(volume.astype(np.float32))/2))/(np.max(volume.astype(np.float32))/2)
 
 
-#subsampled_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_subsampled_volumes.h5'
-#original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/training_blue_noise_ground_truth.h5'
-
-subsampled_volumes_path='../GAUSSIAN_DATASET/training_subsampled_volumes.h5'
-original_volumes_path='../GAUSSIAN_DATASET/training_ground_truth.h5'
-
-
-
-h5_dataset=HDF5Dataset(subsampled_volumes_path,original_volumes_path,'original_train',normalize)
+h5_dataset=HDF5Dataset(config_autoencoder.subsampled_volumes_path,
+                       config_autoencoder.original_volumes_path,
+                       'original_train',
+                       normalize)
 # Create the dataloader
-dataloader = torch.utils.data.DataLoader(h5_dataset, batch_size=batch_size, shuffle=True, num_workers=workers)
+dataloader = torch.utils.data.DataLoader(h5_dataset,
+                                         batch_size=config_autoencoder.batch_size,
+                                         shuffle=True,
+                                         num_workers=config_autoencoder.workers)
 
 # train_batch = next(iter(dataloader))
 
 # plt.imshow(np.squeeze(np.array(train_batch[1][0,:,:,0].cpu())), cmap="gray")
 # plt.imshow(np.squeeze(np.array(train_batch[0][0,:,:,0].cpu())), cmap="gray")
 
-#subsampled_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/testing_blue_noise_subsampled_volumes.h5'
-#original_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampling_bluenoise/testing_blue_noise_ground_truth.h5'
 
-
-subsampled_volumes_path_test='../GAUSSIAN_DATASET/testing_subsampled_volumes.h5'
-original_volumes_path_test='../GAUSSIAN_DATASET/testing_ground_truth.h5'
-
-h5_dataset_test=HDF5Dataset(subsampled_volumes_path_test,original_volumes_path_test,'original_test',normalize)
+h5_dataset_test=HDF5Dataset(config_autoencoder.subsampled_volumes_path_test,
+                            config_autoencoder.original_volumes_path_test,
+                            'original_test',
+                            normalize)
 # Create the dataloader
-dataloader_test = torch.utils.data.DataLoader(h5_dataset_test, batch_size=1, shuffle=True, num_workers=workers)
+dataloader_test = torch.utils.data.DataLoader(h5_dataset_test,
+                                              batch_size=1,
+                                              shuffle=True,
+                                              num_workers=config_autoencoder.workers)
 
 # test_batch = next(iter(dataloader_test))
 
@@ -141,10 +120,9 @@ dataloader_test = torch.utils.data.DataLoader(h5_dataset_test, batch_size=1, shu
 # plt.imshow(np.squeeze(np.array(test_batch[0][0,:,:,0].cpu())), cmap="gray")
 
 
-# Decide which device we want to run on
-device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
-# custom weights initialization called on netG and netD
+
+# custom weights initialization called on netG 
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('ConvTranspose') != -1:
@@ -155,29 +133,70 @@ def weights_init(m):
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0)
         
-        
+def define_optimizer(netG: nn.Module) -> [optim.Adam]:
+    optimizer = optim.Adam(netG.parameters(), lr=config_autoencoder.model_lr, betas=config_autoencoder.model_betas)
+    return optimizer   
+     
+def define_scheduler(optimizer: optim.Adam) -> [lr_scheduler.StepLR]:
+    scheduler = lr_scheduler.StepLR(optimizer, config_autoencoder.lr_scheduler_step_size, config_autoencoder.lr_scheduler_gamma)
+    return scheduler 
+     
 
 
 
-# Create the generator
-netG = Autoencoder_skip_connections(ngpu).to(device)
-
+netG = Autoencoder(config_autoencoder.ngpu).to(config_autoencoder.device)
 # Handle multi-gpu if desired
-if (device.type == 'cuda') and (ngpu > 1):
-    netG = nn.DataParallel(netG, list(range(ngpu)))
+if (config_autoencoder.device.type == 'cuda') and (config_autoencoder.ngpu > 1):
+    netG = nn.DataParallel(netG, list(range(config_autoencoder.ngpu)))
 
-# Apply the weights_init function to randomly initialize all weights
-#  to mean=0, stdev=0.02.
-netG.apply(weights_init)
 
-summary(netG, sub_volumes_dim)
+
 
 
 criterion = nn.L1Loss()
-
 criterion_for_testing=nn.L1Loss()
+print("Define all loss functions successfully.")
+optimizer=define_optimizer(netG)
+print("Define all optimizer functions successfully.")
+scheduler = define_scheduler(optimizer)
+print("Define all optimizer scheduler functions successfully.")
 
-optimizer = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
+
+
+if(config_autoencoder.resume_model_path):
+    # Load checkpoint model
+    checkpoint = torch.load(config_autoencoder.resume_model_path, map_location=lambda storage, loc: storage)
+    # Restore the parameters in the training node to this point
+    start_epoch = checkpoint["epoch"]
+    best_psnr = checkpoint["best_psnr"]
+    best_ssim = checkpoint["best_ssim"]
+    # Load checkpoint state dict. Extract the fitted model weights
+    model_state_dict = netG.state_dict()
+    new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
+                      k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
+    # Overwrite the pretrained model weights to the current model
+    model_state_dict.update(new_state_dict)
+    netG.load_state_dict(model_state_dict)
+    # Load the optimizer model
+    optimizer.load_state_dict(checkpoint["optimizer"])
+    # Load the scheduler model
+    scheduler.load_state_dict(checkpoint["scheduler"])
+    print(f"Loaded `{config_autoencoder.resume_model_path}` resume netG model weights successfully. "
+          f"Resume training from epoch {start_epoch}.")
+    summary(netG, config_autoencoder.sub_volumes_dim)
+else:
+    # Apply the weights_init function to randomly initialize all weights
+    #  to mean=0, stdev=0.02.
+    print('Training from scratch...')
+    netG.apply(weights_init)
+    summary(netG, config_autoencoder.sub_volumes_dim)
+    start_epoch=0
+
+
+
+
+if not os.path.exists(config_autoencoder.results_dir):
+    os.makedirs(config_autoencoder.results_dir)
 
 
 print("Starting Training Loop...")
@@ -186,11 +205,11 @@ losses = []
 losses_val=[]
 best_psnr=0
 best_ssim=0
-for epoch in range(num_epochs):
+for epoch in range(start_epoch, config_autoencoder.num_epochs):
     # For each batch in the dataloader
     for i, data_train in enumerate(dataloader, 0):  
-        inputs = data_train[0].to(device, dtype=torch.float)
-        targets = data_train[1].to(device, dtype=torch.float)
+        inputs = data_train[0].to(config_autoencoder.device, dtype=torch.float)
+        targets = data_train[1].to(config_autoencoder.device, dtype=torch.float)
         
         # clear the gradients
         optimizer.zero_grad()
@@ -205,19 +224,21 @@ for epoch in range(num_epochs):
         
         # Output training stats
         if i % 50 == 0:
-            print('[%d/%d][%d/%d]\tLoss: %.4f' % (epoch, num_epochs, i, len(dataloader),loss.item()))
+            print('[%d/%d][%d/%d]\tLoss: %.4f' % (epoch, config_autoencoder.num_epochs, i, len(dataloader),loss.item()))
             
         losses.append(loss.item())
 
-        
+    # Update LR
+    scheduler.step()
+    
     test_losses=[]
     psnr_list=[]
     ssim_list=[]
     print('Evaluation...')
     
     for j, data_test in enumerate(dataloader_test, 0):  
-         inputs_test = data_test[0].to(device, dtype=torch.float)
-         targets_test = data_test[1].to(device, dtype=torch.float)
+         inputs_test = data_test[0].to(config_autoencoder.device, dtype=torch.float)
+         targets_test = data_test[1].to(config_autoencoder.device, dtype=torch.float)
          # compute the model output
          reconstructions_test = netG(inputs_test)
          # calculate loss
@@ -246,20 +267,35 @@ for epoch in range(num_epochs):
     
     is_best=current_psnr>best_psnr and current_ssim>best_ssim
     
+    
+    torch.save({"epoch": epoch + 1,
+                "best_psnr": current_psnr,
+                "best_ssim": current_ssim,
+                "state_dict": netG.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "scheduler": scheduler.state_dict()},
+                os.path.join(config_autoencoder.results_dir, f"model_epoch_{epoch}.pth.tar"))
+    
+    
     if is_best:
         best_psnr=current_psnr
         best_ssim=current_ssim
-        torch.save(netG, 'BEST_MODEL_GAUSSIAN_RANDOM_75.pth')
+        torch.save({"epoch": epoch + 1,
+                    "best_psnr": best_psnr,
+                    "best_ssim": best_ssim,
+                    "state_dict": netG.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                    "scheduler": scheduler.state_dict()},
+                    os.path.join(config_autoencoder.results_dir, f"BEST_MODEL_{epoch}.pth.tar"))
         
         
     losses_val.append(current_loss)
     
     
-save_obj(losses,'train_losses_GAUSSIAN_RANDOM_75' )
-save_obj(losses_val,'test_losses_GAUSSIAN_RANDOM_75' )      
+save_obj(losses,os.path.join(config_autoencoder.results_dir, 'train_losses' ))
+save_obj(losses_val,os.path.join(config_autoencoder.results_dir, 'test_losses' ))      
       
-      
-torch.save(netG, 'last_epoch_GAUSSIAN_RANDOM_75.pth')
+
 
 # def load_obj(name):
 #     with open( name, 'rb') as f:
@@ -275,61 +311,3 @@ torch.save(netG, 'last_epoch_GAUSSIAN_RANDOM_75.pth')
 # plt.legend()
 # plt.show()
 
-###############################################################################
-###################                                         ###################
-###################                                         ###################
-###################                                         ###################
-###################          TESTING                        ###################
-###################                                         ###################
-###################                                         ###################
-###################                                         ###################
-###############################################################################                   
-
-# subsampled_volumes_path_testing='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/testing_subsampled_volumes.h5'
-# original_volumes_path_testing='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/data_train_autoencoder3D/testing_ground_truth.h5'
-
-
-# h5_dataset_test=HDF5Dataset(subsampled_volumes_path_testing,original_volumes_path_testing)
-# # Create the dataloader
-# dataloader_test = torch.utils.data.DataLoader(h5_dataset_test, batch_size=2, shuffle=True, num_workers=1)
-
-
-# real_batch = next(iter(dataloader_test))
-
-# test_losses=[]
-# for flo in dataloader_test:  
-#     print(flo)
-#     break
-#     inputs = data[0].to(device, dtype=torch.float)
-#     targets = data[1].to(device, dtype=torch.float)
-#     # compute the model output
-#     reconstructions_test = netG(inputs)
-#     # calculate loss
-#     loss_test = criterion(reconstructions_test, targets)
-#     test_losses.append(loss_test.toitem())
-#     if i % 50 == 0:
-#         print(i)
-
-# np.mean(test_losses)
-
-
-# import cv2
-
-# t=np.array(targets[0,:,:,:].cpu()).astype(np.uint8)
-# inp=np.array(inputs[0,:,:,:].cpu()).astype(np.uint8)
-# resul=model_loaded(inputs)
-# resul=resul[0,:,:,:].cpu().detach().numpy().astype(np.uint8)
-
-
-# t = t[:,:,3]
-# inp=inp[:,:,3]
-# resul=resul[:,:,3]
-
-
-# cv2.imshow('Original Image',t)
-# cv2.imshow('subsampled',inp)
-# cv2.imshow('Reconstruction',resul)
-
-
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
