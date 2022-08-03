@@ -5,8 +5,8 @@ Created on Mon Jul 18 14:34:27 2022
 
 @author: diego
 """
-
-
+import os
+import h5py
 import pickle
 import numpy as np
 import torch
@@ -20,10 +20,12 @@ from Autoencoder_Architecture import Autoencoder
 bigger_sub_volumes_dim=(512,150,16)
 original_volume_dim=(512,1000,100)
 ngpu=2
-model_path='BEST_MODEL_random_sampling.pth'
-mask_path='../RANDOM_SAMPLING_DATASET/mask_random75.pkl'
-txt_test_path='../RANDOM_SAMPLING_DATASET/test_volumes_paths_random.txt'
-original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
+results_dir='MODEL_EVALUATION'
+model_path='BEST_MODEL_2.pth.tar'
+mask_path='../masks/mask_random75.pkl'
+masks_dataset_path=''
+txt_test_path='../random_sub_sampling_Data/test_volumes_paths.txt'
+original_volumes_path='../sub_sampled_data/original_volumes/'
 comparison_size=100
 compare_with_roi=True
 
@@ -38,13 +40,13 @@ def get_window_for_comparison(original_volume,window_size,comparison_size):
     mean_b_scans=np.mean(original_volume,2)
     mean_b_scans=mean_b_scans[30:,:].astype(np.uint8)
 
-    means=np.argmax(mean_b_scans,0)
+    means=np.argmax(mean_b_scans,0)+30
     window_mean= np.mean(means).astype(int)
     window = np.zeros(window_size)
     upper_limit=window_mean-comparison_size if window_mean-comparison_size>=0 else 0
     lower_limit=window_mean+comparison_size if window_mean-comparison_size<=window_size[0] else window_size[0]
     window[upper_limit:lower_limit,:,:]=np.ones((lower_limit-upper_limit,window_size[1],window_size[2]))
-    return window
+    return window,upper_limit,lower_limit
 
 def make_video(volume,name):
     
@@ -260,6 +262,67 @@ def initialize_reconstruction_model(model_path):
     summary(reconstruction_model, bigger_sub_volumes_dim)
     return reconstruction_model
 
+def mark_ROI(upper_limit,lower_limit,name,img):
+    start_point_u = (0, upper_limit)
+    end_point_u=(1000, upper_limit)
+
+    start_point_l = (0, lower_limit)
+    end_point_l=(1000, lower_limit)
+    img=cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
+    # Green color in BGR
+    color = (0, 0, 255)
+     
+    # Line thickness of 9 px
+    thickness = 2
+     
+    # Using cv2.line() method
+    # Draw a diagonal green line with thickness of 9 px
+    image = cv2.line(img, start_point_u, end_point_u, color, thickness)
+    image = cv2.line(image, start_point_l, end_point_l, color, thickness)
+    cv2.imwrite(name+'.jpeg', image)
+
+def plot_error(data,name):
+    fig, ax1 = plt.subplots(1,1,figsize=(10, 5))
+    
+    im = ax1.imshow(data)
+    cax = fig.add_axes([ax1.get_position().x1+0.01,
+                        ax1.get_position().y0,0.02,
+                        ax1.get_position().height])
+    cb = plt.colorbar(im,cax=cax)
+    
+    fg_color = 'black'
+    bg_color = 'white'
+    
+    # IMSHOW    
+    # set title plus title color
+    ax1.set_title('Reconstruction Error', color=fg_color)
+    
+    # set figure facecolor
+    ax1.patch.set_facecolor(bg_color)
+    
+    # set tick and ticklabel color
+    im.axes.tick_params(color=fg_color, labelcolor=fg_color)
+    
+    # set imshow outline
+    for spine in im.axes.spines.values():
+        spine.set_edgecolor(fg_color)    
+    
+    # COLORBAR
+    # set colorbar label plus label color
+    cb.set_label('Absolute Error', color=fg_color)
+    
+    # set colorbar tick color
+    cb.ax.yaxis.set_tick_params(color=fg_color)
+    
+    # set colorbar edgecolor 
+    cb.outline.set_edgecolor(fg_color)
+    
+    
+    
+    fig.patch.set_facecolor(bg_color)    
+    
+    plt.show()
+    fig.savefig(name, dpi=200, facecolor=bg_color)
 
 def evaluate_model(mask_path,
                    txt_test_path,
@@ -269,8 +332,8 @@ def evaluate_model(mask_path,
                    bigger_sub_volumes_dim,
                    comparison_size,
                    compare_with_roi=False):
-    
-    mask=load_obj(mask_path)
+    if(mask_path):
+        mask=load_obj(mask_path)
     
     with open(txt_test_path) as f:
         lines = f.readlines()
@@ -282,21 +345,34 @@ def evaluate_model(mask_path,
     MAE_list=[]
     SSIM_list=[]
     
+    total_PSNR_list=[]
+    total_RMSE_list=[]
+    total_MAE_list=[]
+    total_SSIM_list=[]
     
     
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+        
     for i,test_volume_path in enumerate(test_volume_paths):
         try:
             print(test_volume_path.split('/')[-1]+'---------->'+str(i))
             original_volume=load_obj(test_volume_path)
             
+            if(masks_dataset_path):
+                f_gt = h5py.File(masks_dataset_path, 'r')
+    
+                vol_name=test_volume_path.split('/')[-1].split('.')[0]
+    
+                mask=np.array(f_gt.get(vol_name))
         
             sub_sampled_volume=np.multiply(mask,original_volume).astype(np.uint8)
             
             ######## Normalize matrix###############################
             sub_sampled_volume_normalized,max_value=normalize(sub_sampled_volume)
-            
+            print(sub_sampled_volume_normalized.shape)
             bigger_reconstruction=reconstruct_volume_batches(sub_sampled_volume_normalized,reconstruction_model,bigger_sub_volumes_dim)
-            
+            print(bigger_reconstruction.shape)
             ######## Denormalize matrix###############################
             
             bigger_reconstruction=(bigger_reconstruction*max_value)+max_value
@@ -309,14 +385,20 @@ def evaluate_model(mask_path,
             
             
             if(compare_with_roi):
-                window_for_comparison=get_window_for_comparison(original_volume,window_size=original_volume_dim,comparison_size=comparison_size)
+                print('ROI COMPARISON')
+                window_for_comparison, upper_limit, lower_limit=get_window_for_comparison(original_volume,window_size=original_volume_dim,comparison_size=comparison_size)
                 volume_for_comparison=np.multiply(original_volume,window_for_comparison).astype(np.uint8)
                 reconstruction_for_comparison=np.multiply(bigger_reconstruction,window_for_comparison).astype(np.uint8)
-                
+                print('evaluate metrics on roi')
                 PSNR=compute_PSNR(volume_for_comparison,reconstruction_for_comparison)
                 RMSE=compute_RMSE(volume_for_comparison,reconstruction_for_comparison)
                 MAE=compute_MAE(volume_for_comparison,reconstruction_for_comparison)
                 SSIM=ssim(volume_for_comparison.astype(np.uint8),reconstruction_for_comparison.astype(np.uint8))
+                print('evaluate metrics on the whole volume')
+                total_PSNR=compute_PSNR(original_volume,bigger_reconstruction)
+                total_RMSE=compute_RMSE(original_volume,bigger_reconstruction)
+                total_MAE=compute_MAE(original_volume,bigger_reconstruction)
+                total_SSIM=ssim(original_volume.astype(np.uint8),bigger_reconstruction.astype(np.uint8))
             else:
                 PSNR=compute_PSNR(original_volume,bigger_reconstruction)
                 RMSE=compute_RMSE(original_volume,bigger_reconstruction)
@@ -328,16 +410,39 @@ def evaluate_model(mask_path,
             MAE_list.append(MAE)
             SSIM_list.append(SSIM)
             
+            if(compare_with_roi):
+                total_PSNR_list.append(total_PSNR)
+                total_RMSE_list.append(total_RMSE)
+                total_MAE_list.append(total_MAE)
+                total_SSIM_list.append(total_SSIM)
+            
             if(i%10==0):
                 if(compare_with_roi):
                     print('Saving images... ')
-                    cv2.imwrite('REFERENCE_VOLUME_SLICE_'+str(i)+'.jpeg', volume_for_comparison[:,:,50])
-                    cv2.imwrite('RECONSTRUCTION_VOLUME_SLICE_'+str(i)+'.jpeg', reconstruction_for_comparison[:,:,50])
-                    cv2.imwrite('SUBSAMPLED_VOLUME_SLICE_'+str(i)+'.jpeg', sub_sampled_volume[:,:,50])
+                    
+                    mark_ROI(upper_limit,lower_limit,
+                             os.path.join(results_dir, f"REFERENCE_VOLUME_SLICE_{i}"),
+                             original_volume[:,:,50])
+                    
+                    mark_ROI(upper_limit,lower_limit,
+                             os.path.join(results_dir, f"RECONSTRUCTION_VOLUME_SLICE_{i}"),
+                             bigger_reconstruction[:,:,50])
+                    
+                    mark_ROI(upper_limit,
+                             lower_limit,
+                             os.path.join(results_dir, f"SUBSAMPLED_VOLUME_SLICE_{i}"),
+                             sub_sampled_volume[:,:,50])
+                    
+                    error=np.abs(original_volume-bigger_reconstruction)
+                    plot_error(data=error[:,:,50],
+                               name=os.path.join(results_dir, f'RECONSTRUCTION_ERROR_{i}.png'))
+                    plt.imshow(error[:,:,50])
+                    plt.show()
                 print('Generating video...')
                 gap=np.zeros((512,50,100)).astype(np.uint8)
                 comparative_volume=np.concatenate((original_volume,gap,bigger_reconstruction,gap,sub_sampled_volume),axis=1)
-                make_video(comparative_volume,'comparative_reconstruction_'+str(i))
+                make_video(comparative_volume,
+                           os.path.join(results_dir, f'comparative_reconstruction_{i}'))
         except Exception as e:
             print(e)
             print('Dimension ERROR...')
@@ -347,6 +452,13 @@ def evaluate_model(mask_path,
     print('RMSE AVG: ',np.mean(RMSE_list))
     print('MAE AVG: ',np.mean(MAE_list))
     print('SSIM AVG: ',np.mean(SSIM_list))
+    
+    
+    if(compare_with_roi):
+        print('Total PSNR AVG: ',np.mean(total_PSNR_list))
+        print('Total RMSE AVG: ',np.mean(total_RMSE_list))
+        print('Total MAE AVG: ',np.mean(total_MAE_list))
+        print('Total SSIM AVG: ',np.mean(total_SSIM_list))
 
 reconstruction_model=initialize_reconstruction_model(model_path)
 evaluate_model(mask_path,
