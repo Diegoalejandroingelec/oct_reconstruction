@@ -61,6 +61,7 @@ class H5LoadDataset(data.Dataset):
     def get_info(self):
         f = h5py.File(self.file_path, 'r')
         info=len(list(f.keys()))
+        info=1000
         f.close()
         return info
     

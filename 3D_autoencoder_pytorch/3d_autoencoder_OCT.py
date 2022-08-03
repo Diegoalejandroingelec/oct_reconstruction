@@ -16,7 +16,7 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 import pickle
 from skimage.metrics import structural_similarity as ssim
-from Autoencoder_Architecture import Autoencoder,Autoencoder_skip_connections
+from Autoencoder_Architecture import Autoencoder
 import config_autoencoder
 from torch.optim import lr_scheduler
 

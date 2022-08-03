@@ -11,4 +11,5 @@
 *.npy
 /GAN/advanced_GAN/results
 /GAN/advanced_GAN/samples
-/GAN/advanced_GAN/__pycache__
+__pycache__/
+*.tar

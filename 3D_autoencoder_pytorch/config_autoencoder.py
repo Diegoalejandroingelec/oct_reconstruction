@@ -18,10 +18,10 @@ model_betas = (0.9, 0.999)
 workers = 2
 
 # Batch size during training
-batch_size = 4
+batch_size = 16
 
 # Number of GPUs available. Use 0 for CPU mode.
-ngpu = 1
+ngpu = 2
 
 sub_volumes_dim=(512,64,16)
 
@@ -33,12 +33,12 @@ device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else 
 lr_scheduler_step_size = num_epochs // 2
 lr_scheduler_gamma = 0.1
 
-results_dir='TRAINING_RANDOM_75'
+results_dir='GAUSSIAN_RANDOM_75'
 resume_model_path=''
 ################TRAINING#################
-subsampled_volumes_path='../random_sub_sampling_Data/training_random_subsampled_volumes.h5'
-original_volumes_path='../random_sub_sampling_Data/training_random_ground_truth.h5'
+subsampled_volumes_path='../GAUSSIAN_DATASET/training_subsampled_volumes.h5'
+original_volumes_path='../GAUSSIAN_DATASET/training_ground_truth.h5'
 
 ################TESTING#################
-subsampled_volumes_path_test='../random_sub_sampling_Data/testing_random_subsampled_volumes.h5'
-original_volumes_path_test='../random_sub_sampling_Data/testing_random_ground_truth.h5'
+subsampled_volumes_path_test='../GAUSSIAN_DATASET/testing_subsampled_volumes.h5'
+original_volumes_path_test='../GAUSSIAN_DATASET/testing_ground_truth.h5'

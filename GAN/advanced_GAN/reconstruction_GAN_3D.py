@@ -32,8 +32,8 @@ bigger_sub_volumes_dim=(512,64,16)
 original_volume_dim=(512,1000,100)
 ngpu=2
 model_path='./results/GAN_OCT/g_best.pth.tar'
-mask_path='../../BLUE_NOISE_DATASET/mask_random_blue_noise175.pkl'
-txt_test_path='../../BLUE_NOISE_DATASET/test_volumes_paths_blue_noise1.txt'
+mask_path='../../RANDOM_SAMPLING_DATASET/mask_random75.pkl'
+txt_test_path='../../RANDOM_SAMPLING_DATASET/test_volumes_paths_random.txt'
 original_volumes_path='../../../OCT_ORIGINAL_VOLUMES/'
 
 def load_obj(name):
@@ -86,6 +86,8 @@ def reconstruct_volume_batches(volume,reconstruction_model,sub_volumes_dim):
                 if len(batch_for_inference)==batch_size_for_inference:
                     batch_for_inference=np.array(batch_for_inference)
                     batch_for_inference=torch.from_numpy(batch_for_inference).to(device, dtype=torch.float)
+                    print(batch_for_inference.shape)
+                    batch_for_inference=torch.unsqueeze(batch_for_inference,1)
                     reconstructed_batch =  reconstruction_model(batch_for_inference).cpu().detach().numpy()
                     
                     
@@ -228,15 +230,15 @@ for i,test_volume_path in enumerate(test_volume_paths[0:1]):
         
     
         sub_sampled_volume=np.multiply(mask,original_volume).astype(np.uint8)
-        
+        print(sub_sampled_volume.shape)
         ######## Normalize matrix###############################
         sub_sampled_volume_normalized= sub_sampled_volume/255
-        
         bigger_reconstruction=reconstruct_volume_batches(sub_sampled_volume_normalized,generator,bigger_sub_volumes_dim)
-        
+        print(bigger_reconstruction.shape)
+
         ######## Denormalize matrix###############################
         
-        bigger_reconstruction=(bigger_reconstruction*127.5)+127.5
+        bigger_reconstruction=(bigger_reconstruction)*255
         bigger_reconstruction = bigger_reconstruction.astype(np.uint8)
         
         mask_blue_noise_prima= (~mask.astype(bool)).astype(int)
@@ -271,10 +273,9 @@ for i,test_volume_path in enumerate(test_volume_paths[0:1]):
             gap=np.zeros((512,50,100)).astype(np.uint8)
             comparative_volume=np.concatenate((original_volume,gap,bigger_reconstruction,gap,sub_sampled_volume),axis=1)
             make_video(comparative_volume,'comparative_reconstruction_'+str(i))
-    except:
+    except Exception as e:
+        print(e)
         print('Dimension ERROR...')
-        
-
 print('PSNR AVG: ',np.mean(PSNR_list))
 print('RMSE AVG: ',np.mean(RMSE_list))
 print('MAE AVG: ',np.mean(MAE_list))

@@ -27,10 +27,10 @@ class ResidualConvBlock3D(nn.Module):
     def __init__(self, channels: int) -> None:
         super(ResidualConvBlock3D, self).__init__()
         self.rcb = nn.Sequential(
-            nn.Conv3d(in_channels=channels, out_channels=channels, kernel_size=(3,3,3), stride=(1,1,1), padding=(1,1,1), bias=False),
+            nn.Conv3d(in_channels=channels, out_channels=channels, kernel_size=(3,3,3), stride=(1,1,1), padding=(1,1,1), bias=True),
             nn.BatchNorm3d(channels),
             nn.PReLU(),
-            nn.Conv3d(in_channels=channels, out_channels=channels, kernel_size=(3,3,3), stride=(1,1,1), padding=(1,1,1), bias=False),
+            nn.Conv3d(in_channels=channels, out_channels=channels, kernel_size=(3,3,3), stride=(1,1,1), padding=(1,1,1), bias=True),
             nn.BatchNorm3d(channels),
         )
 
@@ -100,7 +100,7 @@ class Generator(nn.Module):
         self.ngpu = ngpu
         # First conv layer.
         self.conv_block1 = nn.Sequential(
-            nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(9, 9, 9), stride=(1, 1, 1), padding=(4, 4, 4)),
+            nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(9, 9, 9), padding='same'),
             nn.PReLU(),
         )
 
@@ -112,13 +112,13 @@ class Generator(nn.Module):
 
         # Second conv layer.
         self.conv_block2 = nn.Sequential(
-            nn.Conv3d(in_channels=64, out_channels=64, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1), bias=False),
+            nn.Conv3d(in_channels=64, out_channels=64, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1)),
             nn.BatchNorm3d(64),
         )
 
 
         # Output layer.
-        self.conv_block3 = nn.Conv3d(in_channels=64, out_channels=1, kernel_size=(9, 9, 9), stride=(1, 1, 1), padding=(4, 4, 4))
+        self.conv_block3 = nn.Conv3d(in_channels=64, out_channels=1, kernel_size=(9, 9, 9), padding='same')
 
         # Initialize neural network weights
         self._initialize_weights()

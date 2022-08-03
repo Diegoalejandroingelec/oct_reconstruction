@@ -8,8 +8,8 @@ Created on Mon Jul 25 15:11:22 2022
 import torch
 
 # Incremental training and migration training
-resume_d = ""
-resume_g = ""
+resume_d = "./results/GAN_OCT/d_best.pth.tar"
+resume_g = "./results/GAN_OCT/g_best.pth.tar"
 
 # Number of residual blocks in Generator #16
 n_residual_blocks=16
@@ -17,18 +17,18 @@ n_residual_blocks=16
 exp_name = "GAN_OCT"
 
 # How many iterations to print the training result
-print_frequency = 200
-epochs=5
+print_frequency = 10
+epochs=20
 
-ngpu=1
+ngpu=2
 
 sub_volumes_dim=(1,512,64,16)
 #sub_volumes_dim=(1, 64,64,16)
-subsampled_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/random_sub_sampling_Data/training_random_subsampled_volumes.h5'
-original_volumes_path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/random_sub_sampling_Data/training_random_ground_truth.h5'
+subsampled_volumes_path='../../RANDOM_SAMPLING_DATASET/training_random_subsampled_volumes.h5'
+original_volumes_path='../../RANDOM_SAMPLING_DATASET/training_random_ground_truth.h5'
 
-subsampled_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/random_sub_sampling_Data/testing_random_subsampled_volumes.h5'
-original_volumes_path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/random_sub_sampling_Data/testing_random_ground_truth.h5'
+subsampled_volumes_path_test='../../RANDOM_SAMPLING_DATASET/testing_random_subsampled_volumes.h5'
+original_volumes_path_test='../../RANDOM_SAMPLING_DATASET/testing_random_ground_truth.h5'
 
 batch_size=4
 num_workers=4
