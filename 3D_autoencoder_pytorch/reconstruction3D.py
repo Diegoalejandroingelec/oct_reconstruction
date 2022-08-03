@@ -20,12 +20,12 @@ from Autoencoder_Architecture import Autoencoder
 bigger_sub_volumes_dim=(512,150,16)
 original_volume_dim=(512,1000,100)
 ngpu=2
-results_dir='MODEL_EVALUATION'
-model_path='BEST_MODEL_2.pth.tar'
-mask_path='../masks/mask_random75.pkl'
+results_dir='MODEL_EVALUATION_GAUSSIAN_RANDOM_75'
+model_path='./GAUSSIAN_RANDOM_75/BEST_MODEL_2.pth.tar'
+mask_path='../GAUSSIAN_DATASET/masks_dataset_test.h5'
 masks_dataset_path=''
-txt_test_path='../random_sub_sampling_Data/test_volumes_paths.txt'
-original_volumes_path='../sub_sampled_data/original_volumes/'
+txt_test_path='../GAUSSIAN_DATASET/test_volumes_paths.txt'
+original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 comparison_size=100
 compare_with_roi=True
 
