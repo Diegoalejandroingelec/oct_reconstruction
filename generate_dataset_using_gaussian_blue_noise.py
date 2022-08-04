@@ -273,30 +273,70 @@ def generate_gaussian_blue_noise_mask(blue_noise,original_volume,desired_transmi
 ########################################################################################
 blue_noise=generate_shifting_blue_noise(expected_dims=vol_dims)
 
-def generate_dataset(dataset_folder):
-    all_paths=get_volume_paths()
-    os.mkdir(dataset_folder)
-    training_total= int(np.floor(len(all_paths)*0.8))
+def generate_dataset(dataset_folder,
+                     mask_dataset_training_path,
+                     mask_dataset_testing_path,
+                     training_txt_path,
+                     testing_txt_path,
+                     desired_transmittance,
+                     sigma,
+                     plot_mask):
     
-    train_volumes_paths=all_paths[0:training_total]
-    test_volumes_paths=all_paths[training_total:]
+
+    
+    
+    if not os.path.exists(dataset_folder):
+        os.makedirs(dataset_folder)
+    
+    if(training_txt_path and testing_txt_path):
+        with open(training_txt_path) as f:
+            lines = f.readlines()
+        train_volumes_paths=lines
+        with open(testing_txt_path) as f:
+            lines = f.readlines()
+        test_volumes_paths=lines
+    else:
+        all_paths=get_volume_paths()
+        training_total= int(np.floor(len(all_paths)*0.8))
+        
+        train_volumes_paths=all_paths[0:training_total]
+        test_volumes_paths=all_paths[training_total:]
+        with open('./'+dataset_folder+'/train_volumes_paths.txt', 'w') as f:
+            f.write('\n'.join(train_volumes_paths))
+        with open('./'+dataset_folder+'/test_volumes_paths.txt', 'w') as f:
+            f.write('\n'.join(test_volumes_paths))
     
     
     volume_number=0
     subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_subsampled_volumes.h5', 'w')
     volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_ground_truth.h5', 'w')
-    masks_dataset_train = h5py.File('./'+dataset_folder+'/masks_dataset_train.h5', 'w')
-    with open('./'+dataset_folder+'/train_volumes_paths.txt', 'w') as f:
-        f.write('\n'.join(train_volumes_paths))
+    
+    if(mask_dataset_training_path):
+        masks_dataset_train = h5py.File(mask_dataset_training_path, 'r')
+    else:
+        masks_dataset_train = h5py.File('./'+dataset_folder+'/masks_dataset_train.h5', 'w')
+
         
     for volume_path in train_volumes_paths:
-
+        volume_path=volume_path.strip('\n')
         print(volume_path)
         try: 
             volume = read_data(volume_path)
-            mask=generate_gaussian_blue_noise_mask(blue_noise,original_volume=volume,desired_transmittance=0.25,sigma=150,plot_mask=True)
             name=volume_path.split('/')[-1].split('.')[0]
-            masks_dataset_train.create_dataset(name, data=mask)
+            
+            if(mask_dataset_training_path):
+                mask=np.array(masks_dataset_train.get(name))
+                if(plot_mask):
+                    plt.imshow(mask[:,:,11],cmap='gray')
+                    plt.show() 
+            else:
+                mask=generate_gaussian_blue_noise_mask(blue_noise,
+                                                       volume,
+                                                       desired_transmittance,
+                                                       sigma,
+                                                       plot_mask)
+                masks_dataset_train.create_dataset(name, data=mask)
+            
             subsampled_image = np.multiply(mask,volume).astype(np.uint8)
             
             
@@ -322,22 +362,39 @@ def generate_dataset(dataset_folder):
     volume_number=0
     subsampled_volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_subsampled_volumes.h5', 'w')
     volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_ground_truth.h5', 'w')
-    masks_dataset_test = h5py.File('./'+dataset_folder+'/masks_dataset_test.h5', 'w')
-    with open('./'+dataset_folder+'/test_volumes_paths.txt', 'w') as f:
-        f.write('\n'.join(test_volumes_paths))
-        
+    
+    
+    if(mask_dataset_testing_path):
+        masks_dataset_test = h5py.File(mask_dataset_testing_path, 'r')
+    else:
+        masks_dataset_test = h5py.File('./'+dataset_folder+'/masks_dataset_test.h5', 'w')
         
     for volume_path in test_volumes_paths:
             
             try:
+                volume_path=volume_path.strip('\n')
                 print(volume_path)
         
                 volume = read_data(volume_path)
-                mask=generate_gaussian_blue_noise_mask(blue_noise,original_volume=volume,desired_transmittance=0.25,sigma=150,plot_mask=True)
                 name=volume_path.split('/')[-1].split('.')[0]
-                masks_dataset_test.create_dataset(name, data=mask)
-                subsampled_image = np.multiply(mask,volume).astype(np.uint8)
                 
+                
+                
+                if(mask_dataset_testing_path):
+                    mask=np.array(masks_dataset_test.get(name))
+                    if(plot_mask):
+                        plt.imshow(mask[:,:,11],cmap='gray')
+                        plt.show() 
+                else:
+                    mask=generate_gaussian_blue_noise_mask(blue_noise,
+                                                           volume,
+                                                           desired_transmittance,
+                                                           sigma,
+                                                           plot_mask)
+                    masks_dataset_test.create_dataset(name, data=mask)
+                    
+                    
+                subsampled_image = np.multiply(mask,volume).astype(np.uint8)
                 
                 name='original_test_vol_'+str(volume_number)
                 extract_sub_volumes(volume,name,volumes_dataset_test)
@@ -356,5 +413,19 @@ def generate_dataset(dataset_folder):
     subsampled_volumes_dataset_test.close()  
     volumes_dataset_test.close()
     masks_dataset_test.close()
-    
-generate_dataset('BLUE_NOISE_GAUSSIAN_DATASET')  
+
+
+
+dataset_folder='BLUE_NOISE_GAUSSIAN_DATASET'
+# mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
+# mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
+# training_txt_path='./BLUE_NOISE_GAUSSIAN_DATASET/train_volumes_paths.txt'
+# testing_txt_path='./BLUE_NOISE_GAUSSIAN_DATASET/test_volumes_paths.txt'
+generate_dataset(dataset_folder,
+                 mask_dataset_training_path='',
+                 mask_dataset_testing_path='',
+                 training_txt_path='',
+                 testing_txt_path='',
+                 desired_transmittance=0.25,
+                 sigma=150,
+                 plot_mask=True)

@@ -5,21 +5,22 @@ Created on Wed Jul  6 13:30:43 2022
 
 @author: diego
 """
+import os
+from Generate_shifting_blue_noise import generate_shifting_blue_noise,generate_binary_blue_noise_mask
 from scipy.io import loadmat
 from glob import glob
 import numpy as np
-import cv2
 import random
 import pickle
 import h5py
 
-sub_sampling_percentage=25
+sub_sampling_percentage=75
 
 #'blue_noise_subsampling'
 #'raster_subsampling'
 #'random_subsampling'
 
-subsampling_method='random_subsampling'
+subsampling_method='blue_noise_subsampling'
 
 def read_data(path):
     data = loadmat(path)
@@ -35,27 +36,9 @@ def read_data(path):
 ########################################################################################
 
 def create_blue_noise_mask_1(expected_dims,subsampling_percentage):
-    blue_noise_cube1 = np.transpose(np.load('blue_noise_cubes/bluenoisecube.npy'), (2,1,0))
-    blue_noise_cube2 = np.transpose(np.load('blue_noise_cubes/bluenoisecube2.npy'), (2,1,0))
-    blue_noise_cube3 = np.transpose(np.load('blue_noise_cubes/bluenoisecube3.npy'), (2,1,0))
-    blue_noise_cube4 = np.transpose(np.load('blue_noise_cubes/bluenoisecube4.npy'), (2,1,0))
-    concat1=np.concatenate((blue_noise_cube1,blue_noise_cube2),axis=0)
-    concat2=  np.concatenate((blue_noise_cube3,blue_noise_cube4),axis=0)
-    concat3=np.concatenate((concat1,concat2,concat1,concat2),axis=1)
-    
-    blue_noise_mask = concat3[0:expected_dims[0],0:expected_dims[1],0:expected_dims[2]]
-    
-    blue_noise_mask=blue_noise_mask/np.max(blue_noise_mask)
-    
-    binary_blue_noise_mask = blue_noise_mask > subsampling_percentage
-    binary_blue_noise_mask = binary_blue_noise_mask*1
-    total = binary_blue_noise_mask.sum()
-    
-    
-    missing_data=(100-(total*100)/(blue_noise_mask.shape[0]*blue_noise_mask.shape[1]*blue_noise_mask.shape[2]))
-    print(missing_data)
-    
-    return blue_noise_mask,binary_blue_noise_mask
+    blue_noise=generate_shifting_blue_noise(expected_dims)
+    mask=generate_binary_blue_noise_mask(blue_noise,subsampling_percentage)
+    return mask
 ########################################################################################
 #######################
 #######################
@@ -243,46 +226,13 @@ def extract_sub_volumes(volume,name,h5_file):
     # print(index)
     
     
-########################################################################################
-#######################
-#######################
-#######################                   SELECT SUBSAMPLING METHOD
-#######################
-#######################
-########################################################################################
 
-
-
-if(subsampling_method=='raster_subsampling'):
-    print('raster scan...')
-    mask = generate_mask(percentage=sub_sampling_percentage/100,volume_x=1000,volume_y=512,volume_z=100)
-elif(subsampling_method=='blue_noise_subsampling'):
-    blue_noise_cube = np.load('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/3D_autoencoder_pytorch/bluenoisecube.npy')
-    print('ble noise small...')
-    blue_noise_mask,mask= create_blue_noise_mask(expected_dims=(512,1000,100),
-                                                                   kernel=blue_noise_cube,
-                                                                   subsampling_percentage=sub_sampling_percentage/100)
-elif(subsampling_method== 'random_subsampling'):
-    print('random scan...')
-    mask=create_random_mask(sub_sampling_percentage/100,expected_dims=(512,1000,100))
-
-elif(subsampling_method=='blue_noise_subsampling_1'):
-    print('blue nosise BIG...')    
-    blue_noise_mask,mask=create_blue_noise_mask_1((512,1000,100),sub_sampling_percentage/100)
 # original_volume =load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_75/test/Farsiu_Ophthalmology_2013_AMD_Subject_1048.pkl')
 # subsampled_image = np.multiply(mask,original_volume).astype(np.uint8)
     
     
     
-########################################################################################
-#######################
-#######################
-#######################                   SAVE MASK
-#######################
-#######################
-########################################################################################   
 
-save_obj(mask,'mask_random25'+str(sub_sampling_percentage))
 
 def get_volume_paths():
     amd_eyes_paths = glob("../oct_original_volumes/AMD/*.mat", recursive = True)
@@ -299,24 +249,59 @@ def get_volume_paths():
 #######################
 ########################################################################################
 
-def generate_dataset(mask):
-    all_paths=get_volume_paths()
+def generate_dataset(subsampling_method,
+                     dataset_folder,
+                     training_txt_path,
+                     testing_txt_path,
+                     mask_path):
+    if not os.path.exists(dataset_folder):
+        os.makedirs(dataset_folder)
+        
+    if(mask_path):
+        mask=load_obj(mask_path)
+    else:
+        if(subsampling_method=='raster_subsampling'):
+            print('raster scan...')
+            mask = generate_mask(percentage=sub_sampling_percentage/100,volume_x=1000,volume_y=512,volume_z=100)
+        elif(subsampling_method== 'random_subsampling'):
+            print('random scan...')
+            mask=create_random_mask(sub_sampling_percentage/100,expected_dims=(512,1000,100))
+
+        elif(subsampling_method=='blue_noise_subsampling'):
+            print('blue nosise BIG...')    
+            mask=create_blue_noise_mask_1(expected_dims=(512,1000,100),subsampling_percentage=sub_sampling_percentage/100)
+        
+        save_obj(mask,'./'+dataset_folder+'/mask'+str(sub_sampling_percentage))
     
-    training_total= int(np.floor(len(all_paths)*0.8))
     
-    train_volumes_paths=all_paths[0:training_total]
-    test_volumes_paths=all_paths[training_total:]
+    if(training_txt_path and testing_txt_path):
+        with open(training_txt_path) as f:
+            lines = f.readlines()
+        train_volumes_paths=lines
+        with open(testing_txt_path) as f:
+            lines = f.readlines()
+        test_volumes_paths=lines
+    else:
+        all_paths=get_volume_paths()
+        training_total= int(np.floor(len(all_paths)*0.8))
+        
+        train_volumes_paths=all_paths[0:training_total]
+        test_volumes_paths=all_paths[training_total:]
+        with open('./'+dataset_folder+'/train_volumes_paths.txt', 'w') as f:
+            f.write('\n'.join(train_volumes_paths))
+        with open('./'+dataset_folder+'/test_volumes_paths.txt', 'w') as f:
+            f.write('\n'.join(test_volumes_paths))
+            
+            
+    
     
     
     volume_number=0
-    subsampled_volumes_dataset_train = h5py.File('training_random25_subsampled_volumes.h5', 'w')
-    volumes_dataset_train = h5py.File('training_random25_ground_truth.h5', 'w')
-    
-    with open('train_volumes_paths_random25.txt', 'w') as f:
-        f.write('\n'.join(train_volumes_paths))
+    subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_subsampled_volumes.h5', 'w')
+    volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_ground_truth.h5', 'w')
         
-    for volume_path in train_volumes_paths:
-
+    for volume_path in train_volumes_paths[0:2]:
+        volume_path=volume_path.strip('\n')
         print(volume_path)
         try: 
             volume = read_data(volume_path)
@@ -344,16 +329,14 @@ def generate_dataset(mask):
     
     
     volume_number=0
-    subsampled_volumes_dataset_test = h5py.File('testing_random25_subsampled_volumes.h5', 'w')
-    volumes_dataset_test = h5py.File('testing_random25_ground_truth.h5', 'w')
-    
-    with open('test_volumes_paths_random25.txt', 'w') as f:
-        f.write('\n'.join(test_volumes_paths))
+    subsampled_volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_random25_subsampled_volumes.h5', 'w')
+    volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_random25_ground_truth.h5', 'w')
         
         
-    for volume_path in test_volumes_paths:
+    for volume_path in test_volumes_paths[0:2]:
             
             try:
+                volume_path=volume_path.strip('\n')
                 print(volume_path)
         
                 volume = read_data(volume_path)
@@ -377,8 +360,16 @@ def generate_dataset(mask):
             
     subsampled_volumes_dataset_test.close()  
     volumes_dataset_test.close()
-        
-generate_dataset(mask)   
+
+dataset_folder='TEST_DATASET_FIXED_MASK'
+# training_txt_path='./TEST_DATASET_FIXED_MASK/train_volumes_paths.txt'
+# testing_txt_path='./TEST_DATASET_FIXED_MASK/test_volumes_paths.txt'
+# mask_path='./TEST_DATASET_FIXED_MASK/mask75.pkl'
+generate_dataset(subsampling_method,
+                 dataset_folder,
+                 training_txt_path='',
+                 testing_txt_path='',
+                 mask_path='')   
 
 # all_paths=get_volume_paths()
 # for volume_path in all_paths:
