@@ -357,4 +357,4 @@ def generate_dataset(dataset_folder):
     volumes_dataset_test.close()
     masks_dataset_test.close()
     
-generate_dataset('GAUSSIAN_DATASET')  
+generate_dataset('BLUE_NOISE_GAUSSIAN_DATASET')  
