@@ -5,7 +5,7 @@ Created on Thu Jul 28 10:04:24 2022
 
 @author: diego
 """
-
+from Generate_shifting_blue_noise import generate_shifting_blue_noise,generate_binary_blue_noise_mask
 from scipy.io import loadmat
 from glob import glob
 import numpy as np
@@ -128,13 +128,13 @@ def get_volume_paths():
 ########################################################################################
 #######################
 #######################
-#######################                   GAUSSIAN BLUE NOISE MASK
+#######################                   GAUSSIAN RANDOM NOISE MASK
 #######################
 #######################
 ########################################################################################  
 
 
-def generate_gaussian_blue_noise_mask(original_volume,desired_transmittance,sigma,plot_mask):
+def generate_gaussian_random_noise_mask(original_volume,desired_transmittance,sigma,plot_mask):
     def gaussian(x, a, x0, sigma):
         return a*np.exp(-(x-x0)**2/(2*sigma**2))
     
@@ -147,40 +147,7 @@ def generate_gaussian_blue_noise_mask(original_volume,desired_transmittance,sigm
         else:
             random_mask=np.ones(expected_dims)
         return random_mask
-    
-    def create_blue_noise_mask_1(expected_dims,subsampling_percentage):
-        blue_noise_cube1 = np.transpose(np.load('blue_noise_cubes/bluenoisecube.npy'), (2,1,0))
-        blue_noise_cube2 = np.transpose(np.load('blue_noise_cubes/bluenoisecube2.npy'), (2,1,0))
-        blue_noise_cube3 = np.transpose(np.load('blue_noise_cubes/bluenoisecube3.npy'), (2,1,0))
-        blue_noise_cube4 = np.transpose(np.load('blue_noise_cubes/bluenoisecube4.npy'), (2,1,0))
-        
-        blue_noise_cube5 = np.transpose(np.load('blue_noise_cubes/bluenoisecube5.npy'), (2,1,0))
-        blue_noise_cube6 = np.transpose(np.load('blue_noise_cubes/bluenoisecube6.npy'), (2,1,0))
-        blue_noise_cube7 = np.transpose(np.load('blue_noise_cubes/bluenoisecube7.npy'), (2,1,0))
-        blue_noise_cube8 = np.transpose(np.load('blue_noise_cubes/bluenoisecube8.npy'), (2,1,0))
-        
-        concat1=np.concatenate((blue_noise_cube1,blue_noise_cube2),axis=0)
-        concat2=np.concatenate((blue_noise_cube3,blue_noise_cube4),axis=0)
-        
-        concat3=np.concatenate((blue_noise_cube5,blue_noise_cube6),axis=0)
-        concat4=np.concatenate((blue_noise_cube7,blue_noise_cube8),axis=0)
-        
-        concat5=np.concatenate((concat1,concat2,concat3,concat4),axis=1)
-        
-        blue_noise_mask = concat5[0:expected_dims[0],0:expected_dims[1],0:expected_dims[2]]
-        
-        blue_noise_mask=blue_noise_mask/np.max(blue_noise_mask)
-        
-        binary_blue_noise_mask = blue_noise_mask > subsampling_percentage
-        binary_blue_noise_mask = binary_blue_noise_mask*1
-        total = binary_blue_noise_mask.sum()
-        
-        
-        missing_data=(100-(total*100)/(blue_noise_mask.shape[0]*blue_noise_mask.shape[1]*blue_noise_mask.shape[2]))
-        print('Blue noise missing data: ', missing_data)
-        
-        return blue_noise_mask,binary_blue_noise_mask
-        
+          
      
 
 
@@ -233,6 +200,70 @@ def generate_gaussian_blue_noise_mask(original_volume,desired_transmittance,sigm
         plt.imshow(mask[:,:,11],cmap='gray')
         plt.show() 
     return mask
+
+
+########################################################################################
+#######################
+#######################
+#######################                   GAUSSIAN BLUE NOISE MASK
+#######################
+#######################
+########################################################################################  
+
+
+def generate_gaussian_blue_noise_mask(blue_noise,original_volume,desired_transmittance,sigma,plot_mask):
+    def gaussian(x, a, x0, sigma):
+        return a*np.exp(-(x-x0)**2/(2*sigma**2))   
+
+
+    mean_b_scans=np.mean(original_volume,2)
+    mean_b_scans=mean_b_scans[30:,:].astype(np.uint8)
+
+    means=np.argmax(mean_b_scans,0)
+    #means_smooth=savgol_filter(means,51,1)
+
+
+    # plt.imshow(mean_b_scans,cmap='gray')
+    # plt.plot(means_smooth)
+    # plt.show()
+
+
+    gaussian_mask=np.ones((512,1000))
+
+    for i in range(vol_dims[1]):
+        for j in range(vol_dims[0]):
+            likelihood=gaussian(j, 1, means[i], sigma)
+            threshold= random.uniform(0, 1)
+            if(threshold>likelihood):
+               gaussian_mask[j,i]=0
+        
+      
+    gaussian_mask = np.repeat(gaussian_mask[None,:], vol_dims[2], axis=0)
+    gaussian_mask=np.transpose(gaussian_mask,(1,2,0))
+
+
+    # plt.imshow(gaussian_mask[:,:,11],cmap='gray')
+    # plt.show() 
+
+
+    gaussian_mask_transmittance=(gaussian_mask.sum())/(vol_dims[0]*vol_dims[1]*vol_dims[2])
+    # print(gaussian_mask_transmittance)
+
+
+    missing_transmitance=desired_transmittance/gaussian_mask_transmittance
+
+
+    mask=generate_binary_blue_noise_mask(blue_noise,subsampling_percentage=1-missing_transmitance)
+
+    mask = np.multiply(gaussian_mask.astype(np.uint8),mask.astype(np.uint8))
+
+    print('Missing Data: ', 100-(mask.sum()*100)/(vol_dims[0]*vol_dims[1]*vol_dims[2]))
+    if(plot_mask):
+        plt.imshow(mask[:,:,11],cmap='gray')
+        plt.show() 
+    return mask
+
+
 ########################################################################################
 #######################
 #######################
@@ -240,6 +271,7 @@ def generate_gaussian_blue_noise_mask(original_volume,desired_transmittance,sigm
 #######################
 #######################
 ########################################################################################
+blue_noise=generate_shifting_blue_noise(expected_dims=vol_dims)
 
 def generate_dataset(dataset_folder):
     all_paths=get_volume_paths()
@@ -262,7 +294,7 @@ def generate_dataset(dataset_folder):
         print(volume_path)
         try: 
             volume = read_data(volume_path)
-            mask=generate_gaussian_blue_noise_mask(original_volume=volume,desired_transmittance=0.25,sigma=150,plot_mask=False)
+            mask=generate_gaussian_blue_noise_mask(blue_noise,original_volume=volume,desired_transmittance=0.25,sigma=150,plot_mask=True)
             name=volume_path.split('/')[-1].split('.')[0]
             masks_dataset_train.create_dataset(name, data=mask)
             subsampled_image = np.multiply(mask,volume).astype(np.uint8)
@@ -301,7 +333,7 @@ def generate_dataset(dataset_folder):
                 print(volume_path)
         
                 volume = read_data(volume_path)
-                mask=generate_gaussian_blue_noise_mask(original_volume=volume,desired_transmittance=0.25,sigma=150,plot_mask=False)
+                mask=generate_gaussian_blue_noise_mask(blue_noise,original_volume=volume,desired_transmittance=0.25,sigma=150,plot_mask=True)
                 name=volume_path.split('/')[-1].split('.')[0]
                 masks_dataset_test.create_dataset(name, data=mask)
                 subsampled_image = np.multiply(mask,volume).astype(np.uint8)
