@@ -20,14 +20,16 @@ from Autoencoder_Architecture import Autoencoder
 bigger_sub_volumes_dim=(512,150,16)
 original_volume_dim=(512,1000,100)
 ngpu=2
-results_dir='MODEL_EVALUATION_GAUSSIAN_RANDOM_75'
-model_path='./GAUSSIAN_RANDOM_75/BEST_MODEL_2.pth.tar'
-mask_path='../GAUSSIAN_DATASET/masks_dataset_test.h5'
-masks_dataset_path=''
-txt_test_path='../GAUSSIAN_DATASET/test_volumes_paths.txt'
+results_dir='MODEL_EVALUATION_BLUE_NOISE_GAUSSIAN_DATASET_SIGMA_150'
+model_path='./GAUSSIAN_BLUE_NOISE_75_SIGMA_150/BEST_MODEL_4.pth.tar'
+mask_path=''
+masks_dataset_path='../BLUE_NOISE_GAUSSIAN_DATASET_SIGMA_150/masks_dataset_test.h5'
+masks_dataset_path_train='../BLUE_NOISE_GAUSSIAN_DATASET_SIGMA_150/masks_dataset_train.h5'
+txt_test_path='../BLUE_NOISE_GAUSSIAN_DATASET_SIGMA_150/test_volumes_paths.txt'
 original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 comparison_size=100
 compare_with_roi=True
+
 
 # Decide which device we want to run on
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
@@ -365,6 +367,12 @@ def evaluate_model(mask_path,
                 vol_name=test_volume_path.split('/')[-1].split('.')[0]
     
                 mask=np.array(f_gt.get(vol_name))
+                if(mask.shape==()):
+                    f_gt = h5py.File(masks_dataset_path_train, 'r')
+        
+                    vol_name=test_volume_path.split('/')[-1].split('.')[0]
+        
+                    mask=np.array(f_gt.get(vol_name))
         
             sub_sampled_volume=np.multiply(mask,original_volume).astype(np.uint8)
             
