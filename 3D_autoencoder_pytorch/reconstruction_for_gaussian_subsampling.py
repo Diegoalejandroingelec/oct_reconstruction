@@ -41,7 +41,7 @@ model_path='BEST_MODEL_random_sampling.pth'
 mask_path='../RANDOM_SAMPLING_DATASET/mask_random75.pkl'
 txt_test_path='../RANDOM_GAUSSIAN_DATASET_SIGMA_150/test_volumes_paths.txt'
 original_volumes_path='../OCT_ORIGINAL_VOLUMES/'
-
+comparison_size=100
 
 def load_obj(name):
     with open( name, 'rb') as f:
@@ -50,19 +50,17 @@ def load_obj(name):
 # Decide which device we want to run on
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
-def get_window_for_comparison(original_volume):
-    comparison_size=100
-    window_size=(512,1000,100)
+def get_window_for_comparison(original_volume,window_size,comparison_size):
     mean_b_scans=np.mean(original_volume,2)
     mean_b_scans=mean_b_scans[30:,:].astype(np.uint8)
 
-    means=np.argmax(mean_b_scans,0)
+    means=np.argmax(mean_b_scans,0)+30
     window_mean= np.mean(means).astype(int)
     window = np.zeros(window_size)
     upper_limit=window_mean-comparison_size if window_mean-comparison_size>=0 else 0
     lower_limit=window_mean+comparison_size if window_mean-comparison_size<=window_size[0] else window_size[0]
     window[upper_limit:lower_limit,:,:]=np.ones((lower_limit-upper_limit,window_size[1],window_size[2]))
-    return window
+    return window,upper_limit,lower_limit
 
 
 class Autoencoder(nn.Module):
