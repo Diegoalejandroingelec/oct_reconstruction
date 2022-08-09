@@ -40,7 +40,7 @@ results_dir='MODEL_EVALUATION_RANDOM_SUBSAMPLING_75'
 model_path='BEST_MODEL_random_sampling.pth'
 mask_path='../RANDOM_SAMPLING_DATASET/mask_random75.pkl'
 txt_test_path='../RANDOM_GAUSSIAN_DATASET_SIGMA_150/test_volumes_paths.txt'
-original_volumes_path='../OCT_ORIGINAL_VOLUMES/'
+original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 
 
 def load_obj(name):
@@ -69,7 +69,7 @@ class Autoencoder(nn.Module):
     def __init__(self,ngpu):
         super(Autoencoder,self).__init__()
 
-        layers = [32,32,32,32]
+        layers = [32,32,16,16]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
@@ -356,7 +356,7 @@ class Reconstruction_model(nn.Module):
     def __init__(self,ngpu):
         super(Reconstruction_model,self).__init__()
 
-        layers = [32,32,32,32]
+        layers = [32,32,16,16]
         self.ngpu = ngpu
         
         self.input = nn.Sequential(
@@ -607,8 +607,9 @@ def evaluate_model(mask_path,
                 make_video(comparative_volume,
                            os.path.join(results_dir, f'comparative_reconstruction_{i}'))
         except Exception as e:
+            print('Dimension ERROR...')            
             print(e)
-            print('Dimension ERROR...')
+
             
     
     print('PSNR AVG: ',np.mean(PSNR_list))
