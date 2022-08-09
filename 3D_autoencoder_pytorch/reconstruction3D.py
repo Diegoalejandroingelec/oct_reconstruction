@@ -327,6 +327,8 @@ def plot_error(data,name):
     fig.savefig(name, dpi=200, facecolor=bg_color)
 
 def evaluate_model(mask_path,
+                   masks_dataset_path,
+                   masks_dataset_path_train,
                    txt_test_path,
                    original_volumes_path,
                    original_volume_dim,
@@ -470,6 +472,8 @@ def evaluate_model(mask_path,
 
 reconstruction_model=initialize_reconstruction_model(model_path)
 evaluate_model(mask_path,
+               masks_dataset_path,
+               masks_dataset_path_train,
                txt_test_path,
                original_volumes_path,
                original_volume_dim,
