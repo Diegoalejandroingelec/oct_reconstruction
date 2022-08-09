@@ -13,3 +13,4 @@
 /GAN/advanced_GAN/samples
 __pycache__/
 *.tar
+*.out
