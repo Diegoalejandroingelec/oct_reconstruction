@@ -85,9 +85,42 @@ def get_risley_scan_pattern(PRF,tf,w,phi,n,risley_angle,expected_dims,shift_step
     # cv2.imshow('Risley_pattern_2D',mask.astype(np.uint8)*255)
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
-    print('AMOUNT OF CAPTURED DATA: ',mask.sum())
+    # print('AMOUNT OF CAPTURED DATA: ',mask.sum())
     return mask
+def get_risley_3D_mask(expected_dims,
+                       PRF,
+                       tf,
+                       w,
+                       phi,
+                       risley_angle,
+                       shift_step,
+                       band_width,
+                       line_width,
+                       start_wavelength):
     
+
+    
+    mask_risley=np.zeros(expected_dims)
+    for i in range(1,expected_dims[0]+1):
+        # print(i*line_width+start_wavelength)
+        
+        #Risley optical index fused silica
+        n=risley_optical_index_fused_silica(i*line_width+start_wavelength)
+        #print('Risley optical index fused silica ',n)
+        mask_2D=get_risley_scan_pattern(PRF,
+                                tf,
+                                w,
+                                phi,
+                                n,
+                                risley_angle,
+                                expected_dims,
+                                shift_step)
+    
+        mask_risley[i-1,:,:]=mask_2D
+    missing_data=100-((mask_risley.sum()*100)/(expected_dims[0]*expected_dims[1]*expected_dims[2]))
+    print('MISSING DATA: ',missing_data)
+    return mask_risley.astype(np.uint8)
+
 expected_dims=(512,1000,100) 
 #Laser Pulse Rate
 PRF=200000
@@ -106,24 +139,16 @@ band_width=176
 line_width=band_width/expected_dims[0]
 start_wavelength=962
 
-mask_risley=np.zeros(expected_dims)
-for i in range(1,expected_dims[0]+1):
-    # print(i*line_width+start_wavelength)
-    
-    #Risley optical index fused silica
-    n=risley_optical_index_fused_silica(i*line_width+start_wavelength)
-    print('Risley optical index fused silica ',n)
-    mask_2D=get_risley_scan_pattern(PRF,
-                            tf,
-                            w,
-                            phi,
-                            n,
-                            risley_angle,
-                            expected_dims,
-                            shift_step)
-
-    mask_risley[i-1,:,:]=mask_2D
-
+mask_risley=get_risley_3D_mask(expected_dims,
+                       PRF,
+                       tf,
+                       w,
+                       phi,
+                       risley_angle,
+                       shift_step,
+                       band_width,
+                       line_width,
+                       start_wavelength)
 
 def read_data(path):
     data = loadmat(path)
@@ -134,7 +159,6 @@ volume = read_data('/home/diego/Documents/Delaware/tensorflow/training_3D_images
 
 plt.imshow(volume[:,:,50], cmap='gray')
 plt.show()
-
 
 sub=np.multiply(mask_risley,volume).astype(np.uint8)
 
