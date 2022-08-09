@@ -14,13 +14,13 @@ import random
 import pickle
 import h5py
 
-sub_sampling_percentage=75
+sub_sampling_percentage=100
 
 #'blue_noise_subsampling'
 #'raster_subsampling'
 #'random_subsampling'
 
-subsampling_method='blue_noise_subsampling'
+subsampling_method='raster_subsampling'
 
 def read_data(path):
     data = loadmat(path)
@@ -145,8 +145,12 @@ def generate_mask(percentage,volume_x,volume_y,volume_z):
             
     volume_mask=np.array(volume_mask,dtype='uint8')
             
-    volume_mask= np.transpose(volume_mask,(1,2,0)) 
-        
+    volume_mask= np.transpose(volume_mask,(1,2,0))
+
+    total = volume_mask.sum() 
+    missing_data=(100-(total*100)/(volume_mask.shape[0]*volume_mask.shape[1]*volume_mask.shape[2]))
+    print(missing_data)
+
     return volume_mask
 ########################################################################################
 #######################
@@ -300,7 +304,7 @@ def generate_dataset(subsampling_method,
     subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_subsampled_volumes.h5', 'w')
     volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_ground_truth.h5', 'w')
         
-    for volume_path in train_volumes_paths[0:2]:
+    for volume_path in train_volumes_paths:
         volume_path=volume_path.strip('\n')
         print(volume_path)
         try: 
@@ -333,7 +337,7 @@ def generate_dataset(subsampling_method,
     volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_random25_ground_truth.h5', 'w')
         
         
-    for volume_path in test_volumes_paths[0:2]:
+    for volume_path in test_volumes_paths:
             
             try:
                 volume_path=volume_path.strip('\n')
@@ -361,7 +365,7 @@ def generate_dataset(subsampling_method,
     subsampled_volumes_dataset_test.close()  
     volumes_dataset_test.close()
 
-dataset_folder='TEST_DATASET_FIXED_MASK'
+dataset_folder='RASTER_SCAN_75'
 # training_txt_path='./TEST_DATASET_FIXED_MASK/train_volumes_paths.txt'
 # testing_txt_path='./TEST_DATASET_FIXED_MASK/test_volumes_paths.txt'
 # mask_path='./TEST_DATASET_FIXED_MASK/mask75.pkl'
