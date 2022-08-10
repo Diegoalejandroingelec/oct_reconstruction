@@ -13,7 +13,7 @@ import random
 import pickle
 import h5py
 import os
-
+from BM3D_denoiser import BM3D_denoiser
 import matplotlib.pyplot as plt
 
 from scipy.signal import savgol_filter
@@ -273,7 +273,8 @@ def generate_gaussian_blue_noise_mask(blue_noise,original_volume,desired_transmi
 ########################################################################################
 blue_noise=generate_shifting_blue_noise(expected_dims=vol_dims)
 
-def generate_dataset(dataset_folder,
+def generate_dataset(generate_ground_truth_denoised,
+                     dataset_folder,
                      mask_dataset_training_path,
                      mask_dataset_testing_path,
                      training_txt_path,
@@ -341,7 +342,15 @@ def generate_dataset(dataset_folder,
             
             
             name='original_train_vol_'+str(volume_number)
-            extract_sub_volumes(volume,name,volumes_dataset_train)
+            
+            ################# BM3D #############################
+            if(generate_ground_truth_denoised):
+                denoised_volume=BM3D_denoiser(volume,sigma_psd=0.08)
+                plt.imshow(denoised_volume[:,:,11],cmap='gray')
+                plt.show()
+                extract_sub_volumes(denoised_volume,name,volumes_dataset_train)
+            else:
+                extract_sub_volumes(volume,name,volumes_dataset_train)
                 
             name='subsampled_train_vol_'+str(volume_number)
             extract_sub_volumes(subsampled_image,name,subsampled_volumes_dataset_train)
@@ -397,7 +406,13 @@ def generate_dataset(dataset_folder,
                 subsampled_image = np.multiply(mask,volume).astype(np.uint8)
                 
                 name='original_test_vol_'+str(volume_number)
-                extract_sub_volumes(volume,name,volumes_dataset_test)
+                ################# BM3D #############################
+                if(generate_ground_truth_denoised):
+                    denoised_volume=BM3D_denoiser(volume,sigma_psd=0.08)
+                    extract_sub_volumes(denoised_volume,name,volumes_dataset_test)
+                else:
+                    extract_sub_volumes(volume,name,volumes_dataset_test)
+
                 
                 name='subsampled_test_vol_'+str(volume_number)
                 extract_sub_volumes(subsampled_image,name,subsampled_volumes_dataset_test)
@@ -417,15 +432,17 @@ def generate_dataset(dataset_folder,
 
 
 dataset_folder='BLUE_NOISE_GAUSSIAN_DATASET'
+generate_ground_truth_denoised=True
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
 # training_txt_path='./BLUE_NOISE_GAUSSIAN_DATASET/train_volumes_paths.txt'
 # testing_txt_path='./BLUE_NOISE_GAUSSIAN_DATASET/test_volumes_paths.txt'
-generate_dataset(dataset_folder,
+generate_dataset(generate_ground_truth_denoised,
+                 dataset_folder,
                  mask_dataset_training_path='',
                  mask_dataset_testing_path='',
                  training_txt_path='',
                  testing_txt_path='',
-                 desired_transmittance=0.25,
-                 sigma=150,
+                 desired_transmittance=0.30,
+                 sigma=200,
                  plot_mask=True)

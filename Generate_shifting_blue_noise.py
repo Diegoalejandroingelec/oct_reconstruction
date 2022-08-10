@@ -12,30 +12,9 @@ import matplotlib.pyplot as plt
 def generate_shifting_blue_noise(expected_dims):
     
     blue_noise_slice = np.load('blue_noise_cubes/bluenoise1024.npy')
-    # blue_noise_cube1 = np.transpose(np.load('blue_noise_cubes/bluenoisecube.npy'), (2,1,0))
-    # blue_noise_cube2 = np.transpose(np.load('blue_noise_cubes/bluenoisecube2.npy'), (2,1,0))
-    # blue_noise_cube3 = np.transpose(np.load('blue_noise_cubes/bluenoisecube3.npy'), (2,1,0))
-    # blue_noise_cube4 = np.transpose(np.load('blue_noise_cubes/bluenoisecube4.npy'), (2,1,0))
-    
-    # blue_noise_cube5 = np.transpose(np.load('blue_noise_cubes/bluenoisecube5.npy'), (2,1,0))
-    # blue_noise_cube6 = np.transpose(np.load('blue_noise_cubes/bluenoisecube6.npy'), (2,1,0))
-    # blue_noise_cube7 = np.transpose(np.load('blue_noise_cubes/bluenoisecube7.npy'), (2,1,0))
-    # blue_noise_cube8 = np.transpose(np.load('blue_noise_cubes/bluenoisecube8.npy'), (2,1,0))
-    
-    # concat1=np.concatenate((blue_noise_cube1,blue_noise_cube2),axis=0)
-    # concat2=np.concatenate((blue_noise_cube3,blue_noise_cube4),axis=0)
-    
-    # concat3=np.concatenate((blue_noise_cube5,blue_noise_cube6),axis=0)
-    # concat4=np.concatenate((blue_noise_cube7,blue_noise_cube8),axis=0)
-    
-    # concat5=np.concatenate((concat1,concat2,concat3,concat4),axis=1)
-    
-    # concat_crop = concat5[0:expected_dims[0],0:expected_dims[1],0:expected_dims[2]]
-    
-    # blue_noise_slice=concat_crop[:,:,0]
-    matrix=blue_noise_slice[0:expected_dims[0],0:expected_dims[1]]
+    # matrix=blue_noise_slice[0:expected_dims[0],0:expected_dims[1]]
     blue_noise_mask=np.zeros(expected_dims)
-    blue_noise_mask[:,:,0]=matrix
+    #blue_noise_mask[:,:,0]=matrix
     def matrix_slice(matrix,direction,pixels,expected_dims):
         new_slice=np.zeros((expected_dims[0],expected_dims[1]))
         if(direction==1):##down shift
@@ -72,23 +51,25 @@ def generate_shifting_blue_noise(expected_dims):
             
         return new_slice
     
-    direction_count=1
-    pixel_count=1
+    # direction_count=1
+    # pixel_count=1
     
     for n in range(expected_dims[2]-1):
-        new_slice=matrix_slice(matrix=matrix,
-                               direction=direction_count,
-                               pixels=pixel_count,
-                               expected_dims=expected_dims)
+        # new_slice=matrix_slice(matrix=matrix,
+        #                        direction=direction_count,
+        #                        pixels=pixel_count,
+        #                        expected_dims=expected_dims)
         
-        direction_count+=1
-        if(direction_count>4):
-           pixel_count+=1
-           direction_count=1
+        # direction_count+=1
+        # if(direction_count>4):
+        #    pixel_count+=1
+        #    direction_count=1
            
-        plt.imshow(new_slice,cmap='gray')
-        plt.show()
-        blue_noise_mask[:,:,n+1]=new_slice
+
+        new_slice=blue_noise_slice[n:expected_dims[0]+n,0:expected_dims[1]]
+        # plt.imshow(new_slice,cmap='gray')
+        # plt.show()
+        blue_noise_mask[:,:,n]=new_slice
         
     return blue_noise_mask
         

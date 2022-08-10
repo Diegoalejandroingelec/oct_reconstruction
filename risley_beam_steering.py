@@ -77,13 +77,15 @@ def get_risley_scan_pattern(PRF,tf,w,phi,n,risley_angle,expected_dims,shift_step
     dft_shift = np.fft.fftshift(dft)
     
     magnitude_spectrum = 20*np.log(cv2.magnitude(dft_shift[:,:,0],dft_shift[:,:,1]))
-
+    # cv2.imshow('Risley_pattern_2D',risley_pattern_2D.astype(np.uint8)*255)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
     # plt.figure(num=None, figsize=(8, 6), dpi=80)
     # plt.imshow(magnitude_spectrum, cmap='gray');
     # plt.show()
 #    cv2.imshow('FFT Risley_pattern_2D',magnitude_spectrum)
-    # cv2.imshow('Risley_pattern_2D',mask.astype(np.uint8)*255)
-    # cv2.waitKey(0)
+    # cv2.imshow('Risley_pattern_2D_shifted',mask.astype(np.uint8)*255)
+    # cv2.waitKey(10000)
     # cv2.destroyAllWindows()
     # print('AMOUNT OF CAPTURED DATA: ',mask.sum())
     return mask
@@ -149,7 +151,10 @@ mask_risley=get_risley_3D_mask(expected_dims,
                        band_width,
                        line_width,
                        start_wavelength)
-
+for n in range(100):
+    cv2.imshow('Risley_pattern_2D',mask_risley[:,:,n].astype(np.uint8)*255)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 def read_data(path):
     data = loadmat(path)
     oct_volume = data['images']
@@ -165,3 +170,8 @@ sub=np.multiply(mask_risley,volume).astype(np.uint8)
 for i in range(100):
     plt.imshow(sub[:,:,i], cmap='gray')
     plt.show()
+    
+    
+    
+    
+    
