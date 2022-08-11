@@ -39,6 +39,7 @@ device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else 
 
 
 def BM3D_denoiser(volume,sigma_psd=0.1):
+    print('Denoising volume...')
     start = time.process_time()
     noisy_img=  img_as_float(volume)
     BM3D_denoised=bm3d.bm3d(noisy_img,
