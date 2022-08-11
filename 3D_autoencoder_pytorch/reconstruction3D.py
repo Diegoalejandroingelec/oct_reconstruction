@@ -20,12 +20,12 @@ from Autoencoder_Architecture import Autoencoder
 bigger_sub_volumes_dim=(512,150,16)
 original_volume_dim=(512,1000,100)
 ngpu=2
-results_dir='MODEL_EVALUATION_BLUE_NOISE_GAUSSIAN_DATASET_SIGMA_150'
-model_path='./GAUSSIAN_BLUE_NOISE_75_SIGMA_150/BEST_MODEL_4.pth.tar'
-mask_path=''
-masks_dataset_path='../BLUE_NOISE_GAUSSIAN_DATASET_SIGMA_150/masks_dataset_test.h5'
-masks_dataset_path_train='../BLUE_NOISE_GAUSSIAN_DATASET_SIGMA_150/masks_dataset_train.h5'
-txt_test_path='../BLUE_NOISE_GAUSSIAN_DATASET_SIGMA_150/test_volumes_paths.txt'
+results_dir='MODEL_EVALUATION_BLUE_NOISE_SCAN_75'
+model_path='./BLUE_NOISE_SCAN_75/BEST_MODEL_3.pth.tar'
+mask_path='../BLUE_NOISE_SCAN_75_DATASET/mask75.pkl'
+masks_dataset_path=''
+masks_dataset_path_train=''
+txt_test_path='../RANDOM_GAUSSIAN_DATASET_SIGMA_150/test_volumes_paths.txt'
 original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 comparison_size=100
 compare_with_roi=True
@@ -427,7 +427,18 @@ def evaluate_model(mask_path,
                 total_SSIM_list.append(total_SSIM)
             
             if(i%10==0):
+                print('PSNR AVG: ',np.mean(PSNR_list))
+                print('RMSE AVG: ',np.mean(RMSE_list))
+                print('MAE AVG: ',np.mean(MAE_list))
+                print('SSIM AVG: ',np.mean(SSIM_list))
+    
+    
+
                 if(compare_with_roi):
+                    print('Total PSNR AVG: ',np.mean(total_PSNR_list))
+                    print('Total RMSE AVG: ',np.mean(total_RMSE_list))
+                    print('Total MAE AVG: ',np.mean(total_MAE_list))
+                    print('Total SSIM AVG: ',np.mean(total_SSIM_list)) 
                     print('Saving images... ')
                     
                     mark_ROI(upper_limit,lower_limit,

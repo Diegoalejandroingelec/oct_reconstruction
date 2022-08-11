@@ -98,11 +98,12 @@ dataloader = torch.utils.data.DataLoader(h5_dataset,
                                          shuffle=True,
                                          num_workers=config_autoencoder.workers)
 
-# train_batch = next(iter(dataloader))
+#train_batch = next(iter(dataloader))
 
 # plt.imshow(np.squeeze(np.array(train_batch[1][0,:,:,0].cpu())), cmap="gray")
+# plt.show()
 # plt.imshow(np.squeeze(np.array(train_batch[0][0,:,:,0].cpu())), cmap="gray")
-
+# plt.show()
 
 h5_dataset_test=HDF5Dataset(config_autoencoder.subsampled_volumes_path_test,
                             config_autoencoder.original_volumes_path_test,
@@ -117,8 +118,9 @@ dataloader_test = torch.utils.data.DataLoader(h5_dataset_test,
 # test_batch = next(iter(dataloader_test))
 
 # plt.imshow(np.squeeze(np.array(test_batch[1][0,:,:,0].cpu())), cmap="gray")
+# plt.show()
 # plt.imshow(np.squeeze(np.array(test_batch[0][0,:,:,0].cpu())), cmap="gray")
-
+# plt.show()
 
 
 

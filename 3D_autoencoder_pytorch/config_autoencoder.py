@@ -33,12 +33,12 @@ device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else 
 lr_scheduler_step_size = num_epochs // 2
 lr_scheduler_gamma = 0.1
 
-results_dir='GAUSSIAN_RANDOM_75'
+results_dir='BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_DENOISED'
 resume_model_path=''
 ################TRAINING#################
-subsampled_volumes_path='../GAUSSIAN_DATASET/training_subsampled_volumes.h5'
-original_volumes_path='../GAUSSIAN_DATASET/training_ground_truth.h5'
+subsampled_volumes_path='../BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_DENOISED_DATASET/training_subsampled_volumes.h5'
+original_volumes_path='../BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_DENOISED_DATASET/training_ground_truth.h5'
 
 ################TESTING#################
-subsampled_volumes_path_test='../GAUSSIAN_DATASET/testing_subsampled_volumes.h5'
-original_volumes_path_test='../GAUSSIAN_DATASET/testing_ground_truth.h5'
+subsampled_volumes_path_test='../BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_DENOISED_DATASET/testing_subsampled_volumes.h5'
+original_volumes_path_test='../BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_DENOISED_DATASET/testing_ground_truth.h5'
