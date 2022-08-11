@@ -16,6 +16,9 @@ from skimage.metrics import structural_similarity as ssim
 import cv2
 import matplotlib.pyplot as plt
 from Autoencoder_Architecture import Autoencoder
+import bm3d
+from skimage import img_as_float
+import time
 
 bigger_sub_volumes_dim=(512,150,16)
 original_volume_dim=(512,1000,100)
@@ -29,10 +32,21 @@ txt_test_path='../RANDOM_GAUSSIAN_DATASET_SIGMA_150/test_volumes_paths.txt'
 original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 comparison_size=100
 compare_with_roi=True
-
+denoised_ground_truth_for_comparison=True
 
 # Decide which device we want to run on
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
+
+
+def BM3D_denoiser(volume,sigma_psd=0.1):
+    start = time.process_time()
+    noisy_img=  img_as_float(volume)
+    BM3D_denoised=bm3d.bm3d(noisy_img,
+                            sigma_psd,
+                            stage_arg=bm3d.BM3DStages.HARD_THRESHOLDING)
+    
+    print('TIME ELAPSED FOR DENOISING VOLUME:', time.process_time() - start, 's')
+    return (BM3D_denoised*255).astype(np.uint8)
 
 def load_obj(name):
     with open( name, 'rb') as f:
@@ -391,13 +405,23 @@ def evaluate_model(mask_path,
             mask_blue_noise_prima= (~mask.astype(bool)).astype(int)
     
             bigger_reconstruction=np.multiply(mask_blue_noise_prima,bigger_reconstruction).astype(np.uint8)
-            bigger_reconstruction=bigger_reconstruction+sub_sampled_volume
+            if(denoised_ground_truth_for_comparison):
+                denoised_original_volume=BM3D_denoiser(original_volume,sigma_psd=0.08)
+                sub_sampled_denoised_original_volume=np.multiply(mask,denoised_original_volume).astype(np.uint8)
+                bigger_reconstruction=bigger_reconstruction+sub_sampled_denoised_original_volume
+            else:
+                bigger_reconstruction=bigger_reconstruction+sub_sampled_volume
             
             
             if(compare_with_roi):
                 print('ROI COMPARISON')
                 window_for_comparison, upper_limit, lower_limit=get_window_for_comparison(original_volume,window_size=original_volume_dim,comparison_size=comparison_size)
-                volume_for_comparison=np.multiply(original_volume,window_for_comparison).astype(np.uint8)
+                if(denoised_ground_truth_for_comparison):
+                    volume_for_comparison=np.multiply(denoised_original_volume,window_for_comparison).astype(np.uint8)
+                    original_volume=denoised_original_volume
+                else:
+                    volume_for_comparison=np.multiply(original_volume,window_for_comparison).astype(np.uint8)
+                
                 reconstruction_for_comparison=np.multiply(bigger_reconstruction,window_for_comparison).astype(np.uint8)
                 print('evaluate metrics on roi')
                 PSNR=compute_PSNR(volume_for_comparison,reconstruction_for_comparison)
