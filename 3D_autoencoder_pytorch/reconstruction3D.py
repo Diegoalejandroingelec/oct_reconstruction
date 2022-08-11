@@ -23,11 +23,11 @@ import time
 bigger_sub_volumes_dim=(512,150,16)
 original_volume_dim=(512,1000,100)
 ngpu=2
-results_dir='MODEL_EVALUATION_BLUE_NOISE_SCAN_75'
-model_path='./BLUE_NOISE_SCAN_75/BEST_MODEL_3.pth.tar'
-mask_path='../BLUE_NOISE_SCAN_75_DATASET/mask75.pkl'
-masks_dataset_path=''
-masks_dataset_path_train=''
+results_dir='MODEL_EVALUATION_BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_DENOISED'
+model_path='./BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_DENOISED/BEST_MODEL_0.pth.tar'
+mask_path=''
+masks_dataset_path='../BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_DENOISED_DATASET/masks_dataset_test.h5'
+masks_dataset_path_train='../BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_DENOISED_DATASET/masks_dataset_train.h5'
 txt_test_path='../RANDOM_GAUSSIAN_DATASET_SIGMA_150/test_volumes_paths.txt'
 original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 comparison_size=100
