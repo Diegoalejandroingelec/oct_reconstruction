@@ -62,7 +62,6 @@ def get_risley_scan_pattern(PRF,tf,w,phi,n,risley_angle,expected_dims,shift_step
     
     mask=np.zeros((expected_dims[1],expected_dims[2]))
     for shift in range(0,expected_dims[2]+shift_step,shift_step):
-        
         M = np.float32([
         	[1, 0, shift-expected_dims[2]/2],
         	[0, 1, 0]
@@ -72,22 +71,7 @@ def get_risley_scan_pattern(PRF,tf,w,phi,n,risley_angle,expected_dims,shift_step
         
     mask=(mask!=0)*1
 
-    
-    dft = cv2.dft(np.float32(mask*255),flags = cv2.DFT_COMPLEX_OUTPUT)
-    dft_shift = np.fft.fftshift(dft)
-    
-    magnitude_spectrum = 20*np.log(cv2.magnitude(dft_shift[:,:,0],dft_shift[:,:,1]))
-    # cv2.imshow('Risley_pattern_2D',risley_pattern_2D.astype(np.uint8)*255)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    # plt.figure(num=None, figsize=(8, 6), dpi=80)
-    # plt.imshow(magnitude_spectrum, cmap='gray');
-    # plt.show()
-#    cv2.imshow('FFT Risley_pattern_2D',magnitude_spectrum)
-    # cv2.imshow('Risley_pattern_2D_shifted',mask.astype(np.uint8)*255)
-    # cv2.waitKey(10000)
-    # cv2.destroyAllWindows()
-    # print('AMOUNT OF CAPTURED DATA: ',mask.sum())
+    print('TRANSMTTANCE C-SCAN',(mask.sum()*100)/(expected_dims[1]*expected_dims[2]))
     return mask
 def get_risley_3D_mask(expected_dims,
                        PRF,
@@ -109,7 +93,7 @@ def get_risley_3D_mask(expected_dims,
         #Risley optical index fused silica
         n=risley_optical_index_fused_silica(i*line_width+start_wavelength)
         #print('Risley optical index fused silica ',n)
-        mask_2D=get_risley_scan_pattern(PRF,
+        mask_2D=get_risley_scan_pattern(PRF+(i*(512/50)),
                                 tf,
                                 w,
                                 phi,
@@ -117,15 +101,24 @@ def get_risley_3D_mask(expected_dims,
                                 risley_angle,
                                 expected_dims,
                                 shift_step)
-    
+        
         mask_risley[i-1,:,:]=mask_2D
-    missing_data=100-((mask_risley.sum()*100)/(expected_dims[0]*expected_dims[1]*expected_dims[2]))
-    print('MISSING DATA: ',missing_data)
+        
+    # for m in range(512):   
+    #     cv2.imshow('Risley_pattern_2D_shifted_C_Scan',mask_risley[m,:,:].astype(np.uint8)*255)
+        
+    #     # cv2.imshow('Risley_pattern_2D_shifted_B_Scan',mask_risley[:,:,0].astype(np.uint8)*255)
+    #     cv2.waitKey(500)
+    #     cv2.destroyAllWindows()
+    for m in range(100):
+        print('TRANSMTTANCE B-SCAN',(mask_risley[:,:,m].sum()*100)/(expected_dims[0]*expected_dims[1]))
+    total_transmittance=((mask_risley.sum()*100)/(expected_dims[0]*expected_dims[1]*expected_dims[2]))
+    print('TOTAL TRANSMITTANCE: ',total_transmittance)
     return mask_risley.astype(np.uint8)
 
 expected_dims=(512,1000,100) 
 #Laser Pulse Rate
-PRF=200000
+PRF=199900
 #Image Capture Time 0.003
 tf=0.03
 
@@ -136,7 +129,7 @@ phi=w/0.09
 
 risley_angle=1*(np.pi/180)
 
-shift_step=12
+shift_step=17
 band_width=176
 line_width=band_width/expected_dims[0]
 start_wavelength=962
@@ -151,10 +144,12 @@ mask_risley=get_risley_3D_mask(expected_dims,
                        band_width,
                        line_width,
                        start_wavelength)
-for n in range(100):
-    cv2.imshow('Risley_pattern_2D',mask_risley[:,:,n].astype(np.uint8)*255)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+
+
+# for n in range(100):
+#     cv2.imshow('Risley_pattern_2D',mask_risley[:,:,n].astype(np.uint8)*255)
+#     cv2.waitKey(0)
+#     cv2.destroyAllWindows()
 def read_data(path):
     data = loadmat(path)
     oct_volume = data['images']
@@ -166,7 +161,10 @@ plt.imshow(volume[:,:,50], cmap='gray')
 plt.show()
 
 sub=np.multiply(mask_risley,volume).astype(np.uint8)
-
+for i in range(100):
+    plt.imshow(volume[:,:,i], cmap='gray')
+    plt.show()
+    
 for i in range(100):
     plt.imshow(sub[:,:,i], cmap='gray')
     plt.show()
