@@ -437,7 +437,7 @@ def generate_dataset(generate_ground_truth_denoised,
 
 
 
-dataset_folder='MODEL_EVALUATION_BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER_DATASET'
+dataset_folder='BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER_DATASET'
 generate_ground_truth_denoised=True
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
@@ -451,4 +451,4 @@ generate_dataset(generate_ground_truth_denoised,
                  testing_txt_path='',
                  desired_transmittance=0.30,
                  sigma=200,
-                 plot_mask=True)
+                 plot_mask=False)
