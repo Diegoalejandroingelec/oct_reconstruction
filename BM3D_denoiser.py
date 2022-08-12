@@ -27,8 +27,8 @@ def median_filter_3D(volume,threshold,window_size):
     start = time.process_time()
     filtered_volume=np.zeros(volume.shape)
     volume=np.transpose(volume,(2,0,1))
+    print("DENOISING VOLUME...")
     for index,image in enumerate(volume):
-        print(index)
         padding_size=window_size//2
         img_with_padding=cv2.copyMakeBorder(image,
                                             padding_size,
