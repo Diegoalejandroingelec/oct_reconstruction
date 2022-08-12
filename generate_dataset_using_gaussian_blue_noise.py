@@ -13,7 +13,7 @@ import random
 import pickle
 import h5py
 import os
-from BM3D_denoiser import BM3D_denoiser
+from BM3D_denoiser import BM3D_denoiser,median_filter_3D
 import matplotlib.pyplot as plt
 
 from scipy.signal import savgol_filter
@@ -158,9 +158,9 @@ def generate_gaussian_random_noise_mask(original_volume,desired_transmittance,si
     #means_smooth=savgol_filter(means,51,1)
 
 
-    # plt.imshow(mean_b_scans,cmap='gray')
-    # plt.plot(means_smooth)
-    # plt.show()
+    plt.imshow(mean_b_scans,cmap='gray')
+    plt.plot(means)
+    plt.show()
 
 
     gaussian_mask=np.ones((512,1000))
@@ -220,11 +220,13 @@ def generate_gaussian_blue_noise_mask(blue_noise,original_volume,desired_transmi
     mean_b_scans=mean_b_scans[30:,:].astype(np.uint8)
 
     means=np.argmax(mean_b_scans,0)
-    #means_smooth=savgol_filter(means,51,1)
-
+    means_smooth=savgol_filter(means,51,1)
+    means=means_smooth
 
     # plt.imshow(mean_b_scans,cmap='gray')
-    # plt.plot(means_smooth)
+    # plt.plot(means_smooth,label='means')
+    # plt.title('Average of B-scans')
+    # plt.legend()
     # plt.show()
 
 
@@ -237,7 +239,10 @@ def generate_gaussian_blue_noise_mask(blue_noise,original_volume,desired_transmi
             if(threshold>likelihood):
                gaussian_mask[j,i]=0
         
-      
+    if(plot_mask):
+        plt.imshow(gaussian_mask,cmap='gray')
+        plt.title('Gaussian mask')
+        plt.show()
     gaussian_mask = np.repeat(gaussian_mask[None,:], vol_dims[2], axis=0)
     gaussian_mask=np.transpose(gaussian_mask,(1,2,0))
 
@@ -260,6 +265,7 @@ def generate_gaussian_blue_noise_mask(blue_noise,original_volume,desired_transmi
     print('Missing Data: ', 100-(mask.sum()*100)/(vol_dims[0]*vol_dims[1]*vol_dims[2]))
     if(plot_mask):
         plt.imshow(mask[:,:,11],cmap='gray')
+        plt.title('Gaussian mask + blue noise')
         plt.show() 
     return mask
 
@@ -345,7 +351,7 @@ def generate_dataset(generate_ground_truth_denoised,
             
             ################# BM3D #############################
             if(generate_ground_truth_denoised):
-                denoised_volume=BM3D_denoiser(volume,sigma_psd=0.08)
+                denoised_volume=median_filter_3D(volume,40,5)
                 plt.imshow(denoised_volume[:,:,11],cmap='gray')
                 plt.show()
                 extract_sub_volumes(denoised_volume,name,volumes_dataset_train)
@@ -408,7 +414,7 @@ def generate_dataset(generate_ground_truth_denoised,
                 name='original_test_vol_'+str(volume_number)
                 ################# BM3D #############################
                 if(generate_ground_truth_denoised):
-                    denoised_volume=BM3D_denoiser(volume,sigma_psd=0.08)
+                    denoised_volume=median_filter_3D(volume,40,5)
                     extract_sub_volumes(denoised_volume,name,volumes_dataset_test)
                 else:
                     extract_sub_volumes(volume,name,volumes_dataset_test)
@@ -431,7 +437,7 @@ def generate_dataset(generate_ground_truth_denoised,
 
 
 
-dataset_folder='BLUE_NOISE_GAUSSIAN_DATASET'
+dataset_folder='MODEL_EVALUATION_BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER_DATASET'
 generate_ground_truth_denoised=True
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
