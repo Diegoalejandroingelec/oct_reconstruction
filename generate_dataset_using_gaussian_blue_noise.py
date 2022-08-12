@@ -352,8 +352,8 @@ def generate_dataset(generate_ground_truth_denoised,
             ################# BM3D #############################
             if(generate_ground_truth_denoised):
                 denoised_volume=median_filter_3D(volume,40,5)
-                plt.imshow(denoised_volume[:,:,11],cmap='gray')
-                plt.show()
+                # plt.imshow(denoised_volume[:,:,11],cmap='gray')
+                # plt.show()
                 extract_sub_volumes(denoised_volume,name,volumes_dataset_train)
             else:
                 extract_sub_volumes(volume,name,volumes_dataset_train)
