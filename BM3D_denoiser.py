@@ -48,7 +48,7 @@ def median_filter_3D(volume,threshold,window_size):
                     filtered_image[i,j]=central_value
         filtered_volume[:,:,index]=filtered_image
     print('TIME ELAPSED FOR DENOISING VOLUME:', time.process_time() - start, 's')
-    return filtered_volume
+    return filtered_volume.astype(np.uint8)
 
 
 
