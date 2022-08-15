@@ -505,7 +505,7 @@ def evaluate_model(mask_path,
                              os.path.join(results_dir, f"SUBSAMPLED_VOLUME_SLICE_{i}"),
                              sub_sampled_volume[:,:,50])
                     
-                    error=np.abs(original_volume-bigger_reconstruction)
+                    error=np.abs(original_volume.astype(np.float32)-bigger_reconstruction.astype(np.float32))
                     plot_error(data=error[:,:,50],
                                name=os.path.join(results_dir, f'RECONSTRUCTION_ERROR_{i}.png'))
                     plt.imshow(error[:,:,50])
