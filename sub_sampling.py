@@ -6,6 +6,7 @@ Created on Wed Jul  6 13:30:43 2022
 @author: diego
 """
 import os
+from risley_beam_steering import get_risley_3D_mask
 from Generate_shifting_blue_noise import generate_shifting_blue_noise,generate_binary_blue_noise_mask
 from scipy.io import loadmat
 from glob import glob
@@ -14,19 +15,61 @@ import random
 import pickle
 import h5py
 
-sub_sampling_percentage=100
+sub_sampling_percentage=75
 
 #'blue_noise_subsampling'
 #'raster_subsampling'
 #'random_subsampling'
-
-subsampling_method='raster_subsampling'
+#'risley_subsampling'
+subsampling_method='risley_subsampling'
 
 def read_data(path):
     data = loadmat(path)
     oct_volume = data['images']
     return oct_volume
 
+def find_denoised_volume(volume_path,denoised_dataset_folder_path):
+    volume_name=volume_path.split('/')[-1]
+    path=denoised_dataset_folder_path+'/denoised_'+volume_name
+    return read_data(path)
+
+########################################################################################
+#######################
+#######################
+#######################                   RISLEY BEAM STEERING
+#######################
+#######################
+########################################################################################
+def create_risley_beam_steering_mask(expected_dims):
+
+    #Laser Pulse Rate
+    PRF=199900
+    #Image Capture Time 0.003
+    tf=0.03
+    
+    #angular speed risley 1 rotations per sec
+    w=400
+    #angula speed risley 2 rotations per sec
+    phi=w/0.09
+    
+    risley_angle=1*(np.pi/180)
+    
+    shift_step=17
+    band_width=176
+    line_width=band_width/expected_dims[0]
+    start_wavelength=962
+    
+    mask_risley=get_risley_3D_mask(expected_dims,
+                           PRF,
+                           tf,
+                           w,
+                           phi,
+                           risley_angle,
+                           shift_step,
+                           band_width,
+                           line_width,
+                           start_wavelength)
+    return mask_risley
 ########################################################################################
 #######################
 #######################
@@ -253,7 +296,9 @@ def get_volume_paths():
 #######################
 ########################################################################################
 
-def generate_dataset(subsampling_method,
+def generate_dataset(denoised_dataset_folder_path,
+                     generate_ground_truth_denoised,
+                     subsampling_method,
                      dataset_folder,
                      training_txt_path,
                      testing_txt_path,
@@ -267,6 +312,11 @@ def generate_dataset(subsampling_method,
         if(subsampling_method=='raster_subsampling'):
             print('raster scan...')
             mask = generate_mask(percentage=sub_sampling_percentage/100,volume_x=1000,volume_y=512,volume_z=100)
+            
+        elif(subsampling_method== 'risley_subsampling'):
+            print('Risley beam steering scan...')
+            mask=create_risley_beam_steering_mask(expected_dims=(512,1000,100))
+            
         elif(subsampling_method== 'random_subsampling'):
             print('random scan...')
             mask=create_random_mask(sub_sampling_percentage/100,expected_dims=(512,1000,100))
@@ -314,7 +364,16 @@ def generate_dataset(subsampling_method,
 
             
             name='original_train_vol_'+str(volume_number)
-            extract_sub_volumes(volume,name,volumes_dataset_train)
+            if(generate_ground_truth_denoised):
+                denoised_volume=find_denoised_volume(volume_path,denoised_dataset_folder_path)
+                #denoised_volume=median_filter_3D(volume,40,5)
+                #plt.imshow(denoised_volume[:,:,11],cmap='gray')
+                #plt.show()
+                #plt.imshow(volume[:,:,11],cmap='gray')
+                #plt.show()
+                extract_sub_volumes(denoised_volume,name,volumes_dataset_train)
+            else:
+                extract_sub_volumes(volume,name,volumes_dataset_train)
                 
             name='subsampled_train_vol_'+str(volume_number)
             extract_sub_volumes(subsampled_image,name,subsampled_volumes_dataset_train)
@@ -349,7 +408,16 @@ def generate_dataset(subsampling_method,
                 
                 
                 name='original_test_vol_'+str(volume_number)
-                extract_sub_volumes(volume,name,volumes_dataset_test)
+                if(generate_ground_truth_denoised):
+                    denoised_volume=find_denoised_volume(volume_path,denoised_dataset_folder_path)
+                    #denoised_volume=median_filter_3D(volume,40,5)
+                    #plt.imshow(denoised_volume[:,:,11],cmap='gray')
+                    #plt.show()
+                    #plt.imshow(volume[:,:,11],cmap='gray')
+                    #plt.show()
+                    extract_sub_volumes(denoised_volume,name,volumes_dataset_test)
+                else:
+                    extract_sub_volumes(volume,name,volumes_dataset_test)
                 
                 name='subsampled_test_vol_'+str(volume_number)
                 extract_sub_volumes(subsampled_image,name,subsampled_volumes_dataset_test)
@@ -365,11 +433,15 @@ def generate_dataset(subsampling_method,
     subsampled_volumes_dataset_test.close()  
     volumes_dataset_test.close()
 
-dataset_folder='RASTER_SCAN_75'
+dataset_folder='RISLEY_BEAM_STEERING_25_TRANSMITTANCE_DATASET'
+denoised_dataset_folder_path='./DATASET_DENOISED'
+generate_ground_truth_denoised=True
 # training_txt_path='./TEST_DATASET_FIXED_MASK/train_volumes_paths.txt'
 # testing_txt_path='./TEST_DATASET_FIXED_MASK/test_volumes_paths.txt'
 # mask_path='./TEST_DATASET_FIXED_MASK/mask75.pkl'
-generate_dataset(subsampling_method,
+generate_dataset(denoised_dataset_folder_path,
+                 generate_ground_truth_denoised,
+                 subsampling_method,
                  dataset_folder,
                  training_txt_path='',
                  testing_txt_path='',
@@ -395,8 +467,14 @@ generate_dataset(subsampling_method,
 #     cv2.imshow('Sumbsampled Image',subsampled_image[:,:,i])
 #     cv2.waitKey(0)
 #     cv2.destroyAllWindows()
+# import h5py
+# import matplotlib.pyplot as plt
+# p1='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/RISLEY_BEAM_STEERING_25_TRANSMITTANCE_DATASET/training_ground_truth.h5'
+# p2='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/RISLEY_BEAM_STEERING_25_TRANSMITTANCE_DATASET/training_subsampled_volumes.h5'
+# f = h5py.File(p1, 'r')
+# name=list(f.keys())[300]
+# value=np.array(f.get(name))
+# f.close()
 
-
-
-
-
+# plt.imshow(value[:,:,0],cmap='gray')
+# plt.show()

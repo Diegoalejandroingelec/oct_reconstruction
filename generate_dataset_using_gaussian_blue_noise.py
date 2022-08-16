@@ -358,10 +358,10 @@ def generate_dataset(denoised_dataset_folder_path,
             if(generate_ground_truth_denoised):
                 denoised_volume=find_denoised_volume(volume_path,denoised_dataset_folder_path)
                 #denoised_volume=median_filter_3D(volume,40,5)
-                plt.imshow(denoised_volume[:,:,11],cmap='gray')
-                plt.show()
-                plt.imshow(volume[:,:,11],cmap='gray')
-                plt.show()
+                #plt.imshow(denoised_volume[:,:,11],cmap='gray')
+                #plt.show()
+                #plt.imshow(volume[:,:,11],cmap='gray')
+                #plt.show()
                 extract_sub_volumes(denoised_volume,name,volumes_dataset_train)
             else:
                 extract_sub_volumes(volume,name,volumes_dataset_train)
