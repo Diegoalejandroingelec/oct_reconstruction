@@ -2,4 +2,16 @@
 *.png
 /models
 *.avi
-
+*.h5
+*.jpg
+*.jpeg
+*.t7
+*.pth
+*.txt
+*.npy
+/GAN/advanced_GAN/results
+/GAN/advanced_GAN/samples
+__pycache__/
+*.tar
+*.out
+*.mat

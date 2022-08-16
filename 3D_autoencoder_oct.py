@@ -46,6 +46,7 @@ def make_dataset(path,target_path, batch_size):
         def process_scan(volume):
             """Read and resize volume"""
             # Normalize
+            volume = volume[:,:,0:96]
             volume = normalize(volume)
 
             return volume
@@ -99,7 +100,7 @@ def make_dataset(path,target_path, batch_size):
 path_train='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampled_sub_volumes/subsampled_75/train'
 target_path_train='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampled_sub_volumes/original_75/train'
 
-batch_size=1
+batch_size=4
 data_set=make_dataset(path_train,target_path_train, batch_size)
 
 path_test='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/subsampled_sub_volumes/subsampled_75/test'
@@ -119,17 +120,18 @@ class Denoise(Model):
   def __init__(self):
     super(Denoise, self).__init__()
     self.encoder = tf.keras.Sequential([
-      layers.Input(shape=(64, 64, 100,1)),
-      layers.Conv3D(8, 3, activation='relu', padding='same', strides=2),
-      layers.Conv3D(16, 3, activation='relu', padding='same', strides=2),
-      layers.Conv3D(32, 3, activation='relu', padding='same'),
-      layers.Conv3D(64, 3, activation='relu', padding='same')])
+      layers.Input(shape=(64, 64, 96,1)),
+      layers.Conv3D(32, 7, activation='relu', padding='same'),
+      layers.MaxPool3D(pool_size=2),
+      layers.Conv3D(16, 5, activation='relu', padding='same'),
+      layers.MaxPool3D(pool_size=2),
+      layers.Conv3D(8, 3, activation='relu', padding='same'),
+      layers.MaxPool3D(pool_size=2)])
 
     self.decoder = tf.keras.Sequential([
-      layers.Conv3DTranspose(64, kernel_size=3, activation='relu', padding='same'),
-      layers.Conv3DTranspose(32, kernel_size=3, activation='relu', padding='same'),
-      layers.Conv3DTranspose(16, kernel_size=3, strides=2, activation='relu', padding='same'),
       layers.Conv3DTranspose(8, kernel_size=3, strides=2, activation='relu', padding='same'),
+      layers.Conv3DTranspose(16, kernel_size=5, strides=2, activation='relu', padding='same'),
+      layers.Conv3DTranspose(32, kernel_size=7, strides=2, activation='relu', padding='same'),
       layers.Conv3D(1, kernel_size=3, activation='sigmoid', padding='same')])
 
   def call(self, x):
@@ -171,15 +173,15 @@ autoencoder.decoder.summary()
 # from tensorflow import keras
 # autoencoder=keras.models.load_model('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/models/model_75_2022-07-11 20:44:01.035347')
 
-# data = test_data_set.take(9)
-# volume,target_volume= list(data)[6]
-# volume=volume.numpy()
-# target_volume=target_volume.numpy()
-# plt.imshow(np.squeeze(volume[0,:,:,1,0]), cmap="gray")
-# plt.imshow(np.squeeze(target_volume[0,:,:,1,0]), cmap="gray")
+data = test_data_set.take(9)
+volume,target_volume= list(data)[6]
+volume=volume.numpy()
+target_volume=target_volume.numpy()
+plt.imshow(np.squeeze(volume[0,:,:,1,0]), cmap="gray")
+plt.imshow(np.squeeze(target_volume[0,:,:,1,0]), cmap="gray")
 
-# encoded_imgs = autoencoder.encoder(volume).numpy()
-# decoded_imgs = autoencoder.decoder(encoded_imgs).numpy()
+encoded_imgs = autoencoder.encoder(volume).numpy()
+decoded_imgs = autoencoder.decoder(encoded_imgs).numpy()
 
 # for i in range(100):
 #     plt.imshow(np.squeeze(decoded_imgs[0,:,:,i,0]), cmap="gray")
