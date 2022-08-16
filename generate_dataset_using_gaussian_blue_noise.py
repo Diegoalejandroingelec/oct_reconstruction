@@ -46,6 +46,10 @@ def load_obj(name):
     with open( name, 'rb') as f:
         return pickle.load(f)
     
+def find_denoised_volume(volume_path,denoised_dataset_folder_path):
+    volume_name=volume_path.split('/')[-1]
+    path=denoised_dataset_folder_path+'/denoised_'+volume_name
+    return read_data(path)
     
 ########################################################################################
 #######################
@@ -279,7 +283,8 @@ def generate_gaussian_blue_noise_mask(blue_noise,original_volume,desired_transmi
 ########################################################################################
 blue_noise=generate_shifting_blue_noise(expected_dims=vol_dims)
 
-def generate_dataset(generate_ground_truth_denoised,
+def generate_dataset(denoised_dataset_folder_path,
+                     generate_ground_truth_denoised,
                      dataset_folder,
                      mask_dataset_training_path,
                      mask_dataset_testing_path,
@@ -351,9 +356,12 @@ def generate_dataset(generate_ground_truth_denoised,
             
             ################# BM3D #############################
             if(generate_ground_truth_denoised):
-                denoised_volume=median_filter_3D(volume,40,5)
-                # plt.imshow(denoised_volume[:,:,11],cmap='gray')
-                # plt.show()
+                denoised_volume=find_denoised_volume(volume_path,denoised_dataset_folder_path)
+                #denoised_volume=median_filter_3D(volume,40,5)
+                plt.imshow(denoised_volume[:,:,11],cmap='gray')
+                plt.show()
+                plt.imshow(volume[:,:,11],cmap='gray')
+                plt.show()
                 extract_sub_volumes(denoised_volume,name,volumes_dataset_train)
             else:
                 extract_sub_volumes(volume,name,volumes_dataset_train)
@@ -414,7 +422,8 @@ def generate_dataset(generate_ground_truth_denoised,
                 name='original_test_vol_'+str(volume_number)
                 ################# BM3D #############################
                 if(generate_ground_truth_denoised):
-                    denoised_volume=median_filter_3D(volume,40,5)
+                    denoised_volume=find_denoised_volume(volume_path,denoised_dataset_folder_path)
+                    #denoised_volume=median_filter_3D(volume,40,5)
                     extract_sub_volumes(denoised_volume,name,volumes_dataset_test)
                 else:
                     extract_sub_volumes(volume,name,volumes_dataset_test)
@@ -439,11 +448,13 @@ def generate_dataset(generate_ground_truth_denoised,
 
 dataset_folder='BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER_DATASET'
 generate_ground_truth_denoised=True
+denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
 # training_txt_path='./BLUE_NOISE_GAUSSIAN_DATASET/train_volumes_paths.txt'
 # testing_txt_path='./BLUE_NOISE_GAUSSIAN_DATASET/test_volumes_paths.txt'
-generate_dataset(generate_ground_truth_denoised,
+generate_dataset(denoised_dataset_folder_path,
+                 generate_ground_truth_denoised,
                  dataset_folder,
                  mask_dataset_training_path='',
                  mask_dataset_testing_path='',
