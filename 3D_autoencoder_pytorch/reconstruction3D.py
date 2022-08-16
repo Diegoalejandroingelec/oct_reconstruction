@@ -19,10 +19,12 @@ from Autoencoder_Architecture import Autoencoder
 import bm3d
 from skimage import img_as_float
 import time
+from scipy.io import loadmat
 
 bigger_sub_volumes_dim=(512,150,16)
 original_volume_dim=(512,1000,100)
 ngpu=2
+denoised_dataset_folder_path='../DATASET_DENOISED'
 results_dir='MODEL_EVALUATION_BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER_1'
 model_path='./BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER/BEST_MODEL_1.pth.tar'
 mask_path=''
@@ -36,6 +38,16 @@ denoised_ground_truth_for_comparison=True
 
 # Decide which device we want to run on
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
+
+def read_data(path):
+    data = loadmat(path)
+    oct_volume = data['images']
+    return oct_volume
+
+def find_denoised_volume(volume_path,denoised_dataset_folder_path):
+    volume_name=volume_path.split('/')[-1]
+    path=denoised_dataset_folder_path+'/denoised_'+volume_name
+    return read_data(path)
 
 def median_filter_3D(volume,threshold,window_size):
     start = time.process_time()
@@ -368,7 +380,8 @@ def plot_error(data,name):
     plt.show()
     fig.savefig(name, dpi=200, facecolor=bg_color)
 
-def evaluate_model(mask_path,
+def evaluate_model(denoised_dataset_folder_path,
+                   mask_path,
                    masks_dataset_path,
                    masks_dataset_path_train,
                    txt_test_path,
@@ -434,7 +447,8 @@ def evaluate_model(mask_path,
     
             bigger_reconstruction=np.multiply(mask_blue_noise_prima,bigger_reconstruction).astype(np.uint8)
             if(denoised_ground_truth_for_comparison):
-                denoised_original_volume=median_filter_3D(original_volume,40,5)
+                denoised_original_volume=find_denoised_volume(test_volume_path,denoised_dataset_folder_path)
+                #denoised_original_volume=median_filter_3D(original_volume,40,5)
                 sub_sampled_denoised_original_volume=np.multiply(mask,denoised_original_volume).astype(np.uint8)
                 bigger_reconstruction=bigger_reconstruction+sub_sampled_denoised_original_volume
             else:
@@ -535,7 +549,8 @@ def evaluate_model(mask_path,
         print('Total SSIM AVG: ',np.mean(total_SSIM_list))
 
 reconstruction_model=initialize_reconstruction_model(model_path)
-evaluate_model(mask_path,
+evaluate_model(denoised_dataset_folder_path,
+               mask_path,
                masks_dataset_path,
                masks_dataset_path_train,
                txt_test_path,
