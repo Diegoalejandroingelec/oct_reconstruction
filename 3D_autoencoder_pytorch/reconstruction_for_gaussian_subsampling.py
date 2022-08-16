@@ -441,12 +441,13 @@ def mark_ROI(upper_limit,lower_limit,name,img):
 def plot_error(data,name):
     fig, ax1 = plt.subplots(1,1,figsize=(10, 5))
     
-    im = ax1.imshow(data)
+    mean=np.mean(data)
+    im = ax1.imshow(data, vmin=0, vmax=mean+50)
     cax = fig.add_axes([ax1.get_position().x1+0.01,
                         ax1.get_position().y0,0.02,
                         ax1.get_position().height])
-    cb = plt.colorbar(im,cax=cax)
-    
+    cb = plt.colorbar(im,cax=cax,extend="max")
+
     fg_color = 'black'
     bg_color = 'white'
     
@@ -596,7 +597,8 @@ def evaluate_model(mask_path,
                              os.path.join(results_dir, f"SUBSAMPLED_VOLUME_SLICE_{i}"),
                              sub_sampled_volume[:,:,50])
                     
-                    error=np.abs(original_volume-bigger_reconstruction)
+                    error=np.abs(original_volume.astype(np.float32)-bigger_reconstruction.astype(np.float32))
+                    error=error.astype(np.uint8)
                     plot_error(data=error[:,:,50],
                                name=os.path.join(results_dir, f'RECONSTRUCTION_ERROR_{i}.png'))
                     plt.imshow(error[:,:,50])

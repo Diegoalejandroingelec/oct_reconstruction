@@ -23,12 +23,12 @@ import time
 bigger_sub_volumes_dim=(512,150,16)
 original_volume_dim=(512,1000,100)
 ngpu=2
-results_dir='MODEL_EVALUATION_BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER'
+results_dir='MODEL_EVALUATION_BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER_1'
 model_path='./BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER/BEST_MODEL_1.pth.tar'
 mask_path=''
 masks_dataset_path='../BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER_DATASET/masks_dataset_test.h5'
 masks_dataset_path_train='../BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER_DATASET/masks_dataset_train.h5'
-txt_test_path='../RANDOM_GAUSSIAN_DATASET_SIGMA_150/test_volumes_paths.txt'
+txt_test_path='fast_test_paths.txt'
 original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 comparison_size=100
 compare_with_roi=True
@@ -326,12 +326,13 @@ def mark_ROI(upper_limit,lower_limit,name,img):
 
 def plot_error(data,name):
     fig, ax1 = plt.subplots(1,1,figsize=(10, 5))
-    
-    im = ax1.imshow(data)
+    mean=18.77482421875
+    print('MEAN OF ERROR ',mean)
+    im = ax1.imshow(data, vmin=0, vmax=mean+50)
     cax = fig.add_axes([ax1.get_position().x1+0.01,
                         ax1.get_position().y0,0.02,
                         ax1.get_position().height])
-    cb = plt.colorbar(im,cax=cax)
+    cb = plt.colorbar(im,cax=cax,extend="max")
     
     fg_color = 'black'
     bg_color = 'white'
