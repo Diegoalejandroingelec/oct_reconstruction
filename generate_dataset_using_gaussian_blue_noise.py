@@ -15,9 +15,9 @@ import h5py
 import os
 from BM3D_denoiser import BM3D_denoiser,median_filter_3D
 import matplotlib.pyplot as plt
-
+import time
 from scipy.signal import savgol_filter
-
+import cv2
 
 vol_dims=(512,1000,100)
 
@@ -273,6 +273,63 @@ def generate_gaussian_blue_noise_mask(blue_noise,original_volume,desired_transmi
         plt.show() 
     return mask
 
+########################################################################################
+#######################
+#######################
+#######################                   GENERATE REAL BLUE NOISE GAUSSIAN
+#######################
+#######################
+########################################################################################  
+
+
+def generate_real_gaussian_blue_noise_mask(blue_noise,
+                                           original_volume,
+                                           desired_transmittance,
+                                           sigma,
+                                           plot_mask):
+    def gaussian(x, a, x0, sigma):
+        return a*np.exp(-(x-x0)**2/(2*sigma**2))   
+
+
+    mean_b_scans=np.mean(original_volume,2)
+    mean_b_scans=mean_b_scans[30:,:].astype(np.uint8)
+
+    means=np.argmax(mean_b_scans,0)
+    means_smooth=savgol_filter(means,51,1)
+    means=means_smooth
+    
+    # plt.imshow(mean_b_scans,cmap='gray')
+    # plt.plot(means_smooth,label='means')
+    # plt.title('Average of B-scans')
+    # plt.legend()
+    # plt.show()
+
+
+    blue_noise=blue_noise/np.max(blue_noise)
+
+    binary_blue_noise_mask = np.zeros(original_volume.shape,dtype=np.uint8)
+    
+
+    for i in range(vol_dims[1]):
+        for j in range(vol_dims[0]):
+            likelihood=gaussian(j, 0.45, means[i], sigma)
+            binary_blue_noise_mask[j,i,:]=(blue_noise[j,i,:]<likelihood)*1
+                
+     
+    if(plot_mask):
+        # cv2.imshow('GAUSSIAN BLUE NOISE',binary_blue_noise_mask[:,:,0]*255)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
+        # cv2.imwrite('GAUSSIAN_BLUE_NOISE.jpeg',binary_blue_noise_mask[:,:,0]*255)
+        plt.imshow(binary_blue_noise_mask[:,:,0],cmap='gray')
+        plt.title('Binary gaussian blue noise mask')
+        plt.show()
+
+
+
+    print('Missing Data: ', 100-(binary_blue_noise_mask.sum()*100)/(vol_dims[0]*vol_dims[1]*vol_dims[2]))
+
+    return binary_blue_noise_mask
 
 ########################################################################################
 #######################
@@ -342,7 +399,7 @@ def generate_dataset(denoised_dataset_folder_path,
                     plt.imshow(mask[:,:,11],cmap='gray')
                     plt.show() 
             else:
-                mask=generate_gaussian_blue_noise_mask(blue_noise,
+                mask=generate_real_gaussian_blue_noise_mask(blue_noise,
                                                        volume,
                                                        desired_transmittance,
                                                        sigma,
@@ -409,7 +466,7 @@ def generate_dataset(denoised_dataset_folder_path,
                         plt.imshow(mask[:,:,11],cmap='gray')
                         plt.show() 
                 else:
-                    mask=generate_gaussian_blue_noise_mask(blue_noise,
+                    mask=generate_real_gaussian_blue_noise_mask(blue_noise,
                                                            volume,
                                                            desired_transmittance,
                                                            sigma,
@@ -446,7 +503,7 @@ def generate_dataset(denoised_dataset_folder_path,
 
 
 
-dataset_folder='BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER_DATASET'
+dataset_folder='GAUSSIAN_BLUE_NOISE_TRANSMITTANCE_25'
 generate_ground_truth_denoised=True
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
@@ -461,5 +518,5 @@ generate_dataset(denoised_dataset_folder_path,
                  training_txt_path='',
                  testing_txt_path='',
                  desired_transmittance=0.30,
-                 sigma=200,
+                 sigma=125,
                  plot_mask=False)

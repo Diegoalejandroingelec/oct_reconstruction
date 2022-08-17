@@ -108,7 +108,7 @@ def get_risley_3D_mask(expected_dims,
     # for m in range(512):   
     #     cv2.imshow('Risley_pattern_2D_shifted_C_Scan',mask_risley[m,:,:].astype(np.uint8)*255)
         
-    #     # cv2.imshow('Risley_pattern_2D_shifted_B_Scan',mask_risley[:,:,0].astype(np.uint8)*255)
+    #     cv2.imshow('Risley_pattern_2D_shifted_B_Scan',mask_risley[:,:,0].astype(np.uint8)*255)
     #     cv2.waitKey(500)
     #     cv2.destroyAllWindows()
     print('TRANSMTTANCE C-SCAN',np.mean(transmittance_list))
