@@ -25,12 +25,12 @@ bigger_sub_volumes_dim=(512,150,16)
 original_volume_dim=(512,1000,100)
 ngpu=2
 denoised_dataset_folder_path='../DATASET_DENOISED'
-results_dir='MODEL_EVALUATION_BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER_1'
-model_path='./BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER/BEST_MODEL_1.pth.tar'
-mask_path=''
-masks_dataset_path='../BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER_DATASET/masks_dataset_test.h5'
-masks_dataset_path_train='../BLUE_NOISE_GAUSSIAN_SIGMA_200_TRANSMITTANCE_30_GT_MEDIAN_FILTER_DATASET/masks_dataset_train.h5'
-txt_test_path='fast_test_paths.txt'
+results_dir='MODEL_EVALUATION_RISLEY_BEAM_STEERING_TRANSMITTANCE_25_MEDIAN_FILTER_GT'
+model_path='./RISLEY_BEAM_STEERING_25_TRANSMITTANCE_GT_MEDIAN_FILTER/BEST_MODEL_2.pth.tar'
+mask_path='../RISLEY_BEAM_STEERING_25_TRANSMITTANCE_DATASET/mask75.pkl'
+masks_dataset_path=''
+masks_dataset_path_train=''
+txt_test_path='../RISLEY_BEAM_STEERING_25_TRANSMITTANCE_DATASET/test_volumes_paths.txt'
 original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 comparison_size=100
 compare_with_roi=True
@@ -45,7 +45,7 @@ def read_data(path):
     return oct_volume
 
 def find_denoised_volume(volume_path,denoised_dataset_folder_path):
-    volume_name=volume_path.split('/')[-1]
+    volume_name=volume_path.split('/')[-1].split('.')[0]+'.mat'
     path=denoised_dataset_folder_path+'/denoised_'+volume_name
     return read_data(path)
 
