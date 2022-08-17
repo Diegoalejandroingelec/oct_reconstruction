@@ -71,8 +71,8 @@ def get_risley_scan_pattern(PRF,tf,w,phi,n,risley_angle,expected_dims,shift_step
         
     mask=(mask!=0)*1
 
-    print('TRANSMTTANCE C-SCAN',(mask.sum()*100)/(expected_dims[1]*expected_dims[2]))
-    return mask
+    transmittance=(mask.sum()*100)/(expected_dims[1]*expected_dims[2])
+    return mask,transmittance
 def get_risley_3D_mask(expected_dims,
                        PRF,
                        tf,
@@ -87,13 +87,14 @@ def get_risley_3D_mask(expected_dims,
 
     
     mask_risley=np.zeros(expected_dims)
+    transmittance_list=[]
     for i in range(1,expected_dims[0]+1):
         # print(i*line_width+start_wavelength)
         
         #Risley optical index fused silica
         n=risley_optical_index_fused_silica(i*line_width+start_wavelength)
         #print('Risley optical index fused silica ',n)
-        mask_2D=get_risley_scan_pattern(PRF+(i*(512/50)),
+        mask_2D,transmittance=get_risley_scan_pattern(PRF+(i*(512/50)),
                                 tf,
                                 w,
                                 phi,
@@ -101,7 +102,7 @@ def get_risley_3D_mask(expected_dims,
                                 risley_angle,
                                 expected_dims,
                                 shift_step)
-        
+        transmittance_list.append(transmittance)
         mask_risley[i-1,:,:]=mask_2D
         
     # for m in range(512):   
@@ -110,8 +111,11 @@ def get_risley_3D_mask(expected_dims,
     #     # cv2.imshow('Risley_pattern_2D_shifted_B_Scan',mask_risley[:,:,0].astype(np.uint8)*255)
     #     cv2.waitKey(500)
     #     cv2.destroyAllWindows()
+    print('TRANSMTTANCE C-SCAN',np.mean(transmittance_list))
+    transmittance_list=[]
     for m in range(100):
-        print('TRANSMTTANCE B-SCAN',(mask_risley[:,:,m].sum()*100)/(expected_dims[0]*expected_dims[1]))
+        transmittance_list.append((mask_risley[:,:,m].sum()*100)/(expected_dims[0]*expected_dims[1]))
+    print('TRANSMTTANCE B-SCAN',np.mean(transmittance_list))
     total_transmittance=((mask_risley.sum()*100)/(expected_dims[0]*expected_dims[1]*expected_dims[2]))
     print('TOTAL TRANSMITTANCE: ',total_transmittance)
     return mask_risley.astype(np.uint8)
@@ -129,46 +133,50 @@ phi=w/0.09
 
 risley_angle=1*(np.pi/180)
 
-shift_step=17
+shift_step=20
 band_width=176
 line_width=band_width/expected_dims[0]
 start_wavelength=962
 
-mask_risley=get_risley_3D_mask(expected_dims,
-                        PRF,
-                        tf,
-                        w,
-                        phi,
-                        risley_angle,
-                        shift_step,
-                        band_width,
-                        line_width,
-                        start_wavelength)
+
+for x in range(30):
+    mask_risley=get_risley_3D_mask(expected_dims,
+                            PRF,
+                            tf,
+                            w,
+                            phi,
+                            risley_angle,
+                            x+1,#shift_step
+                            band_width,
+                            line_width,
+                            start_wavelength)
 
 
 
 # for n in range(100):
 #     cv2.imshow('Risley_pattern_2D',mask_risley[:,:,n].astype(np.uint8)*255)
+#     cv2.imshow('Risley_pattern_2D_C_scan',mask_risley[n,:,:].astype(np.uint8)*255)
 #     cv2.waitKey(0)
 #     cv2.destroyAllWindows()
-def read_data(path):
-    data = loadmat(path)
-    oct_volume = data['images']
-    return oct_volume  
-  
-volume = read_data('/home/diego/Documents/Delaware/tensorflow/training_3D_images/oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1023.mat')
-
-plt.imshow(volume[:,:,50], cmap='gray')
-plt.show()
-
-sub=np.multiply(mask_risley,volume).astype(np.uint8)
-for i in range(100):
-    plt.imshow(volume[:,:,i], cmap='gray')
-    plt.show()
     
-for i in range(100):
-    plt.imshow(sub[:,:,i], cmap='gray')
-    plt.show()
+# def read_data(path):
+#     data = loadmat(path)
+#     oct_volume = data['images']
+#     return oct_volume  
+  
+# volume = read_data('/home/diego/Documents/Delaware/tensorflow/training_3D_images/oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1023.mat')
+
+# plt.imshow(volume[:,:,50], cmap='gray')
+# plt.show()
+
+# sub=np.multiply(mask_risley,volume).astype(np.uint8)
+# for i in range(100):
+#     plt.imshow(volume[:,:,i], cmap='gray')
+#     plt.show()
+    
+# for i in range(100):
+#     plt.imshow(sub[:,:,i], cmap='gray')
+#     plt.show()
     
     
     
