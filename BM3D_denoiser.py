@@ -59,7 +59,7 @@ def median_filter_3D(volume,threshold,window_size):
 
 # original_volume =load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_volumes/Farsiu_Ophthalmology_2013_AMD_Subject_1001.pkl')
 
-# median2=median_filter_3D(original_volume,40,5)
+# median2=median_filter_3D(original_volume[:,:,0:1],40,5)
 
 # cv2.imshow('original Image',original_volume[:,:,0])
 # cv2.imshow('denoised Image2',median2[:,:,0].astype(np.uint8))
@@ -67,7 +67,10 @@ def median_filter_3D(volume,threshold,window_size):
 # cv2.destroyAllWindows()
 
 # import matplotlib.pyplot as plt
-
-# plt.plot(original_volume[:,0,0])
-# plt.plot(median2[:,0])
-# plt.show()
+# for h in range(1000):
+#     plt.plot(original_volume[:,h,0],'-o',label='Original Volume')
+#     plt.plot(median2[:,h,0],'.',label='Denoised Original Volume')
+#     plt.plot([40]*512,color='r',linestyle='--',label='Filtering Threshold')
+#     plt.title('Depth scan profile')
+#     plt.legend()
+#     plt.show()

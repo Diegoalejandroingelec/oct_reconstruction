@@ -137,7 +137,6 @@ def get_volume_paths():
 #######################
 ########################################################################################  
 
-
 def generate_gaussian_random_noise_mask(original_volume,desired_transmittance,sigma,plot_mask):
     def gaussian(x, a, x0, sigma):
         return a*np.exp(-(x-x0)**2/(2*sigma**2))
@@ -227,11 +226,11 @@ def generate_gaussian_blue_noise_mask(blue_noise,original_volume,desired_transmi
     means_smooth=savgol_filter(means,51,1)
     means=means_smooth
 
-    # plt.imshow(mean_b_scans,cmap='gray')
-    # plt.plot(means_smooth,label='means')
-    # plt.title('Average of B-scans')
-    # plt.legend()
-    # plt.show()
+    plt.imshow(mean_b_scans,cmap='gray')
+    plt.plot(means_smooth,label='means')
+    plt.title('Average of B-scans')
+    plt.legend()
+    plt.show()
 
 
     gaussian_mask=np.ones((512,1000))
@@ -297,12 +296,12 @@ def generate_real_gaussian_blue_noise_mask(blue_noise,
     means=np.argmax(mean_b_scans,0)
     means_smooth=savgol_filter(means,51,1)
     means=means_smooth
-    
-    # plt.imshow(mean_b_scans,cmap='gray')
-    # plt.plot(means_smooth,label='means')
-    # plt.title('Average of B-scans')
-    # plt.legend()
-    # plt.show()
+    if(plot_mask):
+        plt.imshow(mean_b_scans,cmap='gray')
+        plt.plot(means_smooth,label='means')
+        plt.title('Average of B-scans')
+        plt.legend()
+        plt.show()
 
 
     blue_noise=blue_noise/np.max(blue_noise)
@@ -312,14 +311,13 @@ def generate_real_gaussian_blue_noise_mask(blue_noise,
 
     for i in range(vol_dims[1]):
         for j in range(vol_dims[0]):
-            likelihood=gaussian(j, 0.45, means[i], sigma)
+            likelihood=gaussian(j, 0.32, means[i], sigma)
             binary_blue_noise_mask[j,i,:]=(blue_noise[j,i,:]<likelihood)*1
                 
      
     if(plot_mask):
-        # cv2.imshow('GAUSSIAN BLUE NOISE',binary_blue_noise_mask[:,:,0]*255)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
+        # make_video(binary_blue_noise_mask*255,'REAL_GAUSSIAN_BLUE_NOISE')
+        
         # cv2.imwrite('GAUSSIAN_BLUE_NOISE.jpeg',binary_blue_noise_mask[:,:,0]*255)
         plt.imshow(binary_blue_noise_mask[:,:,0],cmap='gray')
         plt.title('Binary gaussian blue noise mask')
@@ -503,7 +501,7 @@ def generate_dataset(denoised_dataset_folder_path,
 
 
 
-dataset_folder='GAUSSIAN_BLUE_NOISE_TRANSMITTANCE_25'
+dataset_folder='REAL_GAUSSIAN_BLUE_NOISE_TRANSMITTANCE_25_SIGMA_200_DATASET'
 generate_ground_truth_denoised=True
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
@@ -517,6 +515,6 @@ generate_dataset(denoised_dataset_folder_path,
                  mask_dataset_testing_path='',
                  training_txt_path='',
                  testing_txt_path='',
-                 desired_transmittance=0.30,
-                 sigma=125,
+                 desired_transmittance=0.25,
+                 sigma=200,
                  plot_mask=False)
