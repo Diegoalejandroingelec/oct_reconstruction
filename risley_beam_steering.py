@@ -38,6 +38,10 @@ def get_risley_scan_pattern(PRF,tf,w,phi,n,risley_angle,expected_dims,shift_step
     x=Bxi+gamma_xi
     y=Byi+gamma_yi
     
+    # plt.rcParams["figure.figsize"] = (20,20)
+    # plt.plot(x,y,'.')
+    # plt.show()
+    
     
     x_min=np.min(x)
     y_min=np.min(y)
@@ -58,7 +62,6 @@ def get_risley_scan_pattern(PRF,tf,w,phi,n,risley_angle,expected_dims,shift_step
         
         risley_pattern_2D[discrete_points_x,discrete_points_y]=1
        
-    
     
     mask=np.zeros((expected_dims[1],expected_dims[2]))
     for shift in range(0,expected_dims[2]+shift_step,shift_step):
@@ -92,7 +95,7 @@ def get_risley_3D_mask(expected_dims,
         # print(i*line_width+start_wavelength)
         
         #Risley optical index fused silica
-        n=risley_optical_index_fused_silica(i*line_width+start_wavelength)
+        n=risley_optical_index_fused_silica((i*line_width+start_wavelength)/1000)
         #print('Risley optical index fused silica ',n)
         mask_2D,transmittance=get_risley_scan_pattern(PRF+(i*(512/50)),
                                 tf,
@@ -120,36 +123,36 @@ def get_risley_3D_mask(expected_dims,
     print('TOTAL TRANSMITTANCE: ',total_transmittance)
     return mask_risley.astype(np.uint8)
 
-expected_dims=(512,1000,100) 
-#Laser Pulse Rate
-PRF=199900
-#Image Capture Time 0.003
-tf=0.03
+# expected_dims=(512,1000,100) 
+# #Laser Pulse Rate
+# PRF=19990000
+# #Image Capture Time 0.003
+# tf=0.016
 
-#angular speed risley 1 rotations per sec
-w=400
-#angula speed risley 2 rotations per sec
-phi=w/0.09
+# #angular speed risley 1 rotations per sec
+# w=4000
+# #angula speed risley 2 rotations per sec
+# phi=(w/0.09)
 
-risley_angle=1*(np.pi/180)
+# risley_angle=10*(np.pi/180)
 
-shift_step=20
-band_width=176
-line_width=band_width/expected_dims[0]
-start_wavelength=962
+# shift_step=20
+# band_width=176
+# line_width=band_width/expected_dims[0]
+# start_wavelength=962
 
 
-for x in range(30):
-    mask_risley=get_risley_3D_mask(expected_dims,
-                            PRF,
-                            tf,
-                            w,
-                            phi,
-                            risley_angle,
-                            x+1,#shift_step
-                            band_width,
-                            line_width,
-                            start_wavelength)
+
+# mask_risley=get_risley_3D_mask(expected_dims,
+#                         PRF,
+#                         tf,
+#                         w,
+#                         phi,
+#                         risley_angle,
+#                         shift_step,#shift_step
+#                         band_width,
+#                         line_width,
+#                         start_wavelength)
 
 
 

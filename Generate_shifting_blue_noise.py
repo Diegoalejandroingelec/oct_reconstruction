@@ -54,7 +54,7 @@ def generate_shifting_blue_noise(expected_dims):
     # direction_count=1
     # pixel_count=1
     
-    for n in range(expected_dims[2]-1):
+    for n in range(expected_dims[2]):
         # new_slice=matrix_slice(matrix=matrix,
         #                        direction=direction_count,
         #                        pixels=pixel_count,

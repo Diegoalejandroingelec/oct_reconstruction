@@ -311,7 +311,7 @@ def generate_real_gaussian_blue_noise_mask(blue_noise,
 
     for i in range(vol_dims[1]):
         for j in range(vol_dims[0]):
-            likelihood=gaussian(j, 0.32, means[i], sigma)
+            likelihood=gaussian(j, 0.55, means[i], sigma)
             binary_blue_noise_mask[j,i,:]=(blue_noise[j,i,:]<likelihood)*1
                 
      
@@ -501,8 +501,8 @@ def generate_dataset(denoised_dataset_folder_path,
 
 
 
-dataset_folder='REAL_GAUSSIAN_BLUE_NOISE_TRANSMITTANCE_25_SIGMA_200_DATASET'
-generate_ground_truth_denoised=True
+dataset_folder='REAL_GAUSSIAN_BLUE_NOISE_TRANSMITTANCE_25_SIGMA_100_DATASET'
+generate_ground_truth_denoised=False
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
@@ -516,5 +516,5 @@ generate_dataset(denoised_dataset_folder_path,
                  training_txt_path='',
                  testing_txt_path='',
                  desired_transmittance=0.25,
-                 sigma=200,
-                 plot_mask=False)
+                 sigma=100,
+                 plot_mask=True)
