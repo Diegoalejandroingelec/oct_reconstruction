@@ -9,6 +9,9 @@ Created on Fri Aug 19 15:41:35 2022
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
+from scipy.io import loadmat
+from scipy.signal import savgol_filter
+import time
 
 def risley_optical_index_fused_silica(l):
     n=np.sqrt((((0.6961663)*l**2)/(l**2-0.0684043**2))+((0.4079426*l**2)/(l**2-0.1162414**2))+((0.8974794*l**2)/(l**2-9.896161**2))+1)
@@ -134,11 +137,11 @@ def generate_2D_pattern(tf,
     
     x = x+np.abs(np.min(x))
     y = y+np.abs(np.min(y))-27.5
-    plt.rcParams["figure.figsize"] = (10,10)
-    plt.plot(x,y,'.')  
-    plt.plot([0,0,1000,1000,0],[100,0,0,100,100],'r')
-    plt.title('PATTERN USING 4 PRISMS')
-    plt.show()  
+    # plt.rcParams["figure.figsize"] = (10,10)
+    # plt.plot(x,y,'.')  
+    # plt.plot([0,0,1000,1000,0],[100,0,0,100,100],'r')
+    # plt.title('PATTERN USING 4 PRISMS')
+    # plt.show()  
     risley_pattern_2D=np.zeros((expected_dims[1],expected_dims[2]))
     for i in range(int(num_pulse)):
         discrete_points_x=round(x[i]) if (round(x[i])>0 and round(x[i])<expected_dims[1]) else expected_dims[1]-1 if round(x[i])>=expected_dims[1] else 0
@@ -155,6 +158,44 @@ def generate_2D_pattern(tf,
     return risley_pattern_2D,transmittance
 
 
+def required_prf(desired_transmittance):
+    return -2.8e-5*(np.sqrt(-2.50386e21*(desired_transmittance-68.8445))-402144000000)
+
+def gaussian(x, a, x0, sigma):
+    return a*np.exp(-(x-x0)**2/(2*sigma**2))  
+
+def get_transmittances(path):
+    
+    def read_data(path):
+        data = loadmat(path)
+        oct_volume = data['images']
+        return oct_volume
+    
+    
+    
+
+
+    original_volume=read_data(path)
+
+
+    mean_b_scans=np.mean(original_volume,2)
+    mean_b_scans=mean_b_scans[30:,:].astype(np.uint8)
+    
+    means=np.argmax(mean_b_scans,0)
+    means_smooth=savgol_filter(means,51,1)
+    means=means_smooth
+    total_mean=np.mean(means)
+
+    x=np.linspace(0,511,512)
+    transmittances=gaussian(x, 0.48, total_mean, 100)
+    plt.plot(x,transmittances)
+    plt.show()
+    return transmittances*100
+    # plt.imshow(mean_b_scans,cmap='gray')
+    # plt.plot(means_smooth,label='means')
+    # plt.title('Average of B-scans')
+    # plt.legend()
+    # plt.show()
 
 def create_risley_pattern(expected_dims,
                           line_width,
@@ -166,28 +207,75 @@ def create_risley_pattern(expected_dims,
                           w3,
                           w4,
                           a,
-                          number_of_prisms):
+                          number_of_prisms,
+                          volume_path):
     
     mask_risley=np.zeros(expected_dims)
     transmittance_list=[]
-    for i in range(1,expected_dims[0]+1):
-        print(i)
+    if(PRF):
+        for i in range(1,expected_dims[0]+1):
+            print(i)
+            
+            #Risley optical index fused silica
+            n_prism=risley_optical_index_fused_silica((i*line_width+start_wavelength)/1000)
+            #print('Risley optical index fused silica ',n)
+            mask_2D,transmittance=generate_2D_pattern(tf,
+                                PRF+(i*(512/50)),
+                                w,
+                                w2,
+                                w3,
+                                w4,
+                                a,
+                                number_of_prisms,
+                                n_prism,
+                                expected_dims) 
+            transmittance_list.append(transmittance)
+            mask_risley[i-1,:,:]=mask_2D
+    else:
+        minimum_transmittance=15
+        transmittances= get_transmittances(path)
+        new_transmittances=np.zeros(expected_dims[0])
+        index_of_maximum=np.argmax(transmittances)
+        count_down=0
+        for indx,x in enumerate(transmittances[0:index_of_maximum]):
+            transmittances[index_of_maximum-indx-1]
+            if(transmittances[index_of_maximum-indx-1]>minimum_transmittance):
+                new_transmittances[index_of_maximum-indx-1]=transmittances[index_of_maximum-indx-1]
+            else:
+                new_transmittances[index_of_maximum-indx-1]=minimum_transmittance-(count_down*0.01)
+                count_down+=1
+                
+        count_down=0
+        for indx,x in enumerate(transmittances[index_of_maximum:]):
+            
+            if(x>minimum_transmittance):
+                new_transmittances[index_of_maximum+indx]=x  
+            else:
+                new_transmittances[index_of_maximum+indx]=minimum_transmittance-(count_down*0.01)
+                count_down+=1
+                
+        # plt.plot(new_transmittances) 
+        # plt.show()
+        required_prfs=required_prf(np.array(new_transmittances))
+        for i in range(expected_dims[0]):
+            print(i)
+            
+            #Risley optical index fused silica
+            n_prism=risley_optical_index_fused_silica((i*line_width+start_wavelength)/1000)
+            #print('Risley optical index fused silica ',n)
+            mask_2D,transmittance=generate_2D_pattern(tf,
+                                required_prfs[i],
+                                w,
+                                w2,
+                                w3,
+                                w4,
+                                a,
+                                number_of_prisms,
+                                n_prism,
+                                expected_dims) 
+            transmittance_list.append(transmittance)
+            mask_risley[i,:,:]=mask_2D
         
-        #Risley optical index fused silica
-        n_prism=risley_optical_index_fused_silica((i*line_width+start_wavelength)/1000)
-        #print('Risley optical index fused silica ',n)
-        mask_2D,transmittance=generate_2D_pattern(tf,
-                            PRF+(i*(512/50)),
-                            w,
-                            w2,
-                            w3,
-                            w4,
-                            a,
-                            number_of_prisms,
-                            n_prism,
-                            expected_dims) 
-        transmittance_list.append(transmittance)
-        mask_risley[i-1,:,:]=mask_2D
         
     print('MEAN TRANSMTTANCE C-SCAN',np.mean(transmittance_list))
     transmittance_list=[]
@@ -198,27 +286,17 @@ def create_risley_pattern(expected_dims,
     print('TOTAL TRANSMITTANCE',total_transmittance)
     return mask_risley.astype(np.uint8)
 
-def make_video(volume,name):
-    
-    height, width,depth = volume.shape
-    size = (width,height)
-
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
-
-    video = cv2.VideoWriter(name+'.avi',fourcc, 10, size)
-    for b in range(depth):
-        image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
-        video.write(image_for_video)
-    video.release()
-
-
-
 
 
 
 number_of_prisms=4
+
+
+desired_transmittance=25
+
 #Laser Pulse Rate
-PRF=19990000#1999000
+#PRF=required_prf(desired_transmittance)#1999000
+PRF=None
 #Image Capture Time 0.003
 tf=0.016
 
@@ -241,6 +319,13 @@ band_width=176
 line_width=band_width/expected_dims[0]
 start_wavelength=962
 
+
+
+
+
+    
+path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1084.mat'
+start = time.process_time()
 mask_risley=create_risley_pattern(expected_dims,
                           line_width,
                           start_wavelength,
@@ -251,13 +336,24 @@ mask_risley=create_risley_pattern(expected_dims,
                           w3,
                           w4,
                           a,
-                          number_of_prisms)
+                          number_of_prisms,
+                          volume_path=path)
+
+print('TIME ELAPSED FOR GENERATING RISLEY MASK:', time.process_time() - start, 's')
+# x=np.linspace(1999000,7119000,513)
+# x=512320.7283068506
+# y=4.256303756050208+1.13743618e-05*x+-5.00772883e-13*x**2
+
+
+
+
+
 
 
 # from skimage import data
-# import napari
+import napari
 
-# viewer = napari.view_image(magnitude_spectrum)
+viewer = napari.view_image(mask_risley*255)
 
 # img=mask
 # f = np.fft.fft2(img.astype(np.float32))
