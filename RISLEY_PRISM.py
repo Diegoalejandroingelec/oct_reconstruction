@@ -27,7 +27,7 @@ def generate_2D_pattern(tf,
                         number_of_prisms,
                         n_prism,
                         expected_dims,
-                        plot_masks):
+                        plot_mask):
     
 
     #Number Of laser pulses in image capture time
@@ -133,12 +133,12 @@ def generate_2D_pattern(tf,
     
     x = x+np.abs(np.min(x))
     y = y+np.abs(np.min(y))-27.5
-    if(plot_masks):
-        plt.rcParams["figure.figsize"] = (10,20)
-        plt.plot(x,y,'.')  
-        plt.plot([0,0,1000,1000,0],[100,0,0,100,100],'r')
-        plt.title('PATTERN USING 4 PRISMS')
-        plt.show()  
+    # if(plot_mask):
+    #     plt.rcParams["figure.figsize"] = (10,20)
+    #     plt.plot(x,y,'.')  
+    #     plt.plot([0,0,1000,1000,0],[100,0,0,100,100],'r')
+    #     plt.title('PATTERN USING 4 PRISMS')
+    #     plt.show()  
     
     
     risley_pattern_2D=np.zeros((expected_dims[1],expected_dims[2]))
@@ -180,14 +180,11 @@ def required_prf(desired_transmittance):
 def gaussian(x, a, x0, sigma):
     return a*np.exp(-(x-x0)**2/(2*sigma**2))  
 
-def get_transmittances(path):
+def get_transmittances(original_volume,
+                       maximum_transmittance,
+                       sigma):
     
-    def read_data(path):
-        data = loadmat(path)
-        oct_volume = data['images']
-        return oct_volume
 
-    original_volume=read_data(path)
     mean_b_scans=np.mean(original_volume,2)
     mean_b_scans=mean_b_scans[30:,:].astype(np.uint8)
     
@@ -197,7 +194,7 @@ def get_transmittances(path):
     total_mean=np.mean(means)
 
     x=np.linspace(0,511,512)
-    transmittances=gaussian(x, 0.53, total_mean, 100)
+    transmittances=gaussian(x, maximum_transmittance, total_mean, sigma)
     # plt.plot(x,transmittances)
     # plt.show()
     return transmittances*100
@@ -214,8 +211,10 @@ def create_risley_pattern(expected_dims,
                           w4,
                           a,
                           number_of_prisms,
-                          volume_path,
-                          plot_masks):
+                          original_volume,
+                          maximum_transmittance,
+                          sigma,
+                          plot_mask):
     
     mask_risley=np.zeros(expected_dims)
     transmittance_list=[]
@@ -236,12 +235,12 @@ def create_risley_pattern(expected_dims,
                                 number_of_prisms,
                                 n_prism,
                                 expected_dims,
-                                plot_masks) 
+                                plot_mask) 
             transmittance_list.append(transmittance)
             mask_risley[i-1,:,:]=mask_2D
     else:
         minimum_transmittance=15
-        transmittances= get_transmittances(path)
+        transmittances= get_transmittances(original_volume,maximum_transmittance,sigma)
         new_transmittances=np.zeros(expected_dims[0])
         index_of_maximum=np.argmax(transmittances)
         count_down=0
@@ -262,8 +261,11 @@ def create_risley_pattern(expected_dims,
                 new_transmittances[index_of_maximum+indx]=minimum_transmittance-(count_down*0.01)
                 count_down+=1
         print('EXPECTED FINAL TRANSMITTANCE: ', new_transmittances.sum()/expected_dims[0])
-        if(plot_masks):    
+        if(plot_mask):    
             plt.plot(new_transmittances) 
+            plt.title('TRANSMITTANCE DISTRIBUTION')
+            plt.xlabel("Depth ")
+            plt.ylabel("Transmittance[%]")
             plt.show()
         required_prfs=required_prf(np.array(new_transmittances))
         for i in range(expected_dims[0]):
@@ -280,7 +282,7 @@ def create_risley_pattern(expected_dims,
                                 number_of_prisms,
                                 n_prism,
                                 expected_dims,
-                                plot_masks) 
+                                plot_mask) 
             transmittance_list.append(transmittance)
             mask_risley[i,:,:]=mask_2D
         
@@ -290,64 +292,82 @@ def create_risley_pattern(expected_dims,
         transmittance_list.append((mask_risley[:,:,m].sum()*100)/(expected_dims[0]*expected_dims[1]))
     print('MEAN TRANSMTTANCE B-SCAN',np.mean(transmittance_list))
     total_transmittance=((mask_risley.sum()*100)/(expected_dims[0]*expected_dims[1]*expected_dims[2]))
-    print('TOTAL TRANSMITTANCE',total_transmittance)
+    print('-----------TOTAL TRANSMITTANCE------------------',total_transmittance)
     return mask_risley.astype(np.uint8)
 
 
 
 
-number_of_prisms=4
+# number_of_prisms=4
 
 
-desired_transmittance=25
+# desired_transmittance=25
 
-#Laser Pulse Rate
-#PRF=required_prf(desired_transmittance)#1999000
-PRF=None
-#Image Capture Time 0.003
-tf=0.016
+# #Laser Pulse Rate
+# #PRF=required_prf(desired_transmittance)#1999000
+# PRF=None
+# #Image Capture Time 0.003
+# tf=0.016
 
-#angular speed risley 1 rotations per sec
-w=4000
-#angula speed risley 2 rotations per sec
-w2=(w/0.09)
+# #angular speed risley 1 rotations per sec
+# w=4000
+# #angula speed risley 2 rotations per sec
+# w2=(w/0.09)
 
-#angula speed risley 2 rotations per sec
-w3=(-w/0.09)
+# #angula speed risley 2 rotations per sec
+# w3=(-w/0.09)
 
-#angula speed risley 2 rotations per sec
-w4=(-w/0.065)
+# #angula speed risley 2 rotations per sec
+# w4=(-w/0.065)
 
-a=1*(10*np.pi/180)    
-expected_dims=(512,1000,100)   
-
-
-band_width=176
-line_width=band_width/expected_dims[0]
-start_wavelength=962
+# a=1*(10*np.pi/180)    
+# expected_dims=(512,1000,100)   
 
 
+# band_width=176
+# line_width=band_width/expected_dims[0]
+# start_wavelength=962
 
+# maximum_transmittance=0.53
+# sigma=100
 
+# path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1084.mat'
+# def read_data(path):
+#     data = loadmat(path)
+#     oct_volume = data['images']
+#     return oct_volume
 
+# original_volume=read_data(path)
     
-path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1084.mat'
-begin = time.time()
-mask_risley=create_risley_pattern(expected_dims,
-                          line_width,
-                          start_wavelength,
-                          tf,
-                          PRF,
-                          w,
-                          w2,
-                          w3,
-                          w4,
-                          a,
-                          number_of_prisms,
-                          volume_path=path,
-                          plot_masks=False)
-end = time.time()
-print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
+
+# begin = time.time()
+# mask_risley=create_risley_pattern(expected_dims,
+#                           line_width,
+#                           start_wavelength,
+#                           tf,
+#                           PRF,
+#                           w,
+#                           w2,
+#                           w3,
+#                           w4,
+#                           a,
+#                           number_of_prisms,
+#                           original_volume,
+#                           maximum_transmittance,
+#                           sigma,
+#                           plot_mask=True)
+# end = time.time()
+# print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
+
+# plt.imshow(mask_risley[:,:,50],cmap='gray')
+
+
+
+
+
+
+
+
 # x=np.linspace(1999000,7119000,513)
 # x=512320.7283068506
 # y=4.256303756050208+1.13743618e-05*x+-5.00772883e-13*x**2

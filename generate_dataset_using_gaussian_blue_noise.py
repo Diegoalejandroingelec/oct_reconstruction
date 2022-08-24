@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import time
 from scipy.signal import savgol_filter
 import cv2
-
+from RISLEY_PRISM import create_risley_pattern
 vol_dims=(512,1000,100)
 
 
@@ -332,6 +332,86 @@ def generate_real_gaussian_blue_noise_mask(blue_noise,
 ########################################################################################
 #######################
 #######################
+#######################                   GENERATE RISLEY WITH GAUSSIAN MASK
+#######################
+#######################
+######################################################################################## 
+
+
+def generate_risley_gaussian_mask(original_volume,
+                                  sigma,
+                                  maximum_transmittance,
+                                  plot_mask):
+
+    number_of_prisms=4
+
+    #Laser Pulse Rate
+    #PRF=required_prf(desired_transmittance)#1999000
+    PRF=None
+    #Image Capture Time 0.003
+    tf=0.016
+
+    #angular speed risley 1 rotations per sec
+    w=4000
+    #angula speed risley 2 rotations per sec
+    w2=(w/0.09)
+
+    #angula speed risley 2 rotations per sec
+    w3=(-w/0.09)
+
+    #angula speed risley 2 rotations per sec
+    w4=(-w/0.065)
+
+    a=1*(10*np.pi/180)    
+    expected_dims=(512,1000,100)   
+
+
+    band_width=176
+    line_width=band_width/expected_dims[0]
+    start_wavelength=962
+    
+
+
+
+
+        
+    
+    begin = time.time()
+    mask_risley=create_risley_pattern(expected_dims,
+                              line_width,
+                              start_wavelength,
+                              tf,
+                              PRF,
+                              w,
+                              w2,
+                              w3,
+                              w4,
+                              a,
+                              number_of_prisms,
+                              original_volume,
+                              maximum_transmittance,
+                              sigma,
+                              plot_mask)
+    end = time.time()
+    print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
+    print('')
+    if(plot_mask):
+        plt.imshow(mask_risley[:,:,50],cmap='gray')
+        plt.show()
+    return mask_risley
+
+
+
+
+
+
+
+
+
+
+########################################################################################
+#######################
+#######################
 #######################                   GENERATE DATASET
 #######################
 #######################
@@ -347,6 +427,7 @@ def generate_dataset(denoised_dataset_folder_path,
                      testing_txt_path,
                      desired_transmittance,
                      sigma,
+                     maximum_transmittance,
                      plot_mask):
     
 
@@ -397,11 +478,15 @@ def generate_dataset(denoised_dataset_folder_path,
                     plt.imshow(mask[:,:,11],cmap='gray')
                     plt.show() 
             else:
-                mask=generate_real_gaussian_blue_noise_mask(blue_noise,
-                                                       volume,
-                                                       desired_transmittance,
-                                                       sigma,
-                                                       plot_mask)
+                # mask=generate_real_gaussian_blue_noise_mask(blue_noise,
+                #                                        volume,
+                #                                        desired_transmittance,
+                #                                        sigma,
+                #                                        plot_mask)
+                mask=generate_risley_gaussian_mask(volume,
+                                                  sigma,
+                                                  maximum_transmittance,
+                                                  plot_mask)
                 masks_dataset_train.create_dataset(name, data=mask)
             
             subsampled_image = np.multiply(mask,volume).astype(np.uint8)
@@ -464,11 +549,15 @@ def generate_dataset(denoised_dataset_folder_path,
                         plt.imshow(mask[:,:,11],cmap='gray')
                         plt.show() 
                 else:
-                    mask=generate_real_gaussian_blue_noise_mask(blue_noise,
-                                                           volume,
-                                                           desired_transmittance,
-                                                           sigma,
-                                                           plot_mask)
+                    # mask=generate_real_gaussian_blue_noise_mask(blue_noise,
+                    #                                        volume,
+                    #                                        desired_transmittance,
+                    #                                        sigma,
+                    #                                        plot_mask)
+                    mask=generate_risley_gaussian_mask(volume,
+                                                      sigma,
+                                                      maximum_transmittance,
+                                                      plot_mask)
                     masks_dataset_test.create_dataset(name, data=mask)
                     
                     
@@ -501,8 +590,8 @@ def generate_dataset(denoised_dataset_folder_path,
 
 
 
-dataset_folder='REAL_GAUSSIAN_BLUE_NOISE_TRANSMITTANCE_25_SIGMA_100_DATASET'
-generate_ground_truth_denoised=False
+dataset_folder='RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET'
+generate_ground_truth_denoised=True
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
@@ -517,4 +606,5 @@ generate_dataset(denoised_dataset_folder_path,
                  testing_txt_path='',
                  desired_transmittance=0.25,
                  sigma=100,
-                 plot_mask=True)
+                 maximum_transmittance=0.53,
+                 plot_mask=False)
