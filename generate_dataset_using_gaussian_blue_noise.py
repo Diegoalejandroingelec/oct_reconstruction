@@ -454,7 +454,8 @@ def generate_dataset(denoised_dataset_folder_path,
         with open('./'+dataset_folder+'/test_volumes_paths.txt', 'w') as f:
             f.write('\n'.join(test_volumes_paths))
     
-    
+    ###############################################################################################################
+    '''
     volume_number=0
     subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_subsampled_volumes.h5', 'w')
     volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_ground_truth.h5', 'w')
@@ -519,8 +520,8 @@ def generate_dataset(denoised_dataset_folder_path,
     subsampled_volumes_dataset_train.close()  
     volumes_dataset_train.close()
     masks_dataset_train.close()
-    
-    
+    '''
+    ############################################################################################################
     
     volume_number=0
     subsampled_volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_subsampled_volumes.h5', 'w')
@@ -578,7 +579,8 @@ def generate_dataset(denoised_dataset_folder_path,
                 
                 volume_number+=1
             
-            except:
+            except Exception as e :
+                print(e)
                 print('WRONG dimentions'+volume_path)
             
 
@@ -595,15 +597,15 @@ generate_ground_truth_denoised=True
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
-# training_txt_path='./BLUE_NOISE_GAUSSIAN_DATASET/train_volumes_paths.txt'
-# testing_txt_path='./BLUE_NOISE_GAUSSIAN_DATASET/test_volumes_paths.txt'
+training_txt_path='./RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET/train_volumes_paths.txt'
+testing_txt_path='./RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET/test_volumes_paths.txt'
 generate_dataset(denoised_dataset_folder_path,
                  generate_ground_truth_denoised,
                  dataset_folder,
                  mask_dataset_training_path='',
                  mask_dataset_testing_path='',
-                 training_txt_path='',
-                 testing_txt_path='',
+                 training_txt_path=training_txt_path,
+                 testing_txt_path=testing_txt_path,
                  desired_transmittance=0.25,
                  sigma=100,
                  maximum_transmittance=0.53,
