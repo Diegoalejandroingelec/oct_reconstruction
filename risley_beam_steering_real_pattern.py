@@ -172,18 +172,13 @@ def generate_2D_pattern(tf,
     x_factor=np.abs((expected_dims[1]/2)/x_min)
     y_factor=np.abs((expected_dims[2]/2)/y_min)
     
-    x=(A8[1,:]*(x_factor+4.5))
+    x=(A8[1,:]*(x_factor+5))
     y=(A8[0,:]*(y_factor+0.25))
     
     x = x+500
     y = y+50
     
-    # plt.rcParams["figure.figsize"] = (20,20)
-    # plt.plot(x,y,'.')
-    # plt.plot([0,0,1000,1000,0],[100,0,0,100,100],'r')
-    # plt.title('FINAL PATTERN USING 4 PRISM')
-    # plt.grid()
-    # plt.show()
+
     
     risley_pattern_2D=np.zeros((expected_dims[1],expected_dims[2]))
     
@@ -210,10 +205,17 @@ def generate_2D_pattern(tf,
     # cv2.destroyAllWindows()
     transmittance=(risley_pattern_2D.sum()*100)/(expected_dims[1]*expected_dims[2])
     #print('TRANSMTTANCE C-SCAN',transmittance)
+
+    # plt.rcParams["figure.figsize"] = (20,20)
+    # plt.plot(x,y,'.')
+    # plt.plot([0,0,1000,1000,0],[100,0,0,100,100],'r')
+    # plt.title(f'FINAL PATTERN USING 4 PRISM w={w},w1={w2},w2={w3},w3={w4}, T={transmittance}')
+    # plt.grid()
+    # plt.show()
     return risley_pattern_2D,transmittance
 
 def required_prf(desired_transmittance):
-    return -104796.61278281175+1.07808686e+05*desired_transmittance-6.89548030e+02*desired_transmittance**2+2.31497294e+01*desired_transmittance**3
+    return -97759.26679742243+9.72927062e+04*desired_transmittance-5.43662111e+02*desired_transmittance**2+1.77844607e+01*desired_transmittance**3
 
 
 
@@ -351,15 +353,15 @@ def create_risley_pattern(expected_dims,
 # tf=0.016
 
 # #angular speed risley 1 rotations per sec
-# w=4000
+# w=-9990
 # #angula speed risley 2 rotations per sec
-# w2=(w/0.09)
+# w2=(-111000)
 
 # #angula speed risley 2 rotations per sec
-# w3=(-w/0.09)
+# w3=(-12333)
 
 # #angula speed risley 2 rotations per sec
-# w4=(-w/0.065)
+# w4=(-119538)
 
 # a=1*(10*np.pi/180)    
 # expected_dims=(512,1000,100)   
@@ -434,7 +436,7 @@ def create_risley_pattern(expected_dims,
 # number_of_prisms=4
 
 
-# desired_transmittance=80
+# desired_transmittance=15
 
 # #Laser Pulse Rate
 # #PRF=required_prf(desired_transmittance)#1999000
@@ -443,15 +445,15 @@ def create_risley_pattern(expected_dims,
 # tf=0.016
 
 # #angular speed risley 1 rotations per sec
-# w=4000
+# w=9990
 # #angula speed risley 2 rotations per sec
-# w2=(w/0.09)
+# w2=111000
 
 # #angula speed risley 2 rotations per sec
-# w3=(-w/0.09)
+# w3=12333
 
 # #angula speed risley 2 rotations per sec
-# w4=(-w/0.065)
+# w4=119538
 
 # a=1*(10*np.pi/180)    
 # expected_dims=(512,1000,100)   
@@ -464,8 +466,10 @@ def create_risley_pattern(expected_dims,
 # maximum_transmittance=0.53
 # sigma=100
 
-
-# transmittance=generate_2D_pattern(tf,
+# # list_transmittances=[]
+# # prfs=[]
+# # for p in range(1000):
+# r,transmittance=generate_2D_pattern(tf,
 #                         PRF,
 #                         w,
 #                         w2,
@@ -476,10 +480,35 @@ def create_risley_pattern(expected_dims,
 #                         n_prism=1.444,
 #                         expected_dims=expected_dims,
 #                         plot_mask=True)
+    # prfs.append(PRF+(p*10000))
+    # list_transmittances.append(transmittance)
 
-    
-    
+# ws=np.round(np.linspace(-9990,9990,10))
+# w2s=np.round(np.linspace(-9990,9990,10)/0.09)
+# w3s=np.round(np.linspace(-9990,9990,10)/-0.09)
+# w4s=np.round(np.linspace(-9990,9990,10)/-0.065)
 
+# for w in ws:
+#     for w2 in w2s:
+#         for w3 in w3s:
+#             for w4 in w4s:
+#                 # w=4000
+#                 # w2=w/0.09
+#                 # w3=-w/0.09
+#                 # w4=-w/0.065
+#                 if(w!=w2 and w!=w3 and w!=w4 and w2!= w3 and w2!=w4 and w3!=w4):
+#                     transmittance=generate_2D_pattern(tf,
+#                                             PRF,
+#                                             w,
+#                                             w2,
+#                                             w3,
+#                                             w4,
+#                                             a,
+#                                             number_of_prisms,
+#                                             n_prism=1.444,
+#                                             expected_dims=expected_dims,
+#                                             plot_mask=True)
+                
 
 # list_transmittances=np.array(list_transmittances)
 # prfs=np.array(prfs)
