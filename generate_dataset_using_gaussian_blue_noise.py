@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import time
 from scipy.signal import savgol_filter
 import cv2
-from RISLEY_PRISM import create_risley_pattern
+from risley_beam_steering_real_pattern import create_risley_pattern
 vol_dims=(512,1000,100)
 
 
@@ -341,6 +341,7 @@ def generate_real_gaussian_blue_noise_mask(blue_noise,
 def generate_risley_gaussian_mask(original_volume,
                                   sigma,
                                   maximum_transmittance,
+                                  minimum_transmittance,
                                   plot_mask):
 
     number_of_prisms=4
@@ -390,6 +391,7 @@ def generate_risley_gaussian_mask(original_volume,
                               number_of_prisms,
                               original_volume,
                               maximum_transmittance,
+                              minimum_transmittance,
                               sigma,
                               plot_mask)
     end = time.time()
@@ -428,6 +430,7 @@ def generate_dataset(denoised_dataset_folder_path,
                      desired_transmittance,
                      sigma,
                      maximum_transmittance,
+                     minimum_transmittance,
                      plot_mask):
     
 
@@ -455,7 +458,7 @@ def generate_dataset(denoised_dataset_folder_path,
             f.write('\n'.join(test_volumes_paths))
     
     ###############################################################################################################
-    '''
+    
     volume_number=0
     subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_subsampled_volumes.h5', 'w')
     volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_ground_truth.h5', 'w')
@@ -487,6 +490,7 @@ def generate_dataset(denoised_dataset_folder_path,
                 mask=generate_risley_gaussian_mask(volume,
                                                   sigma,
                                                   maximum_transmittance,
+                                                  minimum_transmittance,
                                                   plot_mask)
                 masks_dataset_train.create_dataset(name, data=mask)
             
@@ -520,7 +524,7 @@ def generate_dataset(denoised_dataset_folder_path,
     subsampled_volumes_dataset_train.close()  
     volumes_dataset_train.close()
     masks_dataset_train.close()
-    '''
+    
     ############################################################################################################
     
     volume_number=0
@@ -558,6 +562,7 @@ def generate_dataset(denoised_dataset_folder_path,
                     mask=generate_risley_gaussian_mask(volume,
                                                       sigma,
                                                       maximum_transmittance,
+                                                      minimum_transmittance,
                                                       plot_mask)
                     masks_dataset_test.create_dataset(name, data=mask)
                     
@@ -592,21 +597,22 @@ def generate_dataset(denoised_dataset_folder_path,
 
 
 
-dataset_folder='RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET'
+dataset_folder='REAL_RISLEY_SEMI_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET'
 generate_ground_truth_denoised=True
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
-training_txt_path='./RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET/train_volumes_paths.txt'
-testing_txt_path='./RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET/test_volumes_paths.txt'
+#training_txt_path='./RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET/train_volumes_paths.txt'
+#testing_txt_path='./RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET/test_volumes_paths.txt'
 generate_dataset(denoised_dataset_folder_path,
                  generate_ground_truth_denoised,
                  dataset_folder,
                  mask_dataset_training_path='',
                  mask_dataset_testing_path='',
-                 training_txt_path=training_txt_path,
-                 testing_txt_path=testing_txt_path,
+                 training_txt_path='',
+                 testing_txt_path='',
                  desired_transmittance=0.25,
                  sigma=100,
-                 maximum_transmittance=0.53,
+                 maximum_transmittance=0.48,
+                 minimum_transmittance=0.15,
                  plot_mask=False)
