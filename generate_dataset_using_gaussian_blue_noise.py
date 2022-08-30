@@ -612,7 +612,7 @@ generate_dataset(denoised_dataset_folder_path,
                  training_txt_path='',
                  testing_txt_path='',
                  desired_transmittance=0.25,
-                 sigma=100,
+                 sigma=200,
                  maximum_transmittance=0.48,
-                 minimum_transmittance=0.15,
-                 plot_mask=False)
+                 minimum_transmittance=0.02,
+                 plot_mask=True)

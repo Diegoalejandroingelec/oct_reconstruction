@@ -14,6 +14,19 @@ from scipy.io import loadmat
 from scipy.signal import savgol_filter
 import time
 
+def plot_fn(x,y,title,fontsize,xlabel,ylabel,img_size=(20,20),draw_FOV=False):
+    plt.rcParams["figure.figsize"] = img_size
+    plt.plot(x,y,'.')
+    if(draw_FOV):
+        plt.plot([0,0,1000,1000,0],[100,0,0,100,100],'r')
+    plt.title(title,fontsize=fontsize)
+    plt.grid()
+    plt.xticks(fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
+    plt.xlabel(xlabel, fontsize=fontsize)
+    plt.ylabel(ylabel, fontsize=fontsize)
+    plt.show()
+    
 def risley_optical_index_fused_silica(l):
     n=np.sqrt((((0.6961663)*l**2)/(l**2-0.0684043**2))+((0.4079426*l**2)/(l**2-0.1162414**2))+((0.8974794*l**2)/(l**2-9.896161**2))+1)
     return n
@@ -110,63 +123,45 @@ def generate_2D_pattern(tf,
     
     central_d=12
     
-    A1=(central_d/beam_a[1][2])*beam_a[1]
-    A2=(76/beam_a[2][2])*beam_a[2]
+    A1=np.abs(central_d/beam_a[1][2])*beam_a[1]
+    A2=np.abs(76/beam_a[2][2])*beam_a[2]
     A2=A1+A2
     
     
     r=np.sqrt(A2[0,:]**2+A2[1,:]**2)
     T_p=r*np.tan(a)*np.cos(np.abs(tr1-tr2))
     
-    A3=((central_d+T_p)/beam_a[3][2])*beam_a[3]
+    A3=np.abs((central_d+T_p)/beam_a[3][2])*beam_a[3]
     A3=A3+A2
     
     d_3=188-A3[2,:]
     
-    A4=(d_3/beam_a[4][2])*beam_a[4]
+    A4=np.abs(d_3/beam_a[4][2])*beam_a[4]
     
     A4=A4+A3
     
     r1=np.sqrt(A4[0,:]**2+A4[1,:]**2)
     T_p1=r1*np.tan(a)*np.cos(np.abs(tr2-tr3))
-    A5=((central_d+T_p1)/beam_a[5][2])*beam_a[5]
+    A5=np.abs((central_d+T_p1)/beam_a[5][2])*beam_a[5]
     
     A5=A5+A4
     
     d_5=288-A5[2,:]
-    A6=(d_5/beam_a[6][2])*beam_a[6]
+    A6=np.abs(d_5/beam_a[6][2])*beam_a[6]
     A6=A6+A5
     
     
     r2=np.sqrt(A6[0,:]**2+A6[1,:]**2)
     T_p2=r2*np.tan(a)*np.cos(np.abs(tr3-tr4))
-    A7=((central_d+T_p2)/beam_a[7][2])*beam_a[7]
+    A7=np.abs((central_d+T_p2)/beam_a[7][2])*beam_a[7]
     
     A7=A7+A6
     
     d_7=350-A7[2,:]
-    A8=(d_7/beam_a[8][2])*beam_a[8]
+    A8=np.abs(d_7/beam_a[8][2])*beam_a[8]
     A8=A8+A7
     
-    
-    # plt.rcParams["figure.figsize"] = (20,20)
-    # plt.plot(A4[1,:],A4[0,:],'.')
-    # plt.title('PATTERN USING 2 PRISM')
-    # plt.grid()
-    # plt.show()
-    
-    # plt.rcParams["figure.figsize"] = (20,20)
-    # plt.plot(A6[1,:],A6[0,:],'.')
-    # plt.title('PATTERN USING 3 PRISM')
-    # plt.grid()
-    # plt.show()
-    
-    # plt.rcParams["figure.figsize"] = (20,20)
-    # plt.plot(A8[1,:],A8[0,:],'.')
-    # plt.title('PATTERN USING 4 PRISM')
-    # plt.grid()
-    # plt.show()
-    
+
     x_min=np.min(A8[1,:])
     y_min=np.min(A8[0,:])
     x_factor=np.abs((expected_dims[1]/2)/x_min)
@@ -177,7 +172,6 @@ def generate_2D_pattern(tf,
     
     x = x+500
     y = y+50
-    
 
     
     risley_pattern_2D=np.zeros((expected_dims[1],expected_dims[2]))
@@ -206,12 +200,23 @@ def generate_2D_pattern(tf,
     transmittance=(risley_pattern_2D.sum()*100)/(expected_dims[1]*expected_dims[2])
     #print('TRANSMTTANCE C-SCAN',transmittance)
 
-    # plt.rcParams["figure.figsize"] = (20,20)
-    # plt.plot(x,y,'.')
-    # plt.plot([0,0,1000,1000,0],[100,0,0,100,100],'r')
-    # plt.title(f'FINAL PATTERN USING 4 PRISM w={w},w1={w2},w2={w3},w3={w4}, T={transmittance}')
-    # plt.grid()
-    # plt.show()
+    # if(plot_mask):
+    #     plot_fn(x=A4[1,:],y=A4[0,:],title='PATTERN USING 2 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
+        
+    #     plot_fn(x=A6[1,:],y=A6[0,:],title='PATTERN USING 3 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
+        
+    #     plot_fn(x=A8[1,:],y=A8[0,:],title='PATTERN USING 4 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
+        
+    #     plot_fn(x,
+    #             y,
+    #             title=f'FINAL PATTERN USING 4 PRISM \n w={w} rad/s,w1={w2} rad/s,w2={w3} rad/s,w3={w4} rad/s, T={transmittance}%',
+    #             fontsize=80,
+    #             xlabel='Pixels',
+    #             ylabel='Pixels',
+    #             img_size=(80,25),
+    #             draw_FOV=True)
+    
+
     return risley_pattern_2D,transmittance
 
 def required_prf(desired_transmittance):
@@ -264,7 +269,7 @@ def create_risley_pattern(expected_dims,
     transmittance_list=[]
     if(PRF):
         for i in range(1,expected_dims[0]+1):
-            print(i)
+            #print(i)
             
             #Risley optical index fused silica
             n_prism=risley_optical_index_fused_silica((i*line_width+start_wavelength)/1000)
@@ -310,14 +315,16 @@ def create_risley_pattern(expected_dims,
             plt.title('TRANSMITTANCE DISTRIBUTION')
             plt.xlabel("Depth ")
             plt.ylabel("Transmittance[%]")
+            plt.grid()
             plt.show()
         required_prfs=required_prf(np.array(new_transmittances))
         for i in range(expected_dims[0]):
+            print(i)
             #Risley optical index fused silica
             n_prism=risley_optical_index_fused_silica((i*line_width+start_wavelength)/1000)
             #print('Risley optical index fused silica ',n)
             mask_2D,transmittance=generate_2D_pattern(tf,
-                                required_prfs[i],
+                                np.abs(required_prfs[i]),
                                 w,
                                 w2,
                                 w3,
@@ -347,23 +354,23 @@ def create_risley_pattern(expected_dims,
 # desired_transmittance=25
 
 # #Laser Pulse Rate
-# #PRF=required_prf(desired_transmittance)#1999000
-# PRF=None
+# PRF=None#required_prf(desired_transmittance)#1999000
+# #PRF=None
 # #Image Capture Time 0.003
 # tf=0.016
 
 # #angular speed risley 1 rotations per sec
-# w=-9990
+# w=9990
 # #angula speed risley 2 rotations per sec
-# w2=(-111000)
+# w2=111000
 
 # #angula speed risley 2 rotations per sec
-# w3=(-12333)
+# w3=12333
 
 # #angula speed risley 2 rotations per sec
-# w4=(-119538)
+# w4=119538
 
-# a=1*(10*np.pi/180)    
+# a=10*(np.pi/180)    
 # expected_dims=(512,1000,100)   
 
 
@@ -371,9 +378,9 @@ def create_risley_pattern(expected_dims,
 # line_width=band_width/expected_dims[0]
 # start_wavelength=962
 
-# maximum_transmittance=0.48
-# minimum_transmittance=0.15
-# sigma=100
+# maximum_transmittance=0.38
+# minimum_transmittance=0.025
+# sigma=200
 
 # path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1084.mat'
 # def read_data(path):
@@ -406,12 +413,40 @@ def create_risley_pattern(expected_dims,
 
 # plt.imshow(mask_risley[:,:,50],cmap='gray')
 
-##################################################################################################################
-
-
 # import napari
 
 # viewer = napari.view_image(mask_risley*255)
+##################################################################################################################
+
+
+# def make_video(volume,name,axis=0):
+    
+#     height, width,depth = volume.shape
+#     if (axis==1):
+#         size = (depth,width)
+#         r=height
+#     else:
+#         size = (width,height)
+#         r=depth
+
+#     fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+
+#     video = cv2.VideoWriter(name+'.avi',fourcc, 10, size)
+    
+#     for b in range(r):
+#         if (axis==1):
+#             image_for_video=cv2.cvtColor(np.squeeze(volume[b,:,:]),cv2.COLOR_GRAY2BGR)
+#         else:
+#             image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
+#         video.write(image_for_video)
+#     video.release()
+
+# make_video(mask_risley*255,'Gaussian_S100_T25_xz')
+# make_video(mask_risley*255,'Gaussian_S100_T25_xy',1)
+# subsampled_volume=np.multiply(mask_risley,original_volume)
+
+
+#viewer = napari.view_image(subsampled_volume)
 
 
 
