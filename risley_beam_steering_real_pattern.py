@@ -319,7 +319,6 @@ def create_risley_pattern(expected_dims,
             plt.show()
         required_prfs=required_prf(np.array(new_transmittances))
         for i in range(expected_dims[0]):
-            print(i)
             #Risley optical index fused silica
             n_prism=risley_optical_index_fused_silica((i*line_width+start_wavelength)/1000)
             #print('Risley optical index fused silica ',n)
