@@ -14,14 +14,15 @@ import numpy as np
 import random
 import pickle
 import h5py
-
+import matplotlib.pyplot as plt
+from risley_beam_steering_real_pattern import create_risley_pattern,required_prf
 sub_sampling_percentage=75
 
 #'blue_noise_subsampling'
 #'raster_subsampling'
 #'random_subsampling'
 #'risley_subsampling'
-subsampling_method='risley_subsampling'
+subsampling_method='risley_subsampling_4_prisms'
 
 def read_data(path):
     data = loadmat(path)
@@ -32,7 +33,69 @@ def find_denoised_volume(volume_path,denoised_dataset_folder_path):
     volume_name=volume_path.split('/')[-1]
     path=denoised_dataset_folder_path+'/denoised_'+volume_name
     return read_data(path)
+########################################################################################
+#######################
+#######################
+#######################                   RISLEY BEAM STEERING 4 PRISMS
+#######################
+#######################
+########################################################################################
 
+def create_risley_beam_steering_mask_4_prisms(expected_dims,desired_transmittance):
+
+    number_of_prisms=4
+
+    #Laser Pulse Rate
+    PRF=required_prf(desired_transmittance)#1999000
+    #PRF=None
+    #Image Capture Time 0.003
+    tf=0.016
+
+    #angular speed risley 1 rotations per sec
+    w=9990
+    #angula speed risley 2 rotations per sec
+    w2=111000
+
+    #angula speed risley 2 rotations per sec
+    w3=12333
+
+    #angula speed risley 2 rotations per sec
+    w4=119538
+
+    a=10*(np.pi/180)    
+    expected_dims=(512,1000,100)   
+
+
+    band_width=176
+    line_width=band_width/expected_dims[0]
+    start_wavelength=962
+
+
+        
+
+
+    mask_risley=create_risley_pattern(expected_dims,
+                              line_width,
+                              start_wavelength,
+                              tf,
+                              PRF,
+                              w,
+                              w2,
+                              w3,
+                              w4,
+                              a,
+                              number_of_prisms,
+                              original_volume=None,
+                              maximum_transmittance=None,
+                              minimum_transmittance=None,
+                              sigma=None,
+                              plot_mask=True)
+    
+
+
+    plt.imshow(mask_risley[:,:,50],cmap='gray')
+    plt.show()
+    return mask_risley
 ########################################################################################
 #######################
 #######################
@@ -312,7 +375,9 @@ def generate_dataset(denoised_dataset_folder_path,
         if(subsampling_method=='raster_subsampling'):
             print('raster scan...')
             mask = generate_mask(percentage=sub_sampling_percentage/100,volume_x=1000,volume_y=512,volume_z=100)
-            
+        elif(subsampling_method== 'risley_subsampling_4_prisms'):
+            print('Risley beam steering 4_prisms scan...')
+            mask=create_risley_beam_steering_mask_4_prisms(expected_dims=(512,1000,100),desired_transmittance=(100-sub_sampling_percentage))
         elif(subsampling_method== 'risley_subsampling'):
             print('Risley beam steering scan...')
             mask=create_risley_beam_steering_mask(expected_dims=(512,1000,100))
@@ -433,9 +498,9 @@ def generate_dataset(denoised_dataset_folder_path,
     subsampled_volumes_dataset_test.close()  
     volumes_dataset_test.close()
 
-dataset_folder='RISLEY_BEAM_STEERING_25_TRANSMITTANCE_DATASET'
+dataset_folder='RISLEY_BEAM_STEERING_25_TRANSMITTANCE_4_PRISMS_DATASET'
 denoised_dataset_folder_path='./DATASET_DENOISED'
-generate_ground_truth_denoised=True
+generate_ground_truth_denoised=False
 # training_txt_path='./TEST_DATASET_FIXED_MASK/train_volumes_paths.txt'
 # testing_txt_path='./TEST_DATASET_FIXED_MASK/test_volumes_paths.txt'
 # mask_path='./TEST_DATASET_FIXED_MASK/mask75.pkl'

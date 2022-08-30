@@ -353,7 +353,7 @@ def create_risley_pattern(expected_dims,
 # desired_transmittance=25
 
 # #Laser Pulse Rate
-# PRF=None#required_prf(desired_transmittance)#1999000
+# PRF=required_prf(desired_transmittance)#1999000
 # #PRF=None
 # #Image Capture Time 0.003
 # tf=0.016
@@ -377,9 +377,9 @@ def create_risley_pattern(expected_dims,
 # line_width=band_width/expected_dims[0]
 # start_wavelength=962
 
-# maximum_transmittance=0.38
-# minimum_transmittance=0.025
-# sigma=200
+# maximum_transmittance=0.60
+# minimum_transmittance=0
+# sigma=100
 
 # path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1084.mat'
 # def read_data(path):
@@ -412,9 +412,7 @@ def create_risley_pattern(expected_dims,
 
 # plt.imshow(mask_risley[:,:,50],cmap='gray')
 
-# import napari
 
-# viewer = napari.view_image(mask_risley*255)
 ##################################################################################################################
 
 
@@ -440,12 +438,16 @@ def create_risley_pattern(expected_dims,
 #         video.write(image_for_video)
 #     video.release()
 
-# make_video(mask_risley*255,'Gaussian_S100_T25_xz')
+# make_video(mask_risley*255,'Gaussian_s100_T25_xz')
 # make_video(mask_risley*255,'Gaussian_S100_T25_xy',1)
 # subsampled_volume=np.multiply(mask_risley,original_volume)
 
 
-#viewer = napari.view_image(subsampled_volume)
+# import napari
+
+# viewer = napari.view_image(mask_risley*255)
+
+# viewer = napari.view_image(subsampled_volume)
 
 
 
