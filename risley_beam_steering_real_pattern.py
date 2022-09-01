@@ -338,15 +338,7 @@ def create_risley_pattern(expected_dims,
                 new_transmittances[index_of_maximum+indx]=minimum_transmittance-(count_down*0.01)
                 count_down+=1
         print('EXPECTED FINAL TRANSMITTANCE: ', new_transmittances.sum()/expected_dims[0])
-        if(plot_mask):    
-            distribution_name= 'CAUCHY' if transmittance_distribution_fn=='ca' else 'LAPLACE' if (transmittance_distribution_fn=='la')  else 'GAUSSIAN'
-            plt.plot(new_transmittances) 
-            plt.title(f'TRANSMITTANCE {distribution_name} DISTRIBUTION')
-            plt.xlabel("Depth ")
-            plt.ylabel("Transmittance[%]")
-            plt.grid()
-            plt.show()
-            print('MINIMUM TRANSMITTANCE',np.min(new_transmittances))
+        
         required_prfs=required_prf(np.array(new_transmittances))
         for i in range(expected_dims[0]):
             #Risley optical index fused silica
@@ -365,7 +357,19 @@ def create_risley_pattern(expected_dims,
                                 plot_mask) 
             transmittance_list.append(transmittance)
             mask_risley[i,:,:]=mask_2D
-        
+        if(plot_mask):    
+            distribution_name= 'CAUCHY' if transmittance_distribution_fn=='ca' else 'LAPLACE' if (transmittance_distribution_fn=='la')  else 'GAUSSIAN'
+            plt.rcParams["figure.figsize"] = (10,10)
+            plt.plot(new_transmittances,'-',label='Expected') 
+            plt.plot(transmittance_list,'-',label='Obtained')
+            plt.title(f'TRANSMITTANCE {distribution_name} DISTRIBUTION')
+            plt.xlabel("Depth ")
+            plt.ylabel("Transmittance[%]")
+            plt.grid()
+            plt.legend()
+            plt.show()
+            print('MINIMUM TRANSMITTANCE',np.min(new_transmittances))
+            
     print('MEAN TRANSMTTANCE C-SCAN',np.mean(transmittance_list))
     transmittance_list=[]
     for m in range(100):
@@ -408,12 +412,12 @@ def create_risley_pattern(expected_dims,
 # line_width=band_width/expected_dims[0]
 # start_wavelength=962
 
-# maximum_transmittance=0.475
+# maximum_transmittance=0.52
 # minimum_transmittance=0.0
 # transmittance_distribution_fn='ca'
 # sigma=150
 
-# path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1084.mat'
+# path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1253.mat'
 # def read_data(path):
 #     data = loadmat(path)
 #     oct_volume = data['images']
