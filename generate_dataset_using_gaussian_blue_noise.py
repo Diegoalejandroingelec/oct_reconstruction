@@ -400,6 +400,8 @@ def generate_risley_gaussian_mask(original_volume,
     print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
     print('')
     if(plot_mask):
+        
+        plt.rcParams["figure.figsize"] = (100,80)
         plt.imshow(mask_risley[:,:,50],cmap='gray')
         plt.show()
     return mask_risley
@@ -618,7 +620,7 @@ generate_dataset(denoised_dataset_folder_path,
                  testing_txt_path='',
                  desired_transmittance=0.25,
                  sigma=150,
-                 maximum_transmittance=0.47,
+                 maximum_transmittance=0.60,
                  minimum_transmittance=0.0,
-                 transmittance_distribution_fn='ca',
+                 transmittance_distribution_fn='la',
                  plot_mask=False)
