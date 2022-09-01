@@ -603,7 +603,7 @@ def generate_dataset(denoised_dataset_folder_path,
 
 
 dataset_folder='RISLEY_CAUCHY_TRANSMITTANCE_25_SIGMA_150_DATASET'
-generate_ground_truth_denoised=False
+generate_ground_truth_denoised=True
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
