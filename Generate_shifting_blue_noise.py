@@ -8,6 +8,75 @@ Created on Wed Aug  3 18:47:05 2022
 
 import numpy as np
 import matplotlib.pyplot as plt
+expected_dims=(512,512,100)
+def generate_shifting_blue_noise_all_directions(expected_dims):
+    
+    blue_noise_slice = np.load('blue_noise_cubes/bluenoise1024.npy')
+    blue_shape=blue_noise_slice.shape
+    i_x_start=int(blue_shape[0]/2-expected_dims[0]/2)
+    i_x_end=int(blue_shape[0]/2+expected_dims[0]/2)
+    
+    i_x_start=int(blue_shape[0]/2-expected_dims[0]/2)
+    i_x_end=int(blue_shape[0]/2+expected_dims[0]/2)
+    
+    i_y_start=int(blue_shape[1]/2-expected_dims[1]/2)
+    i_y_end=int(blue_shape[1]/2+expected_dims[1]/2)
+    
+    matrix_i=blue_noise_slice[i_x_start:i_x_end,
+                            i_y_start:i_y_end]
+    blue_noise_mask=np.zeros(expected_dims)
+    blue_noise_mask[:,:,0]=matrix_i
+    def matrix_shift_sides(direction,pixels):          
+        if(direction==1):##rigth shift
+            print('DOWN SHIFT')
+            return blue_noise_slice[i_x_start-pixels:i_x_end-pixels,i_y_start:i_y_end]
+        if(direction==2):##left shift
+            print('UP SHIFT')
+            return blue_noise_slice[i_x_start+pixels:i_x_end+pixels,i_y_start:i_y_end]
+        if(direction==3):##rigth shift
+            print('RIGTH SHIFT')
+            if(i_y_end+pixels<=blue_shape[0]):
+                return blue_noise_slice[i_x_start:i_x_end,i_y_start+pixels:i_y_end+pixels]
+            else:
+                px=(i_y_end+pixels)-blue_shape[0]
+                matrix=blue_noise_slice[i_x_start:i_x_end,blue_shape[0]-expected_dims[1]:blue_shape[0]]
+                m1=matrix[:,:expected_dims[1]-px]
+                m2=matrix[:,expected_dims[1]-px:]
+                new_slice[:,:m2.shape[1]]=m2
+                new_slice[:,m2.shape[1]:]=m1
+                #return new_slice
+                
+        if(direction==4):##left shift
+            print('LEFT SHIFT')
+            
+            if(i_y_start-pixels>=0):
+                return blue_noise_slice[i_x_start:i_x_end,i_y_start-pixels:i_y_end-pixels]
+                
+            else:
+                px=(pixels-i_y_start)
+                matrix=blue_noise_slice[i_x_start:i_x_end,0:expected_dims[1]]
+                m1=matrix[:,px:]
+                m2=matrix[:,:px]
+                new_slice[:,:m1.shape[1]]=m1
+                new_slice[:,m1.shape[1]:]=m2
+                #return new_slice
+    direction_count=1
+    pixel_count=1
+    
+    for n in range(expected_dims[2]-1):
+        new_slice=matrix_shift_sides(direction=direction_count,
+                                     pixels=pixel_count)
+        
+        direction_count+=1
+        if(direction_count>2):
+            pixel_count+=1
+            direction_count=1
+           
+        # plt.imshow(new_slice,cmap='gray')
+        # plt.show()
+        blue_noise_mask[:,:,n+1]=new_slice
+        
+    return blue_noise_mask
 
 def generate_shifting_blue_noise(expected_dims):
     
@@ -86,3 +155,8 @@ def generate_binary_blue_noise_mask(blue_noise_mask,subsampling_percentage):
     
     return binary_blue_noise_mask.astype(np.uint8)
 
+# blue_noise=generate_shifting_blue_noise_all_directions(expected_dims)
+
+# import napari
+
+# viewer = napari.view_image(blue_noise*255)

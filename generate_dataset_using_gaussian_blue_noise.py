@@ -342,6 +342,7 @@ def generate_risley_gaussian_mask(original_volume,
                                   sigma,
                                   maximum_transmittance,
                                   minimum_transmittance,
+                                  transmittance_distribution_fn,
                                   plot_mask):
 
     number_of_prisms=4
@@ -393,6 +394,7 @@ def generate_risley_gaussian_mask(original_volume,
                               maximum_transmittance,
                               minimum_transmittance,
                               sigma,
+                              transmittance_distribution_fn,
                               plot_mask)
     end = time.time()
     print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
@@ -431,6 +433,7 @@ def generate_dataset(denoised_dataset_folder_path,
                      sigma,
                      maximum_transmittance,
                      minimum_transmittance,
+                     transmittance_distribution_fn,
                      plot_mask):
     
 
@@ -491,6 +494,7 @@ def generate_dataset(denoised_dataset_folder_path,
                                                   sigma,
                                                   maximum_transmittance,
                                                   minimum_transmittance,
+                                                  transmittance_distribution_fn,
                                                   plot_mask)
                 masks_dataset_train.create_dataset(name, data=mask)
             
@@ -563,6 +567,7 @@ def generate_dataset(denoised_dataset_folder_path,
                                                       sigma,
                                                       maximum_transmittance,
                                                       minimum_transmittance,
+                                                      transmittance_distribution_fn,
                                                       plot_mask)
                     masks_dataset_test.create_dataset(name, data=mask)
                     
@@ -597,8 +602,8 @@ def generate_dataset(denoised_dataset_folder_path,
 
 
 
-dataset_folder='REAL_RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_200_DATASET'
-generate_ground_truth_denoised=False
+dataset_folder='RISLEY_CAUCHY_TRANSMITTANCE_25_SIGMA_150_DATASET'
+generate_ground_truth_denoised=True
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
@@ -612,7 +617,8 @@ generate_dataset(denoised_dataset_folder_path,
                  training_txt_path='',
                  testing_txt_path='',
                  desired_transmittance=0.25,
-                 sigma=200,
-                 maximum_transmittance=0.38,
-                 minimum_transmittance=0.02,
-                 plot_mask=True)
+                 sigma=150,
+                 maximum_transmittance=0.475,
+                 minimum_transmittance=0.0,
+                 transmittance_distribution_fn='ca',
+                 plot_mask=False)

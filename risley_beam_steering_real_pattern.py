@@ -162,13 +162,13 @@ def generate_2D_pattern(tf,
     A8=A8+A7
     
 
-    x_min=np.min(A8[1,:])
-    y_min=np.min(A8[0,:])
-    x_factor=np.abs((expected_dims[1]/2)/x_min)
-    y_factor=np.abs((expected_dims[2]/2)/y_min)
+    x_max=np.max(A8[1,:])
+    y_max=np.max(A8[0,:])
+    x_factor=np.abs((expected_dims[1]/2)/x_max)
+    y_factor=np.abs((expected_dims[2]/2)/y_max)
     
-    x=(A8[1,:]*(x_factor+5))
-    y=(A8[0,:]*(y_factor+0.25))
+    x=(A8[1,:]*(x_factor+5.5))
+    y=(A8[0,:]*(y_factor+0.35))
     
     x = x+500
     y = y+50
@@ -219,18 +219,37 @@ def generate_2D_pattern(tf,
 
     return risley_pattern_2D,transmittance
 
-def required_prf(desired_transmittance):
-    return -97759.26679742243+9.72927062e+04*desired_transmittance-5.43662111e+02*desired_transmittance**2+1.77844607e+01*desired_transmittance**3
+def required_prf(tr):
+    return 17331.149418538436+7.62755121e+04*tr+9.39995932e+02*tr**2-1.20363195e+01*tr**3+1.97498883e-01*tr**4
 
 
 
-
+# import numpy as np
+# import matplotlib.pyplot as plt
 def gaussian(x, a, x0, sigma):
     return a*np.exp(-(x-x0)**2/(2*sigma**2))  
+def cauchy(x, a, x0, g):
+    return (a*(g**2/((x-x0)**2+g**2)))
 
+def laplace(x, a, x0, b):
+    return a*np.exp(-np.abs(x-x0)/b)
+
+# x=np.linspace(0,511,512)
+# y1=gaussian(x, 0.45, 122.55673529411762, 150)
+# y2=cauchy(x, 0.475, 122.55673529411762, 150)
+# y3=laplace(x, 0.60, 122.55673529411762, 150)
+# plt.plot(x,y1,label='Gaussian')
+# plt.plot(x,y2,label='Cauchy')
+# plt.plot(x,y3,label='Laplace')
+# plt.grid()
+# plt.legend()
+# plt.title('TRANSMITTANCE DISTRIBUTIONS')
+# plt.show()
+    
 def get_transmittances(original_volume,
                        maximum_transmittance,
-                       sigma):
+                       sigma,
+                       function='ga'):
     
 
     mean_b_scans=np.mean(original_volume,2)
@@ -242,7 +261,12 @@ def get_transmittances(original_volume,
     total_mean=np.mean(means)
 
     x=np.linspace(0,511,512)
-    transmittances=gaussian(x, maximum_transmittance, total_mean, sigma)
+    if(function=='ga'):
+        transmittances=gaussian(x, maximum_transmittance, total_mean, sigma)
+    elif(function=='la'):
+        transmittances=laplace(x, maximum_transmittance, total_mean, sigma)
+    elif(function=='ca'):
+        transmittances=cauchy(x, maximum_transmittance, total_mean, sigma)    
     # plt.plot(x,transmittances)
     # plt.show()
     return transmittances*100
@@ -263,13 +287,14 @@ def create_risley_pattern(expected_dims,
                           maximum_transmittance,
                           minimum_transmittance,
                           sigma,
+                          transmittance_distribution_fn,
                           plot_mask):
     
     mask_risley=np.zeros(expected_dims)
     transmittance_list=[]
     if(PRF):
         for i in range(1,expected_dims[0]+1):
-            #print(i)
+            print(i)
             
             #Risley optical index fused silica
             n_prism=risley_optical_index_fused_silica((i*line_width+start_wavelength)/1000)
@@ -289,7 +314,10 @@ def create_risley_pattern(expected_dims,
             mask_risley[i-1,:,:]=mask_2D
     else:
         minimum_transmittance=minimum_transmittance*100
-        transmittances= get_transmittances(original_volume,maximum_transmittance,sigma)
+        transmittances= get_transmittances(original_volume,
+                                           maximum_transmittance,
+                                           sigma,
+                                           transmittance_distribution_fn)
         new_transmittances=np.zeros(expected_dims[0])
         index_of_maximum=np.argmax(transmittances)
         count_down=0
@@ -311,19 +339,21 @@ def create_risley_pattern(expected_dims,
                 count_down+=1
         print('EXPECTED FINAL TRANSMITTANCE: ', new_transmittances.sum()/expected_dims[0])
         if(plot_mask):    
+            distribution_name= 'CAUCHY' if transmittance_distribution_fn=='ca' else 'LAPLACE' if (transmittance_distribution_fn=='la')  else 'GAUSSIAN'
             plt.plot(new_transmittances) 
-            plt.title('TRANSMITTANCE DISTRIBUTION')
+            plt.title(f'TRANSMITTANCE {distribution_name} DISTRIBUTION')
             plt.xlabel("Depth ")
             plt.ylabel("Transmittance[%]")
             plt.grid()
             plt.show()
+            print('MINIMUM TRANSMITTANCE',np.min(new_transmittances))
         required_prfs=required_prf(np.array(new_transmittances))
         for i in range(expected_dims[0]):
             #Risley optical index fused silica
             n_prism=risley_optical_index_fused_silica((i*line_width+start_wavelength)/1000)
             #print('Risley optical index fused silica ',n)
             mask_2D,transmittance=generate_2D_pattern(tf,
-                                np.abs(required_prfs[i]),
+                                required_prfs[i],
                                 w,
                                 w2,
                                 w3,
@@ -347,14 +377,15 @@ def create_risley_pattern(expected_dims,
 
 
 ##################################################################################################################
+
 # number_of_prisms=4
 
 
-# desired_transmittance=25
+# desired_transmittance=1.74
 
 # #Laser Pulse Rate
-# PRF=required_prf(desired_transmittance)#1999000
-# #PRF=None
+# #PRF=required_prf(desired_transmittance)#1999000
+# PRF=None
 # #Image Capture Time 0.003
 # tf=0.016
 
@@ -377,9 +408,10 @@ def create_risley_pattern(expected_dims,
 # line_width=band_width/expected_dims[0]
 # start_wavelength=962
 
-# maximum_transmittance=0.60
-# minimum_transmittance=0
-# sigma=100
+# maximum_transmittance=0.475
+# minimum_transmittance=0.0
+# transmittance_distribution_fn='ca'
+# sigma=150
 
 # path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1084.mat'
 # def read_data(path):
@@ -406,13 +438,16 @@ def create_risley_pattern(expected_dims,
 #                           maximum_transmittance,
 #                           minimum_transmittance,
 #                           sigma,
+#                           transmittance_distribution_fn,
 #                           plot_mask=True)
 # end = time.time()
 # print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
-
+# plt.rcParams["figure.figsize"] = (100,80)
 # plt.imshow(mask_risley[:,:,50],cmap='gray')
 
+# import napari
 
+# viewer = napari.view_image(mask_risley*255)
 ##################################################################################################################
 
 
@@ -472,11 +507,11 @@ def create_risley_pattern(expected_dims,
 # number_of_prisms=4
 
 
-# desired_transmittance=15
+# desired_transmittance=0
 
 # #Laser Pulse Rate
-# #PRF=required_prf(desired_transmittance)#1999000
-# PRF=required_prf(desired_transmittance)
+# PRF=required_prf(desired_transmittance)#1999000
+# #PRF=2/0.016
 # #Image Capture Time 0.003
 # tf=0.016
 
@@ -502,11 +537,15 @@ def create_risley_pattern(expected_dims,
 # maximum_transmittance=0.53
 # sigma=100
 
-# # list_transmittances=[]
-# # prfs=[]
-# # for p in range(1000):
+# list_transmittances=[]
+# prfs=[]
+# # for p in range(10000):
+# #     if(p%100==0):
+# #         plot_mask=True
+# #     else:
+# #         plot_mask=False
 # r,transmittance=generate_2D_pattern(tf,
-#                         PRF,
+#                         PRF,#+(p*1000),
 #                         w,
 #                         w2,
 #                         w3,
@@ -516,7 +555,9 @@ def create_risley_pattern(expected_dims,
 #                         n_prism=1.444,
 #                         expected_dims=expected_dims,
 #                         plot_mask=True)
-    # prfs.append(PRF+(p*10000))
+# print(transmittance)
+    # print(transmittance)
+    # prfs.append(PRF+(p*1000))
     # list_transmittances.append(transmittance)
 
 # ws=np.round(np.linspace(-9990,9990,10))
@@ -544,26 +585,29 @@ def create_risley_pattern(expected_dims,
 #                                             n_prism=1.444,
 #                                             expected_dims=expected_dims,
 #                                             plot_mask=True)
-                
 
-# list_transmittances=np.array(list_transmittances)
-# prfs=np.array(prfs)
+
+         
+# list_transmittances=np.load('/home/diego/Downloads/tr.npy')
+# prfs=np.load('/home/diego/Downloads/prfs.npy')
+# # list_transmittances=np.array(list_transmittances)
+# # prfs=np.array(prfs)
 # from sklearn.preprocessing import PolynomialFeatures
 # from sklearn.pipeline import make_pipeline
 # from sklearn.linear_model import LinearRegression
-# degree=3
+# degree=4
 # polyreg=make_pipeline(PolynomialFeatures(degree),LinearRegression())
 # polyreg.fit(list_transmittances.reshape(-1,1),prfs)
 
-
+# plt.rcParams["figure.figsize"] = (10,10)
 # plt.figure()
 # plt.plot(list_transmittances,prfs)
 # plt.plot(list_transmittances,polyreg.predict(list_transmittances.reshape(-1,1)))
 # plt.show()
 
 # tr=list_transmittances
-# prf_required=-104796.61278281175+1.07808686e+05*tr-6.89548030e+02*tr**2+2.31497294e+01*tr**3
+# prf_required=17331.149418538436+7.62755121e+04*tr+9.39995932e+02*tr**2-1.20363195e+01*tr**3+1.97498883e-01*tr**4
 
-# plt.plot(tr,prf_required)
+# plt.plot(tr,prf_required,'o')
 # plt.plot(list_transmittances,prfs)
 # plt.show()
