@@ -604,7 +604,7 @@ def generate_dataset(denoised_dataset_folder_path,
 
 
 
-dataset_folder='RISLEY_CAUCHY_TRANSMITTANCE_25_SIGMA_150_DATASET'
+dataset_folder='RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_150_DATASET'
 generate_ground_truth_denoised=True
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
@@ -620,7 +620,7 @@ generate_dataset(denoised_dataset_folder_path,
                  testing_txt_path='',
                  desired_transmittance=0.25,
                  sigma=150,
-                 maximum_transmittance=0.60,
+                 maximum_transmittance=0.43,
                  minimum_transmittance=0.0,
-                 transmittance_distribution_fn='la',
+                 transmittance_distribution_fn='ga',
                  plot_mask=False)

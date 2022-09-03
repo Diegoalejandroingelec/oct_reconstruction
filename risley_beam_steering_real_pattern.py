@@ -412,9 +412,9 @@ def create_risley_pattern(expected_dims,
 # line_width=band_width/expected_dims[0]
 # start_wavelength=962
 
-# maximum_transmittance=0.52
+# maximum_transmittance=0.43
 # minimum_transmittance=0.0
-# transmittance_distribution_fn='ca'
+# transmittance_distribution_fn='ga'
 # sigma=150
 
 # path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1253.mat'
