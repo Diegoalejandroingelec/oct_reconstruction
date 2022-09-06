@@ -398,10 +398,10 @@ def generate_2D_pattern(w1,
                 draw_FOV=True)
     return risley_pattern_2D
 # pattern=generate_2D_pattern(w1=9990,w2=9990/0.09,w3=9990/-0.09,w4=9990/0.065)
-pattern=generate_2D_pattern(w1=-18220.85022664,w2=-78743.08644507,w3=181190.41470492,w4=187375.42918816,plot_mask=True)
+# pattern=generate_2D_pattern(w1=-18220.85022664,w2=-78743.08644507,w3=181190.41470492,w4=187375.42918816,plot_mask=True)
 
 
-compute_bluness(pattern)
+# compute_bluness(pattern)
 
 
 #pattern=generate_2D_pattern(w1=104446.20922207832,w2=-7575.253117829561,w3=-6419.671606272459,w4=-117279.15331721306)
