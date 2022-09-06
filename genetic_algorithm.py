@@ -7,16 +7,417 @@ Created on Fri Sep  2 12:51:48 2022
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics.pairwise import euclidean_distances
+from numpy import ndarray
+from Generate_shifting_blue_noise import generate_shifting_blue_noise,generate_binary_blue_noise_mask,generate_shifting_blue_noise_all_directions
+import cv2
 
-n_pop=100
-n_bits=16
+
+
+expected_dimensions=(1000,100)
+# blue=np.load('./blue_noise_cubes/bluenoise1024.npy')
+# mask=generate_binary_blue_noise_mask(blue,subsampling_percentage=0.75)
+# mask=mask[0:expected_dimensions[0],0:expected_dimensions[1]]
+# pattern=mask
+
+# def create_random_mask(sub_sampling_percentage,expected_dims):
+#     if(sub_sampling_percentage>0):
+#         random_mask= np.random.choice([1, 0], size=expected_dims, p=[1-sub_sampling_percentage, sub_sampling_percentage])
+#         total=random_mask.sum()
+#         missing_data=(100-(total*100)/(random_mask.shape[0]*random_mask.shape[1]))
+#         print(missing_data)
+#     else:
+#         random_mask=np.ones(expected_dims)
+#     return random_mask
+
+# pattern=create_random_mask(0.75,expected_dimensions)
+# plt.imshow(pattern)
+# plt.show()
+def analyze_pattern(pattern):
+    # cv2.imshow('BEST PATTERN',pattern)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    
+    DFT=np.fft.fftshift(np.fft.fft2(pattern))/float(np.size(pattern));
+    Height,Width=pattern.shape;
+    ShiftY,ShiftX=(int(Height/2),int(Width/2));
+    
+    
+    plt.imshow(np.abs(DFT),
+                cmap="viridis",
+                interpolation="nearest",
+                vmin=0.0,
+                vmax=np.percentile(np.abs(DFT),99))
+                #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
+    plt.show()
+def create_low_frecuencies_mask(expected_dimensions,axesLength,additional_mask=None,use_additional_mask=False):
+    center_coordinates = (expected_dimensions[1]//2,expected_dimensions[0]//2)
+      
+    #axesLength = axesLength(20, 200)
+      
+    angle = 0
+      
+    startAngle = 0
+      
+    endAngle = 360
+       
+    # Red color in BGR
+    color = (255, 255, 255)
+       
+    # Line thickness of 5 px
+    thickness = -1
+    
+    
+    
+    mask_low_frecuency = np.zeros(expected_dimensions, dtype=np.uint8)
+    mask_low_frecuency = cv2.ellipse(mask_low_frecuency,
+                                     center_coordinates,
+                                     axesLength,
+                                     angle,
+                                     startAngle,
+                                     endAngle,
+                                     color,
+                                     thickness)//255
+    mask_high_frecuency=np.logical_not(mask_low_frecuency)*1
+    
+    
+    if(use_additional_mask):
+        mask_low_frecuency_sub=np.logical_and(mask_low_frecuency,np.logical_not(additional_mask))*1
+        lf_factor=np.sum(mask_low_frecuency)
+        lf_s_factor=np.sum(mask_low_frecuency_sub)
+        
+        return mask_low_frecuency,mask_low_frecuency_sub,lf_factor,lf_s_factor
+        
+    hf_factor=np.sum(mask_high_frecuency)
+    lf_factor=np.sum(mask_low_frecuency)
+
+    return mask_low_frecuency,mask_high_frecuency,hf_factor,lf_factor
+
+
+    
+    
+    
+# f = np.fft.fft2(pattern.astype(np.float32))
+# fshift = np.fft.fftshift(f)
+# magnitude_spectrum = 20*np.log(np.abs(fshift))
+# plt.imshow(magnitude_spectrum,cmap='hot')
+# plt.show()
+
+
+
+
+# start_x=5
+# start_y=50
+# step_x=1
+# step_y=15
+# low_frecuency_scores=[]
+# for i in range(10):
+#     if(i==0):
+#         mask_low_frecuency,mask_high_frecuency,hf_factor,lf_factor=create_low_frecuencies_mask(expected_dimensions,
+#                                                                                                (start_x+(i*step_x),start_y+(i*step_y)))
+#         low_frecuency=np.multiply(mask_low_frecuency,magnitude_spectrum)
+#         low_frecuency_scores.append((np.sum(low_frecuency)/lf_factor))
+#         plt.imshow(mask_low_frecuency,cmap='gray')
+#         plt.show()
+#     else:
+#         mask_low_frecuency,mask_low_frecuency_sub,lf_factor,lf_s_factor=create_low_frecuencies_mask(expected_dimensions,
+#                                                                                                (start_x+(i*step_x),start_y+(i*step_y)),
+#                                                                                                mask_low_frecuency,
+#                                                                                                True)
+#         low_frecuency=np.multiply(mask_low_frecuency_sub,magnitude_spectrum)
+#         low_frecuency_scores.append((np.sum(low_frecuency)/lf_s_factor))
+        
+#         plt.imshow(mask_low_frecuency_sub,cmap='gray')
+#         plt.show()
+    
+    
+    
+    
+# high_frecuency=np.multiply(mask_high_frecuency ,magnitude_spectrum)
+# low_frecuency=np.multiply(mask_low_frecuency,magnitude_spectrum)
+# plt.imshow(np.abs(low_frecuency),
+#             cmap="viridis",
+#             interpolation="nearest",
+#             vmin=0.0,
+#             vmax=np.percentile(np.abs(low_frecuency),99))
+
+# score=-np.log((np.sum(high_frecuency)/hf_factor)/(np.sum(low_frecuency)/lf_factor))
+
+def compute_bluness(pattern):
+    # plt.imshow(mask_low_frecuency)
+    # plt.show()
+    f = np.fft.fft2(pattern.astype(np.float32))
+    fshift = np.fft.fftshift(f)
+    magnitude_spectrum = 20*np.log(np.abs(fshift))
+    magnitude_spectrum[np.isneginf(magnitude_spectrum)]=0
+    plt.imshow(magnitude_spectrum)
+    plt.show()
+    
+    
+    start_x=5
+    start_y=50
+    step_x=1
+    step_y=15
+    low_frecuency_scores=[]
+    for i in range(10):
+        if(i==0):
+            mask_low_frecuency,mask_high_frecuency,hf_factor,lf_factor=create_low_frecuencies_mask(expected_dimensions,
+                                                                                                   (start_x+(i*step_x),start_y+(i*step_y)))
+            low_frecuency=np.multiply(mask_low_frecuency,magnitude_spectrum)
+            low_frecuency_scores.append((np.sum(low_frecuency)/lf_factor))
+            # plt.imshow(mask_low_frecuency,cmap='gray')
+            # plt.show()
+        else:
+            mask_low_frecuency,mask_low_frecuency_sub,lf_factor,lf_s_factor=create_low_frecuencies_mask(expected_dimensions,
+                                                                                                   (start_x+(i*step_x),start_y+(i*step_y)),
+                                                                                                   mask_low_frecuency,
+                                                                                                   True)
+            low_frecuency=np.multiply(mask_low_frecuency_sub,magnitude_spectrum)
+            low_frecuency_scores.append((np.sum(low_frecuency)/lf_s_factor))
+            
+            # plt.imshow(mask_low_frecuency_sub,cmap='gray')
+            # plt.show()
+    
+    
+    
+    mask_low_frecuency,mask_high_frecuency,hf_factor,lf_factor=create_low_frecuencies_mask((1000,100),(20, 200))
+
+    
+    high_frecuency=np.multiply(mask_high_frecuency ,magnitude_spectrum)
+    
+    # plt.imshow(high_frecuency)
+    # plt.show()
+    
+    low_frecuency=np.multiply(mask_low_frecuency,magnitude_spectrum)
+    
+    # plt.imshow(low_frecuency)
+    # plt.show()
+    score_list=[(low_frecuency_scores[ind+1]/low_frecuency_scores[ind])**100 for ind in range(len(low_frecuency_scores)-1)]    
+    
+    
+    score=(((np.sum(high_frecuency)/hf_factor)/(np.sum(low_frecuency)/lf_factor))**100+np.sum(score_list))#the higher the better. For minimize, add - symbol
+    return score
+
+    # DFT=np.fft.fftshift(np.fft.fft2(pattern))/float(np.size(pattern));
+    # Height,Width=pattern.shape;
+    # ShiftY,ShiftX=(int(Height/2),int(Width/2));
+    # plt.rcParams["figure.figsize"] = (8,8)
+    
+    # plt.imshow(np.abs(DFT),
+    #             cmap="viridis",
+    #             interpolation="nearest",
+    #             vmin=0.0,
+    #             vmax=np.percentile(np.abs(DFT),99))
+                #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
+    plt.show()
+    # print('yupi')
+def plot_fn(x,y,title,fontsize,xlabel,ylabel,img_size=(20,20),draw_FOV=False):
+    plt.rcParams["figure.figsize"] = img_size
+    plt.plot(x,y,'.')
+    if(draw_FOV):
+        plt.plot([0,0,1000,1000,0],[100,0,0,100,100],'r')
+    plt.title(title,fontsize=fontsize)
+    plt.grid()
+    plt.xticks(fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
+    plt.xlabel(xlabel, fontsize=fontsize)
+    plt.ylabel(ylabel, fontsize=fontsize)
+    plt.show()
+def generate_2D_pattern(w1,
+                        w2,
+                        w3,
+                        w4,
+                        tf=0.016,
+                        PRF=1999000,
+                        a=10*(np.pi/180),
+                        number_of_prisms=4,
+                        n_prism=1.444,
+                        expected_dims=(512,1000,100),
+                        plot_mask=False):
+    
+
+    #Number Of laser pulses in image capture time
+    num_pulse=tf*PRF
+    #laser spot number
+    i=np.linspace(0,np.ceil(num_pulse).astype(int)-1,np.ceil(num_pulse).astype(int))
+    #Time of laser Pulses
+    t1=i*(1/PRF)
+    #Angle of risley 1
+    tr1= 2*np.pi*w1*t1
+    #Angle of risley 2
+    tr2=2*np.pi*w2*t1
+    #Angle of risley 3
+    tr3=2*np.pi*w3*t1
+    #Angle of risley 4
+    tr4=2*np.pi*w4*t1
+
+    n11=np.array([list(-np.cos(tr1)*np.sin(a)),
+                  list(-np.sin(tr1)*np.sin(a)),
+                  list(np.cos(a)*np.ones(tr1.shape[0]))])
+    
+    n12=np.array([0*tr1,
+                  0*tr1,
+                  np.ones(tr1.shape[0])])
+    n21=n12
+    n22=np.array([list(np.cos(tr2)*np.sin(a)),
+                  list(np.sin(tr2)*np.sin(a)),
+                  list(np.cos(a)*np.ones(tr2.shape[0]))])
+    
+    n31=np.array([list(-np.cos(tr3)*np.sin(a)),
+                  list(-np.sin(tr3)*np.sin(a)),
+                  list(np.cos(a)*np.ones(tr3.shape[0]))])
+    n32=n12
+    
+    n41=n12
+    n42=np.array([list(np.cos(tr4)*np.sin(a)),
+                  list(np.sin(tr4)*np.sin(a)),
+                  list(np.cos(a)*np.ones(tr4.shape[0]))])
+    
+    N=[n11,n12,n21,n22,n31,n32,n41,n42]
+    beam_a=[np.array([0,0,1])]
+    
+    
+    dot_product=np.dot(beam_a[-1],N[1])
+    
+
+
+    for j in range(number_of_prisms*2):
+        if((j+1)%2==0):
+            #dot_product=np.array([np.dot(beam_a[-1][:,index],N[j][:,index]) for index in range(N[j].shape[1])])
+            dot_product=np.einsum('ij,ji->i', np.transpose(beam_a[-1]),N[j])
+            escalar_part=(np.sqrt(1-(n_prism)**2*(1-(dot_product)**2))-((n_prism))*dot_product)
+            vector_of_escalar=np.array([escalar_part,
+                                        escalar_part,
+                                        escalar_part])
+            first_term_vec=(n_prism)*beam_a[-1]
+            beam_a_new=first_term_vec+vector_of_escalar*N[j]
+        else:
+            if(j==0):
+                dot_product=np.dot(beam_a[-1],N[j])
+                escalar_part=(np.sqrt(1-((1/n_prism))**2*(1-(dot_product)**2))-((1/n_prism))*dot_product)
+                vector_of_escalar=np.array([escalar_part,
+                                            escalar_part,
+                                            escalar_part])
+                first_term_vec=np.array([list(((1/n_prism)*beam_a[-1]))]*tr1.shape[0])
+                first_term_vec=np.transpose(first_term_vec)
+                beam_a_new=first_term_vec+vector_of_escalar*N[j]
+            else:
+                #dot_product=np.array([np.dot(beam_a[-1][:,index],N[j][:,index]) for index in range(N[j].shape[1])])
+                dot_product=np.einsum('ij,ji->i', np.transpose(beam_a[-1]),N[j])
+                escalar_part=(np.sqrt(1-(1/n_prism)**2*(1-(dot_product)**2))-((1/n_prism))*dot_product)
+                vector_of_escalar=np.array([escalar_part,
+                                            escalar_part,
+                                            escalar_part])
+                first_term_vec=(1/n_prism)*beam_a[-1]
+                
+                beam_a_new=first_term_vec+vector_of_escalar*N[j]
+        beam_a.append(beam_a_new)
+    
+    central_d=12
+    
+    A1=np.abs(central_d/beam_a[1][2])*beam_a[1]
+    A2=np.abs(76/beam_a[2][2])*beam_a[2]
+    A2=A1+A2
+    
+    
+    r=np.sqrt(A2[0,:]**2+A2[1,:]**2)
+    T_p=r*np.tan(a)*np.cos(np.abs(tr1-tr2))
+    
+    A3=np.abs((central_d+T_p)/beam_a[3][2])*beam_a[3]
+    A3=A3+A2
+    
+    d_3=188-A3[2,:]
+    
+    A4=np.abs(d_3/beam_a[4][2])*beam_a[4]
+    
+    A4=A4+A3
+    
+    r1=np.sqrt(A4[0,:]**2+A4[1,:]**2)
+    T_p1=r1*np.tan(a)*np.cos(np.abs(tr2-tr3))
+    A5=np.abs((central_d+T_p1)/beam_a[5][2])*beam_a[5]
+    
+    A5=A5+A4
+    
+    d_5=288-A5[2,:]
+    A6=np.abs(d_5/beam_a[6][2])*beam_a[6]
+    A6=A6+A5
+    
+    
+    r2=np.sqrt(A6[0,:]**2+A6[1,:]**2)
+    T_p2=r2*np.tan(a)*np.cos(np.abs(tr3-tr4))
+    A7=np.abs((central_d+T_p2)/beam_a[7][2])*beam_a[7]
+    
+    A7=A7+A6
+    
+    d_7=350-A7[2,:]
+    A8=np.abs(d_7/beam_a[8][2])*beam_a[8]
+    A8=A8+A7
+    
+    x_max=np.max(A8[1,:])
+    y_max=np.max(A8[0,:])
+    x_factor=np.abs((expected_dims[1]/2)/x_max)
+    y_factor=np.abs((expected_dims[2]/2)/y_max)
+    
+    x=(A8[1,:]*(x_factor+5.5))
+    y=(A8[0,:]*(y_factor+0.35))
+    
+    x = x+500
+    y = y+50
+
+    
+    risley_pattern_2D=np.zeros((expected_dims[1],expected_dims[2]))
+    
+    aa=ndarray.round(x)
+    bb=ndarray.round(y)
+    
+
+    keep_x_coordinate=np.logical_and(aa >= 0 , aa < expected_dims[1])
+    keep_y_coordinate=np.logical_and(bb >= 0 , bb < expected_dims[2])
+    
+    remove_coordinates=np.logical_not(np.logical_and(keep_x_coordinate,keep_y_coordinate))
+    bb=[d for (d, remove) in zip(bb, remove_coordinates) if not remove]
+    aa=[d for (d, remove) in zip(aa, remove_coordinates) if not remove]
+
+
+    coordinates=np.array((np.array(aa).astype(int),np.array(bb).astype(int)))
+    
+    
+    
+    risley_pattern_2D[tuple(coordinates)] = 255
+    
+    if(plot_mask):
+        plot_fn(x=A8[1,:],y=A8[0,:],title='PATTERN USING 4 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
+        plot_fn(x,
+                y,
+                title=f'FINAL PATTERN USING 4 PRISM \n w1={w1} rad/s,w2={w2} rad/s,w3={w3} rad/s,w4={w4} rad/s',
+                fontsize=80,
+                xlabel='Pixels',
+                ylabel='Pixels',
+                img_size=(80,25),
+                draw_FOV=True)
+    return risley_pattern_2D
+# pattern=generate_2D_pattern(w1=9990,w2=9990/0.09,w3=9990/-0.09,w4=9990/0.065)
+pattern=generate_2D_pattern(w1=-18220.85022664,w2=-78743.08644507,w3=181190.41470492,w4=187375.42918816,plot_mask=True)
+
+
+compute_bluness(pattern)
+
+
+#pattern=generate_2D_pattern(w1=104446.20922207832,w2=-7575.253117829561,w3=-6419.671606272459,w4=-117279.15331721306)
+# compute_bluness(pattern)
+
+########################################################################################################################################
+'''
+n_pop=1000
+n_bits=32
 n_iter=100
 # crossover rate
-r_cross = 0.9
+r_cross = 0.8
 
 
 # define range for input
-bounds = [[-5.0, 5.0], [-5.0, 5.0]]
+bounds = [[-200000, 200000], [-200000, 200000],[-200000, 200000],[-200000, 200000]]
 
 # mutation rate
 r_mut = 1.0 / (float(n_bits) * len(bounds))
@@ -73,7 +474,9 @@ def mutation(bitstring, r_mut):
 
 # objective function
 def objective(x):
-	return x[0]**2.0 + x[1]**2.0
+    pattern=generate_2D_pattern(w1=x[0],w2=x[1],w3=x[2],w4=x[3])
+    return compute_bluness(pattern)
+# 	return x[0]**2.0 + x[1]**2.0
 
 # genetic algorithm
 def genetic_algorithm(objective, n_bits, n_iter, n_pop, r_cross, r_mut):
@@ -91,7 +494,13 @@ def genetic_algorithm(objective, n_bits, n_iter, n_pop, r_cross, r_mut):
         for i in range(n_pop):
             if scores[i] < best_eval:
                 best, best_eval = pop[i], scores[i]
-                print(">%d, new best f(%s) = %.3f" % (gen,  pop[i], scores[i]))
+                angular_speeds= decode(bounds, n_bits, pop[i])
+                best_pattern=generate_2D_pattern(angular_speeds[0],
+                                                 angular_speeds[1],
+                                                 angular_speeds[2],
+                                                 angular_speeds[3],plot_mask=True)
+                analyze_pattern(best_pattern)
+                print(">%d, new best f(%s) = %.10f" % (gen, angular_speeds, scores[i]))
         # select parents
         selected = [selection(pop, scores) for _ in range(n_pop)]
         # create the next generation
@@ -112,4 +521,51 @@ def genetic_algorithm(objective, n_bits, n_iter, n_pop, r_cross, r_mut):
 # perform the genetic algorithm search
 best, score = genetic_algorithm(objective, n_bits, n_iter, n_pop, r_cross, r_mut)
 print('Done!')
-print('f(%s) = %f' % (best, score))
+print('f(%s) = %f' % (decode(bounds, n_bits, best), score))
+'''
+########################################################################################################################################
+
+def fitness_func(solution, solution_idx):
+    pattern=generate_2D_pattern(w1=solution[0],w2=solution[1],w3=solution[2],w4=solution[3])
+    score=compute_bluness(pattern)
+    return score
+
+import pygad
+bounds = [[-200000, 200000], [-200000, 200000],[-200000, 200000],[-200000, 200000]]
+fitness_function = fitness_func
+
+num_generations = 100
+num_parents_mating = 4
+
+sol_per_pop = 1000
+num_genes = 4
+
+init_range_low = -200000
+init_range_high = 200000
+
+parent_selection_type = "tournament"
+keep_parents = 1
+
+crossover_type = "single_point"
+
+mutation_type = "random"
+mutation_percent_genes = 10
+
+
+ga_instance = pygad.GA(num_generations=num_generations,
+                       num_parents_mating=num_parents_mating,
+                       fitness_func=fitness_function,
+                       sol_per_pop=sol_per_pop,
+                       num_genes=num_genes,
+                       init_range_low=init_range_low,
+                       init_range_high=init_range_high,
+                       parent_selection_type=parent_selection_type,
+                       keep_parents=keep_parents,
+                       crossover_type=crossover_type,
+                       mutation_type=mutation_type,
+                       mutation_percent_genes=mutation_percent_genes)
+ga_instance.run()
+
+solution, solution_fitness, solution_idx = ga_instance.best_solution()
+print("Parameters of the best solution : {solution}".format(solution=solution))
+print("Fitness value of the best solution = {solution_fitness}".format(solution_fitness=solution_fitness))

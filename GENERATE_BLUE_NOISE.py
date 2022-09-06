@@ -424,7 +424,7 @@ if(__name__=="__main__"):
         #GenerateNDBlueNoiseTexture((8,8,8,8),nChannel,"../Data/8_8_8_8/HDR_"+ChannelNames+".raw",1.9);
         #GenerateNDBlueNoiseTexture((16,16,16,16),nChannel,"../Data/16_16_16_16/HDR_"+ChannelNames+".raw",1.9);
     #Texture=GetVoidAndClusterBlueNoise((64,64),1.9);
-    Texture=GetVoidAndClusterBlueNoise((64,64,64),(1.9,1.9,1.9));
+    Texture=GetVoidAndClusterBlueNoise((128,128),(1.9,1.9));
     mask=generate_binary_blue_noise_mask(Texture,subsampling_percentage=0.75)
     #AnalyzeNoiseTexture(Texture,True);
     # PlotBinaryPatterns(Texture,3,5);

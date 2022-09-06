@@ -200,21 +200,21 @@ def generate_2D_pattern(tf,
     transmittance=(risley_pattern_2D.sum()*100)/(expected_dims[1]*expected_dims[2])
     #print('TRANSMTTANCE C-SCAN',transmittance)
 
-    # if(plot_mask):
-    #     plot_fn(x=A4[1,:],y=A4[0,:],title='PATTERN USING 2 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
+    if(plot_mask):
+        plot_fn(x=A4[1,:],y=A4[0,:],title='PATTERN USING 2 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
         
-    #     plot_fn(x=A6[1,:],y=A6[0,:],title='PATTERN USING 3 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
+        plot_fn(x=A6[1,:],y=A6[0,:],title='PATTERN USING 3 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
         
-    #     plot_fn(x=A8[1,:],y=A8[0,:],title='PATTERN USING 4 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
+        plot_fn(x=A8[1,:],y=A8[0,:],title='PATTERN USING 4 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
         
-    #     plot_fn(x,
-    #             y,
-    #             title=f'FINAL PATTERN USING 4 PRISM \n w={w} rad/s,w1={w2} rad/s,w2={w3} rad/s,w3={w4} rad/s, T={transmittance}%',
-    #             fontsize=80,
-    #             xlabel='Pixels',
-    #             ylabel='Pixels',
-    #             img_size=(80,25),
-    #             draw_FOV=True)
+        plot_fn(x,
+                y,
+                title=f'FINAL PATTERN USING 4 PRISM \n w={w} rad/s,w1={w2} rad/s,w2={w3} rad/s,w3={w4} rad/s, T={transmittance}%',
+                fontsize=80,
+                xlabel='Pixels',
+                ylabel='Pixels',
+                img_size=(80,25),
+                draw_FOV=True)
     
 
     return risley_pattern_2D,transmittance
@@ -382,76 +382,76 @@ def create_risley_pattern(expected_dims,
 
 ##################################################################################################################
 
-# number_of_prisms=4
+number_of_prisms=4
 
 
-# desired_transmittance=1.74
+desired_transmittance=1.74
 
-# #Laser Pulse Rate
-# #PRF=required_prf(desired_transmittance)#1999000
-# PRF=None
-# #Image Capture Time 0.003
-# tf=0.016
+#Laser Pulse Rate
+#PRF=required_prf(desired_transmittance)#1999000
+PRF=199900000
+#Image Capture Time 0.003
+tf=0.016
 
-# #angular speed risley 1 rotations per sec
-# w=9990
-# #angula speed risley 2 rotations per sec
-# w2=111000
+#angular speed risley 1 rotations per sec
+w=585.9375#9990
+#angula speed risley 2 rotations per sec
+w2=4382.32421875#111000
 
-# #angula speed risley 2 rotations per sec
-# w3=12333
+#angula speed risley 2 rotations per sec
+w3=-482.177734375#12333
 
-# #angula speed risley 2 rotations per sec
-# w4=119538
+#angula speed risley 2 rotations per sec
+w4=-6.10351562#119538
 
-# a=10*(np.pi/180)    
-# expected_dims=(512,1000,100)   
+a=10*(np.pi/180)    
+expected_dims=(512,1000,100)   
 
 
-# band_width=176
-# line_width=band_width/expected_dims[0]
-# start_wavelength=962
+band_width=176
+line_width=band_width/expected_dims[0]
+start_wavelength=962
 
-# maximum_transmittance=0.43
-# minimum_transmittance=0.0
-# transmittance_distribution_fn='ga'
-# sigma=150
+maximum_transmittance=0.43
+minimum_transmittance=0.0
+transmittance_distribution_fn='ga'
+sigma=150
 
-# path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1253.mat'
-# def read_data(path):
-#     data = loadmat(path)
-#     oct_volume = data['images']
-#     return oct_volume
+path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1253.mat'
+def read_data(path):
+    data = loadmat(path)
+    oct_volume = data['images']
+    return oct_volume
 
-# original_volume=read_data(path)
+original_volume=read_data(path)
     
 
-# begin = time.time()
-# mask_risley=create_risley_pattern(expected_dims,
-#                           line_width,
-#                           start_wavelength,
-#                           tf,
-#                           PRF,
-#                           w,
-#                           w2,
-#                           w3,
-#                           w4,
-#                           a,
-#                           number_of_prisms,
-#                           original_volume,
-#                           maximum_transmittance,
-#                           minimum_transmittance,
-#                           sigma,
-#                           transmittance_distribution_fn,
-#                           plot_mask=True)
-# end = time.time()
-# print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
-# plt.rcParams["figure.figsize"] = (100,80)
-# plt.imshow(mask_risley[:,:,50],cmap='gray')
+begin = time.time()
+mask_risley=create_risley_pattern(expected_dims,
+                          line_width,
+                          start_wavelength,
+                          tf,
+                          PRF,
+                          w,
+                          w2,
+                          w3,
+                          w4,
+                          a,
+                          number_of_prisms,
+                          original_volume,
+                          maximum_transmittance,
+                          minimum_transmittance,
+                          sigma,
+                          transmittance_distribution_fn,
+                          plot_mask=True)
+end = time.time()
+print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
+plt.rcParams["figure.figsize"] = (100,80)
+plt.imshow(mask_risley[:,:,50],cmap='gray')
 
-# import napari
+import napari
 
-# viewer = napari.view_image(mask_risley*255)
+viewer = napari.view_image(mask_risley*255)
 ##################################################################################################################
 
 
