@@ -150,8 +150,8 @@ def generate_binary_blue_noise_mask(blue_noise_mask,subsampling_percentage):
     total = binary_blue_noise_mask.sum()
     
     
-    missing_data=(100-(total*100)/(blue_noise_mask.shape[0]*blue_noise_mask.shape[1]*blue_noise_mask.shape[2]))
-    print('Blue noise missing data: ', missing_data)
+    # missing_data=(100-(total*100)/(blue_noise_mask.shape[0]*blue_noise_mask.shape[1]*blue_noise_mask.shape[2]))
+    # print('Blue noise missing data: ', missing_data)
     
     return binary_blue_noise_mask.astype(np.uint8)
 

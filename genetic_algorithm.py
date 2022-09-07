@@ -149,12 +149,29 @@ def compute_bluness(pattern):
     # plt.show()
     f = np.fft.fft2(pattern.astype(np.float32))
     fshift = np.fft.fftshift(f)
-    magnitude_spectrum = 20*np.log(np.abs(fshift))
-    magnitude_spectrum[np.isneginf(magnitude_spectrum)]=0
-    plt.imshow(magnitude_spectrum)
-    plt.show()
+    magnitude_spectrum = np.abs(fshift)
+    # magnitude_spectrum[np.isneginf(magnitude_spectrum)]=0
+    # plt.imshow(20*np.log(np.abs(fshift)))#[475:525,40:60]
+    # plt.show()
     
     
+    
+    
+    # fshift[475:525,40:60] = 0
+    # f_ishift = np.fft.ifftshift(fshift)
+    # img_back = np.fft.ifft2(f_ishift)
+    # img_back = np.real(img_back)
+    #img_back_binarized=cv2.threshold(img_back, 128, 255, cv2.THRESH_BINARY)[1]
+    
+    # pattern=img_back
+    # f = np.fft.fft2(pattern.astype(np.float32))
+    # fshift = np.fft.fftshift(f)
+    # magnitude_spectrum = 20*np.log(np.abs(fshift))
+    # magnitude_spectrum[np.isneginf(magnitude_spectrum)]=0
+    # plt.imshow(magnitude_spectrum)#[475:525,40:60]
+    # plt.show()
+    
+
     start_x=5
     start_y=50
     step_x=1
@@ -166,6 +183,8 @@ def compute_bluness(pattern):
                                                                                                    (start_x+(i*step_x),start_y+(i*step_y)))
             low_frecuency=np.multiply(mask_low_frecuency,magnitude_spectrum)
             low_frecuency_scores.append((np.sum(low_frecuency)/lf_factor))
+            
+            # plt.rcParams["figure.figsize"] = (50,100)
             # plt.imshow(mask_low_frecuency,cmap='gray')
             # plt.show()
         else:
@@ -176,6 +195,7 @@ def compute_bluness(pattern):
             low_frecuency=np.multiply(mask_low_frecuency_sub,magnitude_spectrum)
             low_frecuency_scores.append((np.sum(low_frecuency)/lf_s_factor))
             
+            # plt.rcParams["figure.figsize"] = (50,100)
             # plt.imshow(mask_low_frecuency_sub,cmap='gray')
             # plt.show()
     
@@ -186,31 +206,33 @@ def compute_bluness(pattern):
     
     high_frecuency=np.multiply(mask_high_frecuency ,magnitude_spectrum)
     
-    # plt.imshow(high_frecuency)
+    # plt.imshow(mask_high_frecuency,cmap='gray')
     # plt.show()
     
     low_frecuency=np.multiply(mask_low_frecuency,magnitude_spectrum)
     
-    # plt.imshow(low_frecuency)
+    # plt.imshow(mask_low_frecuency,cmap='gray')
     # plt.show()
+    
     score_list=[(low_frecuency_scores[ind+1]/low_frecuency_scores[ind])**100 for ind in range(len(low_frecuency_scores)-1)]    
     
-    
-    score=(((np.sum(high_frecuency)/hf_factor)/(np.sum(low_frecuency)/lf_factor))**100+np.sum(score_list))#the higher the better. For minimize, add - symbol
+    hf=(np.sum(high_frecuency)/hf_factor)
+    lf=(np.sum(low_frecuency)/lf_factor)
+    score=((hf/lf)**100+np.sum(score_list))#the higher the better. For minimize, add - symbol
     return score
 
-    # DFT=np.fft.fftshift(np.fft.fft2(pattern))/float(np.size(pattern));
+    # DFT=np.fft.fftshift(np.fft.fft2(pattern))/float(np.size(pattern));10.722191822092332
     # Height,Width=pattern.shape;
     # ShiftY,ShiftX=(int(Height/2),int(Width/2));
     # plt.rcParams["figure.figsize"] = (8,8)
     
-    # plt.imshow(np.abs(DFT),
+    # plt.imshow(np.abs(DFT)[475:525,40:60],
     #             cmap="viridis",
     #             interpolation="nearest",
     #             vmin=0.0,
     #             vmax=np.percentile(np.abs(DFT),99))
-                #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
-    plt.show()
+    #             #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
+    # plt.show()
     # print('yupi')
 def plot_fn(x,y,title,fontsize,xlabel,ylabel,img_size=(20,20),draw_FOV=False):
     plt.rcParams["figure.figsize"] = img_size
@@ -398,7 +420,13 @@ def generate_2D_pattern(w1,
                 draw_FOV=True)
     return risley_pattern_2D
 # pattern=generate_2D_pattern(w1=9990,w2=9990/0.09,w3=9990/-0.09,w4=9990/0.065)
-# pattern=generate_2D_pattern(w1=-18220.85022664,w2=-78743.08644507,w3=181190.41470492,w4=187375.42918816,plot_mask=True)
+# pattern=generate_2D_pattern(9990,
+#                             111000,
+#                             12333,
+#                             119538,
+#                             plot_mask=True)
+
+#pattern=generate_2D_pattern(w1=170187.30530956,w2=61934.46916728,w3=-188957.10741073,w4=-164769.00343185,plot_mask=True)
 
 
 # compute_bluness(pattern)
@@ -537,13 +565,13 @@ fitness_function = fitness_func
 num_generations = 100
 num_parents_mating = 4
 
-sol_per_pop = 1000
+sol_per_pop = 100
 num_genes = 4
 
 init_range_low = -200000
 init_range_high = 200000
 
-parent_selection_type = "tournament"
+parent_selection_type = "sss"
 keep_parents = 1
 
 crossover_type = "single_point"
@@ -564,7 +592,9 @@ ga_instance = pygad.GA(num_generations=num_generations,
                        crossover_type=crossover_type,
                        mutation_type=mutation_type,
                        mutation_percent_genes=mutation_percent_genes)
+
 ga_instance.run()
+ga_instance.plot_fitness()
 
 solution, solution_fitness, solution_idx = ga_instance.best_solution()
 print("Parameters of the best solution : {solution}".format(solution=solution))
