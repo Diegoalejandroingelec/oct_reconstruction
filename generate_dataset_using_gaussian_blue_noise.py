@@ -351,20 +351,20 @@ def generate_risley_gaussian_mask(original_volume,
     #PRF=required_prf(desired_transmittance)#1999000
     PRF=None
     #Image Capture Time 0.003
-    tf=0.016
+    tf=0.16
 
     #angular speed risley 1 rotations per sec
-    w=9990
+    w=-3428.22250471
     #angula speed risley 2 rotations per sec
-    w2=111000
+    w2=-1101.58077614
 
     #angula speed risley 2 rotations per sec
-    w3=12333
+    w3=-1530.3051244
 
     #angula speed risley 2 rotations per sec
-    w4=119538
+    w4=4721.40253875
 
-    a=1*(10*np.pi/180)    
+    a=10*(np.pi/180)    
     expected_dims=(512,1000,100)   
 
 
@@ -604,8 +604,8 @@ def generate_dataset(denoised_dataset_folder_path,
 
 
 
-dataset_folder='RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_150_DATASET'
-generate_ground_truth_denoised=True
+dataset_folder='RISLEY_CAUCHY_TRANSMITTANCE_25_SIGMA_150_DATASET'
+generate_ground_truth_denoised=False
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
@@ -619,8 +619,8 @@ generate_dataset(denoised_dataset_folder_path,
                  training_txt_path='',
                  testing_txt_path='',
                  desired_transmittance=0.25,
-                 sigma=150,
+                 sigma=200,
                  maximum_transmittance=0.43,
                  minimum_transmittance=0.0,
-                 transmittance_distribution_fn='ga',
-                 plot_mask=False)
+                 transmittance_distribution_fn='ca',
+                 plot_mask=True)

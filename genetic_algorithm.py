@@ -16,10 +16,12 @@ import cv2
 
 
 expected_dimensions=(1000,100)
-# blue=np.load('./blue_noise_cubes/bluenoise1024.npy')
-# mask=generate_binary_blue_noise_mask(blue,subsampling_percentage=0.75)
-# mask=mask[0:expected_dimensions[0],0:expected_dimensions[1]]
-# pattern=mask
+
+expected_dimensions=(512,1000)
+blue=np.load('./blue_noise_cubes/bluenoise1024.npy')
+mask=generate_binary_blue_noise_mask(blue,subsampling_percentage=0.75)
+mask=mask[0:expected_dimensions[0],0:expected_dimensions[1]]
+pattern=mask
 
 # def create_random_mask(sub_sampling_percentage,expected_dims):
 #     if(sub_sampling_percentage>0):
@@ -147,13 +149,16 @@ def create_low_frecuencies_mask(expected_dimensions,axesLength,additional_mask=N
 def compute_bluness(pattern):
     # plt.imshow(mask_low_frecuency)
     # plt.show()
+
+    pattern=pattern-np.mean(pattern)
+    # plt.imshow(pattern)
+    # plt.show()
     f = np.fft.fft2(pattern.astype(np.float32))
     fshift = np.fft.fftshift(f)
     magnitude_spectrum = np.abs(fshift)
     # magnitude_spectrum[np.isneginf(magnitude_spectrum)]=0
-    # plt.imshow(20*np.log(np.abs(fshift)))#[475:525,40:60]
-    # plt.show()
-    
+    plt.imshow(20*np.log(np.abs(fshift)))#[475:525,40:60]
+    plt.show()
     
     
     
@@ -171,19 +176,20 @@ def compute_bluness(pattern):
     # plt.imshow(magnitude_spectrum)#[475:525,40:60]
     # plt.show()
     
-
+    N=10
     start_x=5
     start_y=50
     step_x=1
     step_y=15
     low_frecuency_scores=[]
-    for i in range(10):
+    for i in range(N):
         if(i==0):
             mask_low_frecuency,mask_high_frecuency,hf_factor,lf_factor=create_low_frecuencies_mask(expected_dimensions,
                                                                                                    (start_x+(i*step_x),start_y+(i*step_y)))
+            #mask_low_frecuency[expected_dimensions[0]//2,expected_dimensions[1]//2]=0    
             low_frecuency=np.multiply(mask_low_frecuency,magnitude_spectrum)
             low_frecuency_scores.append((np.sum(low_frecuency)/lf_factor))
-            
+            #mask_low_frecuency[expected_dimensions[0]//2,expected_dimensions[1]//2]=1
             # plt.rcParams["figure.figsize"] = (50,100)
             # plt.imshow(mask_low_frecuency,cmap='gray')
             # plt.show()
@@ -214,25 +220,27 @@ def compute_bluness(pattern):
     # plt.imshow(mask_low_frecuency,cmap='gray')
     # plt.show()
     
-    score_list=[(low_frecuency_scores[ind+1]/low_frecuency_scores[ind])**100 for ind in range(len(low_frecuency_scores)-1)]    
+    score_list=[(low_frecuency_scores[ind+1]/low_frecuency_scores[ind]) for ind in range(len(low_frecuency_scores)-1)]    
     
     hf=(np.sum(high_frecuency)/hf_factor)
     lf=(np.sum(low_frecuency)/lf_factor)
-    score=((hf/lf)**100+np.sum(score_list))#the higher the better. For minimize, add - symbol
+    part_1=(np.sum(score_list))/(N-1)
+    part_2=(hf/lf)
+    score=(part_1+part_2)#the higher the better. For minimize, add - symbol
     return score
 
-    # DFT=np.fft.fftshift(np.fft.fft2(pattern))/float(np.size(pattern));10.722191822092332
-    # Height,Width=pattern.shape;
-    # ShiftY,ShiftX=(int(Height/2),int(Width/2));
-    # plt.rcParams["figure.figsize"] = (8,8)
+    DFT=np.fft.fftshift(np.fft.fft2(pattern))/float(np.size(pattern));
+    Height,Width=pattern.shape;
+    ShiftY,ShiftX=(int(Height/2),int(Width/2));
+    plt.rcParams["figure.figsize"] = (8,8)
     
-    # plt.imshow(np.abs(DFT)[475:525,40:60],
-    #             cmap="viridis",
-    #             interpolation="nearest",
-    #             vmin=0.0,
-    #             vmax=np.percentile(np.abs(DFT),99))
-    #             #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
-    # plt.show()
+    plt.imshow(np.abs(DFT),
+                cmap="viridis",
+                interpolation="nearest",
+                vmin=0.0,
+                vmax=np.percentile(np.abs(DFT),99))
+                #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
+    plt.show()
     # print('yupi')
 def plot_fn(x,y,title,fontsize,xlabel,ylabel,img_size=(20,20),draw_FOV=False):
     plt.rcParams["figure.figsize"] = img_size
@@ -250,12 +258,13 @@ def generate_2D_pattern(w1,
                         w2,
                         w3,
                         w4,
-                        tf=0.016,
-                        PRF=1999000,
+                        tf=0.16,
+                        PRF=199900,
                         a=10*(np.pi/180),
                         number_of_prisms=4,
                         n_prism=1.444,
                         expected_dims=(512,1000,100),
+                        pattern_for_distance=False,
                         plot_mask=False):
     
 
@@ -375,7 +384,7 @@ def generate_2D_pattern(w1,
     d_7=350-A7[2,:]
     A8=np.abs(d_7/beam_a[8][2])*beam_a[8]
     A8=A8+A7
-    
+
     x_max=np.max(A8[1,:])
     y_max=np.max(A8[0,:])
     x_factor=np.abs((expected_dims[1]/2)/x_max)
@@ -412,12 +421,15 @@ def generate_2D_pattern(w1,
         plot_fn(x=A8[1,:],y=A8[0,:],title='PATTERN USING 4 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
         plot_fn(x,
                 y,
-                title=f'FINAL PATTERN USING 4 PRISM \n w1={w1} rad/s,w2={w2} rad/s,w3={w3} rad/s,w4={w4} rad/s',
+                title=f'FINAL PATTERN USING 4 PRISM \n w1={w1} rps,w2={w2} rps,w3={w3} rps,w4={w4} rps',
                 fontsize=80,
                 xlabel='Pixels',
                 ylabel='Pixels',
                 img_size=(80,25),
                 draw_FOV=True)
+    if(pattern_for_distance):
+        return A8
+    cv2.imwrite('BEST_PATTERN.jpeg', risley_pattern_2D*255)
     return risley_pattern_2D
 # pattern=generate_2D_pattern(w1=9990,w2=9990/0.09,w3=9990/-0.09,w4=9990/0.065)
 # pattern=generate_2D_pattern(9990,
@@ -426,13 +438,16 @@ def generate_2D_pattern(w1,
 #                             119538,
 #                             plot_mask=True)
 
-#pattern=generate_2D_pattern(w1=170187.30530956,w2=61934.46916728,w3=-188957.10741073,w4=-164769.00343185,plot_mask=True)
+pattern=generate_2D_pattern(w1=-3428.22250471,
+                            w2=-1101.58077614,
+                            w3=-1530.3051244,
+                            w4=4721.40253875,plot_mask=True)
+
+# cv2.imwrite('pattern.jpeg',pattern)
+compute_bluness(pattern)
 
 
-# compute_bluness(pattern)
-
-
-#pattern=generate_2D_pattern(w1=104446.20922207832,w2=-7575.253117829561,w3=-6419.671606272459,w4=-117279.15331721306)
+# pattern=generate_2D_pattern(w1=6255.54063372,w2=-2020.10559296,w3=-1227.16073769,w4=1227.40445477,plot_mask=True)
 # compute_bluness(pattern)
 
 ########################################################################################################################################
@@ -552,14 +567,34 @@ print('Done!')
 print('f(%s) = %f' % (decode(bounds, n_bits, best), score))
 '''
 ########################################################################################################################################
-
+from scipy.linalg import get_blas_funcs
 def fitness_func(solution, solution_idx):
-    pattern=generate_2D_pattern(w1=solution[0],w2=solution[1],w3=solution[2],w4=solution[3])
+    pattern=generate_2D_pattern(w1=solution[0],
+                                w2=solution[1],
+                                w3=solution[2],
+                                w4=solution[3],
+                                pattern_for_distance=False,
+                                plot_mask=False)
     score=compute_bluness(pattern)
+    
+    # pattern=np.transpose(pattern[0:2,:])
+    
+    
+    # gemm=get_blas_funcs("gemm", [pattern, pattern.T])
+    # term1=gemm(1, pattern, pattern.T).astype(np.float16)
+    # term2=np.sum(pattern**2, axis=1, keepdims=True).astype(np.float16)
+    # term3=np.sum(pattern**2, axis=1).astype(np.float16)
+    # num_test = pattern.shape[0]
+    # #dists = np.zeros((num_test, num_test)) 
+    # dists = np.sqrt((-2 * term1) + term2 + term3)
+    
+    # dists=euclidean_distances(pattern)
+    # suma=np.sum(dists,axis=1)
+    
     return score
-
+#score=fitness_func([-14463.702398,    -9660.09853304, 196718.5323155 , 141915.63981462], solution_idx=None)
 import pygad
-bounds = [[-200000, 200000], [-200000, 200000],[-200000, 200000],[-200000, 200000]]
+bounds = [[-5000, 5000], [-5000, 5000],[-5000, 5000],[-5000, 5000]]
 fitness_function = fitness_func
 
 num_generations = 100
@@ -568,8 +603,8 @@ num_parents_mating = 4
 sol_per_pop = 100
 num_genes = 4
 
-init_range_low = -200000
-init_range_high = 200000
+init_range_low = -5000
+init_range_high = 5000
 
 parent_selection_type = "sss"
 keep_parents = 1

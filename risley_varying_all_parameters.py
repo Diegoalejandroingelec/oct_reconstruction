@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Aug 25 14:07:05 2022
+Created on Wed Sep 14 12:47:54 2022
 
 @author: diego
 """
@@ -31,7 +31,7 @@ def risley_optical_index_fused_silica(l):
     n=np.sqrt((((0.6961663)*l**2)/(l**2-0.0684043**2))+((0.4079426*l**2)/(l**2-0.1162414**2))+((0.8974794*l**2)/(l**2-9.896161**2))+1)
     return n
 
-def generate_2D_pattern(tf,
+def generate_2D_pattern(t1,
                         PRF,
                         w,
                         w2,
@@ -44,12 +44,6 @@ def generate_2D_pattern(tf,
                         plot_mask):
     
 
-    #Number Of laser pulses in image capture time
-    num_pulse=tf*PRF
-    #laser spot number
-    i=np.linspace(0,np.ceil(num_pulse).astype(int)-1,np.ceil(num_pulse).astype(int))
-    #Time of laser Pulses
-    t1=i*(1/PRF)
     
     #Angle of risley 1
     tr1= 2*np.pi*w*t1
@@ -201,21 +195,21 @@ def generate_2D_pattern(tf,
     transmittance=(risley_pattern_2D.sum()*100)/(expected_dims[1]*expected_dims[2])
     #print('TRANSMTTANCE C-SCAN',transmittance)
 
-    # if(plot_mask):
-    #     # plot_fn(x=A4[1,:],y=A4[0,:],title='PATTERN USING 2 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
+    if(plot_mask):
+        # plot_fn(x=A4[1,:],y=A4[0,:],title='PATTERN USING 2 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
         
-    #     # plot_fn(x=A6[1,:],y=A6[0,:],title='PATTERN USING 3 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
+        # plot_fn(x=A6[1,:],y=A6[0,:],title='PATTERN USING 3 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
         
-    #     plot_fn(x=A8[1,:],y=A8[0,:],title='PATTERN USING 4 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
+        plot_fn(x=A8[1,:],y=A8[0,:],title='PATTERN USING 4 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
         
-    #     plot_fn(x,
-    #             y,
-    #             title=f'FINAL PATTERN USING 4 PRISM \n w={w} rpm,w1={w2} rpm,w2={w3} rpm,w3={w4} rpm, T={transmittance}%',
-    #             fontsize=80,
-    #             xlabel='Pixels',
-    #             ylabel='Pixels',
-    #             img_size=(80,25),
-    #             draw_FOV=True)
+        plot_fn(x,
+                y,
+                title=f'FINAL PATTERN USING 4 PRISM \n w={w} rpm,w1={w2} rpm,w2={w3} rpm,w3={w4} rpm, T={transmittance}%',
+                fontsize=80,
+                xlabel='Pixels',
+                ylabel='Pixels',
+                img_size=(80,25),
+                draw_FOV=True)
     
 
     return risley_pattern_2D,transmittance
@@ -294,25 +288,48 @@ def create_risley_pattern(expected_dims,
     mask_risley=np.zeros(expected_dims)
     transmittance_list=[]
     if(PRF):
-        for i in range(1,expected_dims[0]+1):
-            print(i)
-            
-            #Risley optical index fused silica
-            n_prism=risley_optical_index_fused_silica((i*line_width+start_wavelength)/1000)
-            #print('Risley optical index fused silica ',n)
-            mask_2D,transmittance=generate_2D_pattern(tf,
-                                PRF+(i*(512/50)),
-                                w,
-                                w2,
-                                w3,
-                                w4,
-                                a,
-                                number_of_prisms,
-                                n_prism,
-                                expected_dims,
-                                plot_mask) 
-            transmittance_list.append(transmittance)
-            mask_risley[i-1,:,:]=mask_2D
+        
+        #Number Of laser pulses in image capture time
+        num_pulse=tf*PRF
+        #laser spot number
+        samples=np.linspace(0,np.ceil(num_pulse).astype(int)-1,np.ceil(num_pulse).astype(int))
+        #Time of laser Pulses
+        t1_total=samples*(1/PRF)
+        t_start=0
+        t_step=256#np.round(3.73e-9*PRF).astype(int)  
+        try:
+            for l in range(200):
+                #print(l)
+                for i in range(1,expected_dims[0]+1):
+                 #   print(i)
+                    
+                    #Risley optical index fused silica
+                    n_prism=risley_optical_index_fused_silica((i*line_width+start_wavelength)/1000)
+                    #print('Risley optical index fused silica ',n)
+                    t1=t1_total[t_start:t_start+t_step]
+                    mask_2D,transmittance=generate_2D_pattern(t1,
+                                        PRF,#+(i*(512/50)),
+                                        w,
+                                        w2,
+                                        w3,
+                                        w4,
+                                        a,
+                                        number_of_prisms,
+                                        n_prism,
+                                        expected_dims,
+                                        plot_mask=False)
+                    # cv2.imshow('pattern',mask_2D)
+                    # cv2.waitKey(0)
+                    # cv2.destroyAllWindows()
+                    transmittance_list.append(transmittance)
+                    mask_risley[i-1,:,:]=np.logical_or(mask_risley[i-1,:,:],mask_2D) 
+                    t_start=t_start+t_step
+                    
+                print(f'{l} scan finished')
+                total_transmittance=((mask_risley.sum()*100)/(expected_dims[0]*expected_dims[1]*expected_dims[2]))
+                print('-----------TOTAL TRANSMITTANCE------------------',total_transmittance)
+        except:
+            print('Process Finished')
     else:
         minimum_transmittance=minimum_transmittance*100
         transmittances= get_transmittances(original_volume,
@@ -340,7 +357,7 @@ def create_risley_pattern(expected_dims,
                 count_down+=1
         print('EXPECTED FINAL TRANSMITTANCE: ', new_transmittances.sum()/expected_dims[0])
         
-        required_prfs=required_prf(np.array(new_transmittances))/10
+        required_prfs=required_prf(np.array(new_transmittances))
         for i in range(expected_dims[0]):
             #Risley optical index fused silica
             n_prism=risley_optical_index_fused_silica((i*line_width+start_wavelength)/1000)
@@ -383,237 +400,73 @@ def create_risley_pattern(expected_dims,
 
 ##################################################################################################################
 
-# number_of_prisms=4
+number_of_prisms=4
 
 
-# desired_transmittance=1.74
+desired_transmittance=1.74
 
-# #Laser Pulse Rate
-# #PRF=required_prf(desired_transmittance)#1999000
-# #PRF=199900
-# PRF=None
-# #Image Capture Time 0.003
-# tf=0.16
+#Laser Pulse Rate
+#PRF=required_prf(desired_transmittance)#1999000
+PRF=350000
+#Image Capture Time 0.003
+tf=81.92
 
-# #angular speed risley 1 rotations per sec
-# w=-3428.22250471
-# #angula speed risley 2 rotations per sec
-# w2=-1101.58077614
+#angular speed risley 1 rotations per sec
+w=6255.54063372
+#angula speed risley 2 rotations per sec
+w2=-2020.10559296
 
-# #angula speed risley 2 rotations per sec
-# w3=-1530.3051244
+#angula speed risley 2 rotations per sec
+w3=-1227.16073769
 
-# #angula speed risley 2 rotations per sec
-# w4=4721.40253875
+#angula speed risley 2 rotations per sec
+w4=1227.40445477
 
-# a=10*(np.pi/180)    
-# expected_dims=(512,1000,100)   
+a=10*(np.pi/180)    
+expected_dims=(512,1000,100)   
 
 
-# band_width=176
-# line_width=band_width/expected_dims[0]
-# start_wavelength=962
+band_width=176
+line_width=band_width/expected_dims[0]
+start_wavelength=962
 
-# maximum_transmittance=0.43
-# minimum_transmittance=0.0
-# transmittance_distribution_fn='ca'
-# sigma=200
+maximum_transmittance=0.43
+minimum_transmittance=0.0
+transmittance_distribution_fn='ga'
+sigma=150
 
-# path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1253.mat'
-# def read_data(path):
-#     data = loadmat(path)
-#     oct_volume = data['images']
-#     return oct_volume
+path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1253.mat'
+def read_data(path):
+    data = loadmat(path)
+    oct_volume = data['images']
+    return oct_volume
 
-# original_volume=read_data(path)
+original_volume=read_data(path)
     
 
-# begin = time.time()
-# mask_risley=create_risley_pattern(expected_dims,
-#                           line_width,
-#                           start_wavelength,
-#                           tf,
-#                           PRF,
-#                           w,
-#                           w2,
-#                           w3,
-#                           w4,
-#                           a,
-#                           number_of_prisms,
-#                           original_volume,
-#                           maximum_transmittance,
-#                           minimum_transmittance,
-#                           sigma,
-#                           transmittance_distribution_fn,
-#                           plot_mask=True)
-# end = time.time()
-# print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
-# plt.rcParams["figure.figsize"] = (100,80)
-# plt.imshow(mask_risley[:,:,50],cmap='gray')
+begin = time.time()
+mask_risley=create_risley_pattern(expected_dims,
+                          line_width,
+                          start_wavelength,
+                          tf,
+                          PRF,
+                          w,
+                          w2,
+                          w3,
+                          w4,
+                          a,
+                          number_of_prisms,
+                          original_volume,
+                          maximum_transmittance,
+                          minimum_transmittance,
+                          sigma,
+                          transmittance_distribution_fn,
+                          plot_mask=True)
+end = time.time()
+print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
+plt.rcParams["figure.figsize"] = (100,80)
+plt.imshow(mask_risley[:,:,50],cmap='gray')
 
-# import napari
+import napari
 
-# viewer = napari.view_image(mask_risley*255)
-##################################################################################################################
-
-
-# def make_video(volume,name,axis=0):
-    
-#     height, width,depth = volume.shape
-#     if (axis==1):
-#         size = (depth,width)
-#         r=height
-#     else:
-#         size = (width,height)
-#         r=depth
-
-#     fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
-
-#     video = cv2.VideoWriter(name+'.avi',fourcc, 10, size)
-    
-#     for b in range(r):
-#         if (axis==1):
-#             image_for_video=cv2.cvtColor(np.squeeze(volume[b,:,:]),cv2.COLOR_GRAY2BGR)
-#         else:
-#             image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
-#         video.write(image_for_video)
-#     video.release()
-
-# make_video(mask_risley*255,'Gaussian_s100_T25_xz')
-# make_video(mask_risley*255,'Gaussian_S100_T25_xy',1)
-# subsampled_volume=np.multiply(mask_risley,original_volume)
-
-
-# import napari
-
-# viewer = napari.view_image(mask_risley*255)
-
-# viewer = napari.view_image(subsampled_volume)
-
-
-
-# img=mask_risley*255
-# f = np.fft.fft2(img.astype(np.float32))
-# fshift = np.fft.fftshift(f)
-# magnitude_spectrum = 20*np.log(np.abs(fshift))
-
-
-# viewer = napari.view_image(magnitude_spectrum)
-
-
-
-
-
-
-
-
-
-
-    
-# number_of_prisms=4
-
-
-# desired_transmittance=0
-
-# #Laser Pulse Rate
-# PRF=required_prf(desired_transmittance)#1999000
-# #PRF=2/0.016
-# #Image Capture Time 0.003
-# tf=0.016
-
-# #angular speed risley 1 rotations per sec
-# w=9990
-# #angula speed risley 2 rotations per sec
-# w2=111000
-
-# #angula speed risley 2 rotations per sec
-# w3=12333
-
-# #angula speed risley 2 rotations per sec
-# w4=119538
-
-# a=1*(10*np.pi/180)    
-# expected_dims=(512,1000,100)   
-
-
-# band_width=176
-# line_width=band_width/expected_dims[0]
-# start_wavelength=962
-
-# maximum_transmittance=0.53
-# sigma=100
-
-# list_transmittances=[]
-# prfs=[]
-# # for p in range(10000):
-# #     if(p%100==0):
-# #         plot_mask=True
-# #     else:
-# #         plot_mask=False
-# r,transmittance=generate_2D_pattern(tf,
-#                         PRF,#+(p*1000),
-#                         w,
-#                         w2,
-#                         w3,
-#                         w4,
-#                         a,
-#                         number_of_prisms,
-#                         n_prism=1.444,
-#                         expected_dims=expected_dims,
-#                         plot_mask=True)
-# print(transmittance)
-    # print(transmittance)
-    # prfs.append(PRF+(p*1000))
-    # list_transmittances.append(transmittance)
-
-# ws=np.round(np.linspace(-9990,9990,10))
-# w2s=np.round(np.linspace(-9990,9990,10)/0.09)
-# w3s=np.round(np.linspace(-9990,9990,10)/-0.09)
-# w4s=np.round(np.linspace(-9990,9990,10)/-0.065)
-
-# for w in ws:
-#     for w2 in w2s:
-#         for w3 in w3s:
-#             for w4 in w4s:
-#                 # w=4000
-#                 # w2=w/0.09
-#                 # w3=-w/0.09
-#                 # w4=-w/0.065
-#                 if(w!=w2 and w!=w3 and w!=w4 and w2!= w3 and w2!=w4 and w3!=w4):
-#                     transmittance=generate_2D_pattern(tf,
-#                                             PRF,
-#                                             w,
-#                                             w2,
-#                                             w3,
-#                                             w4,
-#                                             a,
-#                                             number_of_prisms,
-#                                             n_prism=1.444,
-#                                             expected_dims=expected_dims,
-#                                             plot_mask=True)
-
-
-         
-# list_transmittances=np.load('/home/diego/Downloads/tr.npy')
-# prfs=np.load('/home/diego/Downloads/prfs.npy')
-# # list_transmittances=np.array(list_transmittances)
-# # prfs=np.array(prfs)
-# from sklearn.preprocessing import PolynomialFeatures
-# from sklearn.pipeline import make_pipeline
-# from sklearn.linear_model import LinearRegression
-# degree=4
-# polyreg=make_pipeline(PolynomialFeatures(degree),LinearRegression())
-# polyreg.fit(list_transmittances.reshape(-1,1),prfs)
-
-# plt.rcParams["figure.figsize"] = (10,10)
-# plt.figure()
-# plt.plot(list_transmittances,prfs)
-# plt.plot(list_transmittances,polyreg.predict(list_transmittances.reshape(-1,1)))
-# plt.show()
-
-# tr=list_transmittances
-# prf_required=17331.149418538436+7.62755121e+04*tr+9.39995932e+02*tr**2-1.20363195e+01*tr**3+1.97498883e-01*tr**4
-
-# plt.plot(tr,prf_required,'o')
-# plt.plot(list_transmittances,prfs)
-# plt.show()
+viewer = napari.view_image(mask_risley*255)
