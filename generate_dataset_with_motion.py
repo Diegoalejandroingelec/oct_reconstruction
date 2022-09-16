@@ -527,6 +527,11 @@ def generate_dataset(generate_only_with_motion,
                 extract_sub_volumes(volume,name,volumes_dataset_train)
                 
             name='subsampled_train_vol_'+str(volume_number)
+            cv2.imshow('a',subsampled_image[50,:,:])
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+            
+            
             extract_sub_volumes(subsampled_image,name,subsampled_volumes_dataset_train)
             
             volume_number+=1
@@ -538,7 +543,8 @@ def generate_dataset(generate_only_with_motion,
     
     subsampled_volumes_dataset_train.close()  
     volumes_dataset_train.close()
-    masks_dataset_train.close()
+    if(not generate_only_with_motion):
+        masks_dataset_train.close()
     
     ############################################################################################################
     
@@ -611,12 +617,13 @@ def generate_dataset(generate_only_with_motion,
             
     subsampled_volumes_dataset_test.close()  
     volumes_dataset_test.close()
-    masks_dataset_test.close()
+    if(not generate_only_with_motion):
+        masks_dataset_test.close()
 
 
 
 dataset_folder='MOTION_MAXIMUM_10X_10Y_DATASET'
-generate_ground_truth_denoised=True
+generate_ground_truth_denoised=False
 generate_only_with_motion=True
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
