@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jul 28 10:04:24 2022
+Created on Fri Sep 16 11:41:06 2022
 
 @author: diego
 """
+
 from Generate_shifting_blue_noise import generate_shifting_blue_noise,generate_binary_blue_noise_mask
 from scipy.io import loadmat
 from glob import glob
@@ -19,6 +20,7 @@ import time
 from scipy.signal import savgol_filter
 import cv2
 from risley_beam_steering_real_pattern import create_risley_pattern
+from Brownian_movement import add_motion_to_en_face_images
 vol_dims=(512,1000,100)
 
 
@@ -424,7 +426,8 @@ def generate_risley_gaussian_mask(original_volume,
 ########################################################################################
 blue_noise=generate_shifting_blue_noise(expected_dims=vol_dims)
 
-def generate_dataset(denoised_dataset_folder_path,
+def generate_dataset(generate_only_with_motion,
+                     denoised_dataset_folder_path,
                      generate_ground_truth_denoised,
                      dataset_folder,
                      mask_dataset_training_path,
@@ -468,10 +471,11 @@ def generate_dataset(denoised_dataset_folder_path,
     subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_subsampled_volumes.h5', 'w')
     volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_ground_truth.h5', 'w')
     
-    if(mask_dataset_training_path):
-        masks_dataset_train = h5py.File(mask_dataset_training_path, 'r')
-    else:
-        masks_dataset_train = h5py.File('./'+dataset_folder+'/masks_dataset_train.h5', 'w')
+    if(not generate_only_with_motion):
+        if(mask_dataset_training_path):
+            masks_dataset_train = h5py.File(mask_dataset_training_path, 'r')
+        else:
+            masks_dataset_train = h5py.File('./'+dataset_folder+'/masks_dataset_train.h5', 'w')
 
         
     for volume_path in train_volumes_paths:
@@ -479,28 +483,33 @@ def generate_dataset(denoised_dataset_folder_path,
         print(volume_path)
         try: 
             volume = read_data(volume_path)
+            
             name=volume_path.split('/')[-1].split('.')[0]
+            if(not generate_only_with_motion):
+                if(mask_dataset_training_path):
+                    mask=np.array(masks_dataset_train.get(name))
+                    if(plot_mask):
+                        plt.imshow(mask[:,:,11],cmap='gray')
+                        plt.show() 
+                else:
+                    # mask=generate_real_gaussian_blue_noise_mask(blue_noise,
+                    #                                        volume,
+                    #                                        desired_transmittance,
+                    #                                        sigma,
+                    #                                        plot_mask)
+                    mask=generate_risley_gaussian_mask(volume,
+                                                      sigma,
+                                                      maximum_transmittance,
+                                                      minimum_transmittance,
+                                                      transmittance_distribution_fn,
+                                                      plot_mask)
+                    masks_dataset_train.create_dataset(name, data=mask)
             
-            if(mask_dataset_training_path):
-                mask=np.array(masks_dataset_train.get(name))
-                if(plot_mask):
-                    plt.imshow(mask[:,:,11],cmap='gray')
-                    plt.show() 
-            else:
-                # mask=generate_real_gaussian_blue_noise_mask(blue_noise,
-                #                                        volume,
-                #                                        desired_transmittance,
-                #                                        sigma,
-                #                                        plot_mask)
-                mask=generate_risley_gaussian_mask(volume,
-                                                  sigma,
-                                                  maximum_transmittance,
-                                                  minimum_transmittance,
-                                                  transmittance_distribution_fn,
-                                                  plot_mask)
-                masks_dataset_train.create_dataset(name, data=mask)
+            subsampled_image = add_motion_to_en_face_images(original_volume=volume,
+                                                            plot_random_walk=plot_mask)
             
-            subsampled_image = np.multiply(mask,volume).astype(np.uint8)
+            if(not generate_only_with_motion):
+                subsampled_image = np.multiply(mask,subsampled_image).astype(np.uint8)
             
             
             name='original_train_vol_'+str(volume_number)
@@ -537,11 +546,11 @@ def generate_dataset(denoised_dataset_folder_path,
     subsampled_volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_subsampled_volumes.h5', 'w')
     volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_ground_truth.h5', 'w')
     
-    
-    if(mask_dataset_testing_path):
-        masks_dataset_test = h5py.File(mask_dataset_testing_path, 'r')
-    else:
-        masks_dataset_test = h5py.File('./'+dataset_folder+'/masks_dataset_test.h5', 'w')
+    if(not generate_only_with_motion):
+        if(mask_dataset_testing_path):
+            masks_dataset_test = h5py.File(mask_dataset_testing_path, 'r')
+        else:
+            masks_dataset_test = h5py.File('./'+dataset_folder+'/masks_dataset_test.h5', 'w')
         
     for volume_path in test_volumes_paths:
             
@@ -553,28 +562,30 @@ def generate_dataset(denoised_dataset_folder_path,
                 name=volume_path.split('/')[-1].split('.')[0]
                 
                 
-                
-                if(mask_dataset_testing_path):
-                    mask=np.array(masks_dataset_test.get(name))
-                    if(plot_mask):
-                        plt.imshow(mask[:,:,11],cmap='gray')
-                        plt.show() 
-                else:
-                    # mask=generate_real_gaussian_blue_noise_mask(blue_noise,
-                    #                                        volume,
-                    #                                        desired_transmittance,
-                    #                                        sigma,
-                    #                                        plot_mask)
-                    mask=generate_risley_gaussian_mask(volume,
-                                                      sigma,
-                                                      maximum_transmittance,
-                                                      minimum_transmittance,
-                                                      transmittance_distribution_fn,
-                                                      plot_mask)
-                    masks_dataset_test.create_dataset(name, data=mask)
+                if(not generate_only_with_motion):
+                    if(mask_dataset_testing_path):
+                        mask=np.array(masks_dataset_test.get(name))
+                        if(plot_mask):
+                            plt.imshow(mask[:,:,11],cmap='gray')
+                            plt.show() 
+                    else:
+                        # mask=generate_real_gaussian_blue_noise_mask(blue_noise,
+                        #                                        volume,
+                        #                                        desired_transmittance,
+                        #                                        sigma,
+                        #                                        plot_mask)
+                        mask=generate_risley_gaussian_mask(volume,
+                                                          sigma,
+                                                          maximum_transmittance,
+                                                          minimum_transmittance,
+                                                          transmittance_distribution_fn,
+                                                          plot_mask)
+                        masks_dataset_test.create_dataset(name, data=mask)
                     
-                    
-                subsampled_image = np.multiply(mask,volume).astype(np.uint8)
+                subsampled_image = add_motion_to_en_face_images(original_volume=volume,
+                                                                plot_random_walk=plot_mask)
+                if(not generate_only_with_motion):
+                    subsampled_image = np.multiply(mask,subsampled_image).astype(np.uint8)
                 
                 name='original_test_vol_'+str(volume_number)
                 ################# BM3D #############################
@@ -604,14 +615,16 @@ def generate_dataset(denoised_dataset_folder_path,
 
 
 
-dataset_folder='RISLEY_LAPLACE_TRANSMITTANCE_25_SIGMA_200_DATASET'
-generate_ground_truth_denoised=True
+dataset_folder='MOTION_MAXIMUM_10X_10Y_DATASET'
+generate_ground_truth_denoised=False
+generate_only_with_motion=True
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
 #training_txt_path='./RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET/train_volumes_paths.txt'
 #testing_txt_path='./RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET/test_volumes_paths.txt'
-generate_dataset(denoised_dataset_folder_path,
+generate_dataset(generate_only_with_motion,
+                 denoised_dataset_folder_path,
                  generate_ground_truth_denoised,
                  dataset_folder,
                  mask_dataset_training_path='',
@@ -623,4 +636,4 @@ generate_dataset(denoised_dataset_folder_path,
                  maximum_transmittance=0.41,
                  minimum_transmittance=0.0,
                  transmittance_distribution_fn='ga',
-                 plot_mask=False)
+                 plot_mask=True)

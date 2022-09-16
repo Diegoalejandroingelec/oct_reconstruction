@@ -14,6 +14,20 @@ from scipy.io import loadmat
 from scipy.signal import savgol_filter
 import time
 
+def make_video(volume,name):
+    
+    height, width,depth = volume.shape
+    size = (depth,width)
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+
+    video = cv2.VideoWriter(name+'.avi',fourcc, 10, size)
+    for b in range(height):
+        image_for_video=cv2.cvtColor(np.squeeze(volume[b,:,:]),cv2.COLOR_GRAY2BGR)
+        video.write(image_for_video)
+    video.release()
+    
+
 def plot_fn(x,y,title,fontsize,xlabel,ylabel,img_size=(20,20),draw_FOV=False):
     plt.rcParams["figure.figsize"] = img_size
     plt.plot(x,y,'.')
@@ -202,14 +216,14 @@ def generate_2D_pattern(t1,
         
         plot_fn(x=A8[1,:],y=A8[0,:],title='PATTERN USING 4 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
         
-        plot_fn(x,
-                y,
-                title=f'FINAL PATTERN USING 4 PRISM \n w={w} rpm,w1={w2} rpm,w2={w3} rpm,w3={w4} rpm, T={transmittance}%',
-                fontsize=80,
-                xlabel='Pixels',
-                ylabel='Pixels',
-                img_size=(80,25),
-                draw_FOV=True)
+        # plot_fn(x,
+        #         y,
+        #         title=f'FINAL PATTERN USING 4 PRISM \n w={w} rpm,w1={w2} rpm,w2={w3} rpm,w3={w4} rpm, T={transmittance}%',
+        #         fontsize=80,
+        #         xlabel='Pixels',
+        #         ylabel='Pixels',
+        #         img_size=(80,25),
+        #         draw_FOV=True)
     
 
     return risley_pattern_2D,transmittance
@@ -298,6 +312,7 @@ def create_risley_pattern(expected_dims,
         t_start=0
         t_step=256#np.round(3.73e-9*PRF).astype(int)  
         try:
+            change_in_transmittance_per_sweep=[]
             for l in range(200):
                 #print(l)
                 for i in range(1,expected_dims[0]+1):
@@ -328,8 +343,17 @@ def create_risley_pattern(expected_dims,
                 print(f'{l} scan finished')
                 total_transmittance=((mask_risley.sum()*100)/(expected_dims[0]*expected_dims[1]*expected_dims[2]))
                 print('-----------TOTAL TRANSMITTANCE------------------',total_transmittance)
+                if(plot_mask):
+                    
+                    change_in_transmittance_per_sweep.append(mask_risley[50,:,:].copy())
+                    # plt.imshow(mask_risley[50,:,:],cmap='gray')
+                    # plt.show()
+            make_video(np.array(change_in_transmittance_per_sweep).astype(np.uint8)*255,'change_in_transmittance_per_sweep.avi')
         except:
             print('Process Finished')
+            
+            
+            
     else:
         minimum_transmittance=minimum_transmittance*100
         transmittances= get_transmittances(original_volume,

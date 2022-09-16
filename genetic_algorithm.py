@@ -229,18 +229,18 @@ def compute_bluness(pattern):
     score=(part_1+part_2)#the higher the better. For minimize, add - symbol
     return score
 
-    DFT=np.fft.fftshift(np.fft.fft2(pattern))/float(np.size(pattern));
-    Height,Width=pattern.shape;
-    ShiftY,ShiftX=(int(Height/2),int(Width/2));
-    plt.rcParams["figure.figsize"] = (8,8)
+    # DFT=np.fft.fftshift(np.fft.fft2(pattern))/float(np.size(pattern));
+    # Height,Width=pattern.shape;
+    # ShiftY,ShiftX=(int(Height/2),int(Width/2));
+    # plt.rcParams["figure.figsize"] = (8,8)
     
-    plt.imshow(np.abs(DFT),
-                cmap="viridis",
-                interpolation="nearest",
-                vmin=0.0,
-                vmax=np.percentile(np.abs(DFT),99))
-                #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
-    plt.show()
+    # plt.imshow(np.abs(DFT),
+    #             cmap="viridis",
+    #             interpolation="nearest",
+    #             vmin=0.0,
+    #             vmax=np.percentile(np.abs(DFT),99))
+    #             #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
+    # plt.show()
     # print('yupi')
 def plot_fn(x,y,title,fontsize,xlabel,ylabel,img_size=(20,20),draw_FOV=False):
     plt.rcParams["figure.figsize"] = img_size
