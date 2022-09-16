@@ -527,9 +527,9 @@ def generate_dataset(generate_only_with_motion,
                 extract_sub_volumes(volume,name,volumes_dataset_train)
                 
             name='subsampled_train_vol_'+str(volume_number)
-            cv2.imshow('a',subsampled_image[50,:,:])
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+            # cv2.imshow('a',subsampled_image[50,:,:])
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
             
             
             extract_sub_volumes(subsampled_image,name,subsampled_volumes_dataset_train)
