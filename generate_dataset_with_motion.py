@@ -616,7 +616,7 @@ def generate_dataset(generate_only_with_motion,
 
 
 dataset_folder='MOTION_MAXIMUM_10X_10Y_DATASET'
-generate_ground_truth_denoised=False
+generate_ground_truth_denoised=True
 generate_only_with_motion=True
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
@@ -636,4 +636,4 @@ generate_dataset(generate_only_with_motion,
                  maximum_transmittance=0.41,
                  minimum_transmittance=0.0,
                  transmittance_distribution_fn='ga',
-                 plot_mask=True)
+                 plot_mask=False)
