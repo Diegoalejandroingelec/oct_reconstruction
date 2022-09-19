@@ -459,6 +459,7 @@ def evaluate_model(denoised_dataset_folder_path,
                 bigger_reconstruction=np.multiply(mask_blue_noise_prima,bigger_reconstruction).astype(np.uint8)
             
             if(denoised_ground_truth_for_comparison):
+                print('ahi vaaaaa')
                 denoised_original_volume=find_denoised_volume(test_volume_path,denoised_dataset_folder_path)
                 #denoised_original_volume=median_filter_3D(original_volume,40,5)
                 if(not only_motion):
@@ -478,7 +479,7 @@ def evaluate_model(denoised_dataset_folder_path,
                 else:
                     volume_for_comparison=np.multiply(original_volume,window_for_comparison).astype(np.uint8)
                 
-                reconstruction_for_comparison=np.multiply(bigger_reconstruction,window_for_comparison).astype(np.uint8)
+                reconstruction_for_comparison=np.multiply(bigger_reconstruction,window_for_comparison[:,:,11:89]).astype(np.uint8)
                 print('evaluate metrics on roi')
                 PSNR=compute_PSNR(volume_for_comparison,reconstruction_for_comparison)
                 RMSE=compute_RMSE(volume_for_comparison,reconstruction_for_comparison)
