@@ -39,6 +39,7 @@ original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 comparison_size=100
 compare_with_roi=True
 denoised_ground_truth_for_comparison=True
+only_motion=True
 
 # Decide which device we want to run on
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
@@ -570,4 +571,5 @@ evaluate_model(denoised_dataset_folder_path,
                reconstruction_model,
                bigger_sub_volumes_dim,
                comparison_size,
+               only_motion,
                compare_with_roi)
