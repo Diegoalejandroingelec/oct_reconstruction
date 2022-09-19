@@ -457,12 +457,12 @@ def evaluate_model(denoised_dataset_folder_path,
     
                 bigger_reconstruction=np.multiply(mask_blue_noise_prima,bigger_reconstruction).astype(np.uint8)
             
-            if(denoised_ground_truth_for_comparison and not only_motion):
+            if(denoised_ground_truth_for_comparison):
                 denoised_original_volume=find_denoised_volume(test_volume_path,denoised_dataset_folder_path)
                 #denoised_original_volume=median_filter_3D(original_volume,40,5)
-                
-                sub_sampled_denoised_original_volume=np.multiply(mask,denoised_original_volume).astype(np.uint8)
-                bigger_reconstruction=bigger_reconstruction+sub_sampled_denoised_original_volume
+                if(not only_motion):
+                    sub_sampled_denoised_original_volume=np.multiply(mask,denoised_original_volume).astype(np.uint8)
+                    bigger_reconstruction=bigger_reconstruction+sub_sampled_denoised_original_volume
             else:
                 bigger_reconstruction=bigger_reconstruction+sub_sampled_volume
             
