@@ -26,7 +26,7 @@ from Brownian_movement import add_motion_to_en_face_images
 os.chdir("./3D_autoencoder_pytorch/")
 
 bigger_sub_volumes_dim=(512,1000,16)
-original_volume_dim=(512,1000,100)
+original_volume_dim=(512,1000,100-22)
 ngpu=2
 denoised_dataset_folder_path='../DATASET_DENOISED'
 results_dir='MOTION_MAXIMUM_10X_10Y_DATASET_GT_MEDIAN_FILTER_MEDIAN_FILTER_GT'
@@ -441,6 +441,7 @@ def evaluate_model(denoised_dataset_folder_path,
                 sub_sampled_volume=np.multiply(mask,original_volume).astype(np.uint8)
             else:
                 sub_sampled_volume=add_motion_to_en_face_images(original_volume,plot_random_walk=False)
+                sub_sampled_volume=sub_sampled_volume[:,:,11:89]
             
             ######## Normalize matrix###############################
             sub_sampled_volume_normalized,max_value=normalize(sub_sampled_volume)
@@ -461,6 +462,7 @@ def evaluate_model(denoised_dataset_folder_path,
                 denoised_original_volume=find_denoised_volume(test_volume_path,denoised_dataset_folder_path)
                 #denoised_original_volume=median_filter_3D(original_volume,40,5)
                 if(not only_motion):
+                    print('TA MAL!!!!!!!')
                     sub_sampled_denoised_original_volume=np.multiply(mask,denoised_original_volume).astype(np.uint8)
                     bigger_reconstruction=bigger_reconstruction+sub_sampled_denoised_original_volume
             else:
@@ -472,7 +474,7 @@ def evaluate_model(denoised_dataset_folder_path,
                 window_for_comparison, upper_limit, lower_limit=get_window_for_comparison(original_volume,window_size=original_volume_dim,comparison_size=comparison_size)
                 if(denoised_ground_truth_for_comparison):
                     volume_for_comparison=np.multiply(denoised_original_volume,window_for_comparison).astype(np.uint8)
-                    original_volume=denoised_original_volume
+                    original_volume=denoised_original_volume[:,:,11:89]
                 else:
                     volume_for_comparison=np.multiply(original_volume,window_for_comparison).astype(np.uint8)
                 

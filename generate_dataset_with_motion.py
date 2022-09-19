@@ -507,9 +507,10 @@ def generate_dataset(generate_only_with_motion,
             
             subsampled_image = add_motion_to_en_face_images(original_volume=volume,
                                                             plot_random_walk=plot_mask)
-            
+            subsampled_image = subsampled_image[:,:,11:89]
             if(not generate_only_with_motion):
                 subsampled_image = np.multiply(mask,subsampled_image).astype(np.uint8)
+                
             
             
             name='original_train_vol_'+str(volume_number)
@@ -517,6 +518,7 @@ def generate_dataset(generate_only_with_motion,
             ################# BM3D #############################
             if(generate_ground_truth_denoised):
                 denoised_volume=find_denoised_volume(volume_path,denoised_dataset_folder_path)
+                denoised_volume = denoised_volume[:,:,11:89]
                 #denoised_volume=median_filter_3D(volume,40,5)
                 #plt.imshow(denoised_volume[:,:,11],cmap='gray')
                 #plt.show()
@@ -590,14 +592,17 @@ def generate_dataset(generate_only_with_motion,
                     
                 subsampled_image = add_motion_to_en_face_images(original_volume=volume,
                                                                 plot_random_walk=plot_mask)
+                subsampled_image = subsampled_image[:,:,11:89]
                 if(not generate_only_with_motion):
                     subsampled_image = np.multiply(mask,subsampled_image).astype(np.uint8)
+                    
                 
                 name='original_test_vol_'+str(volume_number)
                 ################# BM3D #############################
                 if(generate_ground_truth_denoised):
                     denoised_volume=find_denoised_volume(volume_path,denoised_dataset_folder_path)
                     #denoised_volume=median_filter_3D(volume,40,5)
+                    denoised_volume = denoised_volume[:,:,11:89]
                     extract_sub_volumes(denoised_volume,name,volumes_dataset_test)
                 else:
                     extract_sub_volumes(volume,name,volumes_dataset_test)
@@ -622,7 +627,7 @@ def generate_dataset(generate_only_with_motion,
 
 
 
-dataset_folder='MOTION_MAXIMUM_10X_10Y_DATASET'
+dataset_folder='MOTION_MAXIMUM_10X_10Y_CROP_DATASET'
 generate_ground_truth_denoised=False
 generate_only_with_motion=True
 denoised_dataset_folder_path='./DATASET_DENOISED'
