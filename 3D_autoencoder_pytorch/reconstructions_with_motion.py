@@ -25,7 +25,7 @@ os.chdir("../")
 from Brownian_movement import add_motion_to_en_face_images
 os.chdir("./3D_autoencoder_pytorch/")
 
-bigger_sub_volumes_dim=(512,150,16)
+bigger_sub_volumes_dim=(512,1000,16)
 original_volume_dim=(512,1000,100)
 ngpu=2
 denoised_dataset_folder_path='../DATASET_DENOISED'
@@ -439,7 +439,7 @@ def evaluate_model(denoised_dataset_folder_path,
             if(not only_motion):
                 sub_sampled_volume=np.multiply(mask,original_volume).astype(np.uint8)
             else:
-                sub_sampled_volume=add_motion_to_en_face_images(original_volume,plot_random_walk=True)
+                sub_sampled_volume=add_motion_to_en_face_images(original_volume,plot_random_walk=False)
             
             ######## Normalize matrix###############################
             sub_sampled_volume_normalized,max_value=normalize(sub_sampled_volume)
