@@ -473,10 +473,10 @@ def evaluate_model(denoised_dataset_folder_path,
             if(compare_with_roi):
                 print('ROI COMPARISON')
                 window_for_comparison, upper_limit, lower_limit=get_window_for_comparison(original_volume,window_size=original_volume_dim,comparison_size=comparison_size)
-                print(window_for_comparison.shape)
+                
                 if(denoised_ground_truth_for_comparison):
-                    print(denoised_original_volume.shape)
-                    volume_for_comparison=np.multiply(denoised_original_volume,window_for_comparison).astype(np.uint8)
+                    
+                    volume_for_comparison=np.multiply(denoised_original_volume[:,:,11:89],window_for_comparison).astype(np.uint8)
                     original_volume=denoised_original_volume[:,:,11:89]
                 else:
                     volume_for_comparison=np.multiply(original_volume,window_for_comparison).astype(np.uint8)
