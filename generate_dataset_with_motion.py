@@ -64,7 +64,7 @@ def find_denoised_volume(volume_path,denoised_dataset_folder_path):
 def extract_sub_volumes(volume,name,h5_file):
     w_div_factor = 64
     h_div_factor = 512
-    d_div_factor = 16
+    d_div_factor = 32
     
     overlap_pixels_w=w_div_factor//2
     overlap_pixels_h=0
@@ -89,7 +89,7 @@ def extract_sub_volumes(volume,name,h5_file):
                 # print('width: ',(w_end,w_end+w_div_factor))
                 # print('depth: ',(d_end,d_end+d_div_factor))
                 sub_volume=volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]
-                if(sub_volume.shape!=(512,64,16)):
+                if(sub_volume.shape!=(h_div_factor,w_div_factor,d_div_factor)):
                     raise Exception("ERROR GENERATING SUB VOLUMES")
                     
                     
@@ -507,7 +507,7 @@ def generate_dataset(generate_only_with_motion,
             
             subsampled_image = add_motion_to_en_face_images(original_volume=volume,
                                                             plot_random_walk=plot_mask)
-            subsampled_image = subsampled_image[:,:,11:89]
+            subsampled_image = subsampled_image[:,:,2:98]
             if(not generate_only_with_motion):
                 subsampled_image = np.multiply(mask,subsampled_image).astype(np.uint8)
                 
@@ -518,7 +518,7 @@ def generate_dataset(generate_only_with_motion,
             ################# BM3D #############################
             if(generate_ground_truth_denoised):
                 denoised_volume=find_denoised_volume(volume_path,denoised_dataset_folder_path)
-                denoised_volume = denoised_volume[:,:,11:89]
+                denoised_volume = denoised_volume[:,:,2:98]
                 #denoised_volume=median_filter_3D(volume,40,5)
                 #plt.imshow(denoised_volume[:,:,11],cmap='gray')
                 #plt.show()
@@ -538,7 +538,8 @@ def generate_dataset(generate_only_with_motion,
             
             volume_number+=1
         
-        except:
+        except Exception as e :
+            print(e)
             print('WRONG dimentions'+volume_path)
 
     
@@ -592,7 +593,7 @@ def generate_dataset(generate_only_with_motion,
                     
                 subsampled_image = add_motion_to_en_face_images(original_volume=volume,
                                                                 plot_random_walk=plot_mask)
-                subsampled_image = subsampled_image[:,:,11:89]
+                subsampled_image = subsampled_image[:,:,2:98]
                 if(not generate_only_with_motion):
                     subsampled_image = np.multiply(mask,subsampled_image).astype(np.uint8)
                     
@@ -602,7 +603,7 @@ def generate_dataset(generate_only_with_motion,
                 if(generate_ground_truth_denoised):
                     denoised_volume=find_denoised_volume(volume_path,denoised_dataset_folder_path)
                     #denoised_volume=median_filter_3D(volume,40,5)
-                    denoised_volume = denoised_volume[:,:,11:89]
+                    denoised_volume = denoised_volume[:,:,2:98]
                     extract_sub_volumes(denoised_volume,name,volumes_dataset_test)
                 else:
                     extract_sub_volumes(volume,name,volumes_dataset_test)
@@ -627,8 +628,8 @@ def generate_dataset(generate_only_with_motion,
 
 
 
-dataset_folder='MOTION_MAXIMUM_10X_10Y_CROP_DATASET'
-generate_ground_truth_denoised=True
+dataset_folder='MOTION_MAXIMUM_1X_1Y_CROP_DATASET'
+generate_ground_truth_denoised=False
 generate_only_with_motion=True
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
