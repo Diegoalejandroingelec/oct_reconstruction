@@ -544,7 +544,7 @@ def evaluate_model(denoised_dataset_folder_path,
                     plt.imshow(error[:,:,50])
                     plt.show()
                 print('Generating video...')
-                gap=np.zeros((512,50,100)).astype(np.uint8)
+                gap=np.zeros((original_volume.shape[0],50,original_volume.shape[2])).astype(np.uint8)
                 comparative_volume=np.concatenate((original_volume,gap,bigger_reconstruction,gap,sub_sampled_volume),axis=1)
                 make_video(comparative_volume,
                            os.path.join(results_dir, f'comparative_reconstruction_{i}'))

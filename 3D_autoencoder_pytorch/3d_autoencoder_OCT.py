@@ -98,11 +98,11 @@ dataloader = torch.utils.data.DataLoader(h5_dataset,
                                          shuffle=True,
                                          num_workers=config_autoencoder.workers)
 
-#train_batch = next(iter(dataloader))
+train_batch = next(iter(dataloader))
 
-# plt.imshow(np.squeeze(np.array(train_batch[1][0,:,:,0].cpu())), cmap="gray")
+# plt.imshow(np.squeeze(np.array(train_batch[1][4,:,:,0].cpu())), cmap="gray")
 # plt.show()
-# plt.imshow(np.squeeze(np.array(train_batch[0][0,:,:,0].cpu())), cmap="gray")
+# plt.imshow(np.squeeze(np.array(train_batch[0][4,:,:,0].cpu())), cmap="gray")
 # plt.show()
 
 h5_dataset_test=HDF5Dataset(config_autoencoder.subsampled_volumes_path_test,
