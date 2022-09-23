@@ -13,6 +13,7 @@ import cv2
 from scipy.io import loadmat
 from scipy.signal import savgol_filter
 import time
+from Brownian_movement import create_2D_brownian_motion
 
 def make_video(volume,name):
     
@@ -209,7 +210,7 @@ def generate_2D_pattern(t1,
     transmittance=(risley_pattern_2D.sum()*100)/(expected_dims[1]*expected_dims[2])
     #print('TRANSMTTANCE C-SCAN',transmittance)
 
-    if(plot_mask):
+    if(False):
         # plot_fn(x=A4[1,:],y=A4[0,:],title='PATTERN USING 2 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
         
         # plot_fn(x=A6[1,:],y=A6[0,:],title='PATTERN USING 3 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
@@ -297,12 +298,18 @@ def create_risley_pattern(expected_dims,
                           minimum_transmittance,
                           sigma,
                           transmittance_distribution_fn,
+                          number_of_laser_sweeps,
+                          steps_before_centering,
+                          hand_tremor_period,
+                          laser_time_between_sweeps,
+                          x_factor,
+                          y_factor,
                           plot_mask):
     
     mask_risley=np.zeros(expected_dims)
     transmittance_list=[]
     if(PRF):
-        
+
         #Number Of laser pulses in image capture time
         num_pulse=tf*PRF
         #laser spot number
@@ -310,19 +317,54 @@ def create_risley_pattern(expected_dims,
         #Time of laser Pulses
         t1_total=samples*(1/PRF)
         t_start=0
-        t_step=256#np.round(3.73e-9*PRF).astype(int)  
+        t_step=np.round(laser_time_between_sweeps*PRF).astype(int)  
+        
+
         try:
+            layer_counter=0
             change_in_transmittance_per_sweep=[]
-            for l in range(200):
+            steps=((expected_dims[0]*number_of_laser_sweeps)/np.round((hand_tremor_period)/(t_step*(1/PRF))))
+            rand_x,rand_y=create_2D_brownian_motion(np.ceil(steps),
+                                                     steps_before_centering,
+                                                     plot_mask,
+                                                     x_factor,y_factor)
+            
+            num_rows, num_cols = expected_dims[1],expected_dims[2]
+            
+            max_x_shift=int(np.max(np.abs(np.round(rand_x))))
+            max_y_shift=int(np.max(np.abs(np.round(rand_y))))
+            max_translation_matrix = np.float32([ [1,0,max_x_shift], [0,1,max_y_shift ]])  
+            size_of_max_translation=(num_cols+2*max_x_shift, num_rows+2*max_y_shift)
+            motion_counter=0
+            translation_matrix=np.float32([[1,0,0], [0,1,0]]) 
+
+
+            ones_matrix=np.ones((expected_dims[1],expected_dims[2]))
+            en_face_initial_shift=cv2.warpAffine(ones_matrix,
+                                                 max_translation_matrix,
+                                                 size_of_max_translation)
+            
+            max_num_rows, max_num_cols = en_face_initial_shift.shape[:2]
+            
+            motion=True
+            for l in range(number_of_laser_sweeps):
                 #print(l)
                 for i in range(1,expected_dims[0]+1):
+                    # start1 = time.time()
+                    layer_counter+=1
                  #   print(i)
+                    if(layer_counter % np.round((hand_tremor_period)/(t_step*(1/PRF)))==0):
+                       motion=True
+                       motion_counter+=1
+                       translation_matrix=np.float32([ [1,0,int(np.round(rand_x[motion_counter]))], [0,1,int(np.round(rand_y[motion_counter])) ]]) 
+                       print('MOTION!!!!!')
+                       #translation_matrix=np.float32([ [1,0,30], [0,1,30 ]])
                     
                     #Risley optical index fused silica
                     n_prism=risley_optical_index_fused_silica((i*line_width+start_wavelength)/1000)
                     #print('Risley optical index fused silica ',n)
                     t1=t1_total[t_start:t_start+t_step]
-                    mask_2D,transmittance=generate_2D_pattern(t1,
+                    mask_2D,_=generate_2D_pattern(t1,
                                         PRF,#+(i*(512/50)),
                                         w,
                                         w2,
@@ -332,23 +374,89 @@ def create_risley_pattern(expected_dims,
                                         number_of_prisms,
                                         n_prism,
                                         expected_dims,
-                                        plot_mask=False)
+                                        plot_mask)
                     # cv2.imshow('pattern',mask_2D)
                     # cv2.waitKey(0)
                     # cv2.destroyAllWindows()
-                    transmittance_list.append(transmittance)
-                    mask_risley[i-1,:,:]=np.logical_or(mask_risley[i-1,:,:],mask_2D) 
+                    
+                    
+                    # if(motion_counter>=1):
+                    #     cv2.imshow('ENFACE', en_face_initial_shift*255)    
+                    #     cv2.waitKey(0)
+                    #     cv2.destroyAllWindows()
+                    
+                    if(motion):
+                        en_face_shift=cv2.warpAffine(en_face_initial_shift,
+                                                     translation_matrix,
+                                                     (max_num_cols,max_num_rows))
+                        #motion=False
+                    # if(motion_counter>=1):
+                        # cv2.imshow('ENFACE SHIFT', constant.astype(np.uint8)*255)    
+                        # cv2.waitKey(0)
+                        # cv2.destroyAllWindows()
+                    
+
+                    mask_2D_static= cv2.copyMakeBorder(mask_2D.copy(),
+                                                 max_y_shift,
+                                                 max_y_shift,
+                                                 max_x_shift,
+                                                 max_x_shift,
+                                                 cv2.BORDER_CONSTANT,value=[0,0,0])
+                
+
+                    
+                    sampling=np.multiply(mask_2D_static,en_face_shift)
+                    # if(motion):
+                    #     example=np.logical_or(mask_2D_static,en_face_shift)*255
+                    #     cv2.imshow('2D ORIGINAL MASK', mask_2D*255) 
+                    #     cv2.imshow('SAMPLING', sampling*255) 
+                    #     cv2.imshow('EXAMPLE OR', example.astype(np.uint8))    
+                    #     cv2.waitKey(0)
+                    #     cv2.destroyAllWindows()
+                    #     motion=False
+
+                    # inverse_translation_matrix=np.float32([ [1,0,-translation_matrix[0,2]], [0,1,-translation_matrix[1,2]]])
+                    # sampling=cv2.warpAffine(sampling,
+                    #                         inverse_translation_matrix,
+                    #                         (max_num_cols,max_num_rows))
+
+                    # if(motion_counter>=1):
+                    #     cv2.imshow('inverse_sampling', sampling*255)    
+                    #     cv2.waitKey(0)
+                    #     cv2.destroyAllWindows()
+
+                    
+                    sampling=sampling[max_y_shift+int(translation_matrix[1,2]):sampling.shape[0]-(max_y_shift-int(translation_matrix[1,2])),max_x_shift+int(translation_matrix[0,2]):sampling.shape[1]-(max_x_shift-int(translation_matrix[0,2]))]
+                    
+                    # if(motion_counter>=1):
+                    #     cv2.imshow('MASK 2d normal', mask_2D*255)  
+                    #     cv2.imshow('crop_inverse_sampling', sampling*255)    
+                    #     cv2.waitKey(0)
+                    #     cv2.destroyAllWindows()
+                        
+                    
+                    # if(motion_counter>=1):
+                    #     cv2.imshow('Translation1', mask_2D*255)  
+                    #     cv2.imshow('Translation', sampling*255)    
+                    #     cv2.waitKey(0)
+                    #     cv2.destroyAllWindows()
+                        
+                        
+                    mask_risley[i-1,:,:]=np.logical_or(mask_risley[i-1,:,:],sampling) 
                     t_start=t_start+t_step
                     
-                print(f'{l} scan finished')
-                total_transmittance=((mask_risley.sum()*100)/(expected_dims[0]*expected_dims[1]*expected_dims[2]))
-                print('-----------TOTAL TRANSMITTANCE------------------',total_transmittance)
-                if(plot_mask):
+                    # end1 = time.time()
+                    # print(f'{end1-start1} s')   
+                    # print('uy')
+                # print(f'{l} scan finished')
+                # total_transmittance=((mask_risley.sum()*100)/(expected_dims[0]*expected_dims[1]*expected_dims[2]))
+                # print('-----------TOTAL TRANSMITTANCE------------------',total_transmittance)
+                # if(plot_mask):
                     
-                    change_in_transmittance_per_sweep.append(mask_risley[50,:,:].copy())
+                #     change_in_transmittance_per_sweep.append(mask_risley[50,:,:].copy())
                     # plt.imshow(mask_risley[50,:,:],cmap='gray')
                     # plt.show()
-            make_video(np.array(change_in_transmittance_per_sweep).astype(np.uint8)*255,'change_in_transmittance_per_sweep.avi')
+            #make_video(np.array(change_in_transmittance_per_sweep).astype(np.uint8)*255,'change_in_transmittance_per_sweep.avi')
         except:
             print('Process Finished')
             
@@ -412,18 +520,18 @@ def create_risley_pattern(expected_dims,
             plt.show()
             print('MINIMUM TRANSMITTANCE',np.min(new_transmittances))
             
-    print('MEAN TRANSMTTANCE C-SCAN',np.mean(transmittance_list))
-    transmittance_list=[]
-    for m in range(100):
-        transmittance_list.append((mask_risley[:,:,m].sum()*100)/(expected_dims[0]*expected_dims[1]))
-    print('MEAN TRANSMTTANCE B-SCAN',np.mean(transmittance_list))
+    # print('MEAN TRANSMTTANCE C-SCAN',np.mean(transmittance_list))
+    # transmittance_list=[]
+    # for m in range(100):
+    #     transmittance_list.append((mask_risley[:,:,m].sum()*100)/(expected_dims[0]*expected_dims[1]))
+    # print('MEAN TRANSMTTANCE B-SCAN',np.mean(transmittance_list))
     total_transmittance=((mask_risley.sum()*100)/(expected_dims[0]*expected_dims[1]*expected_dims[2]))
     print('-----------TOTAL TRANSMITTANCE------------------',total_transmittance)
     return mask_risley.astype(np.uint8)
 
 
 ##################################################################################################################
-
+'''
 number_of_prisms=4
 
 
@@ -431,20 +539,20 @@ desired_transmittance=1.74
 
 #Laser Pulse Rate
 #PRF=required_prf(desired_transmittance)#1999000
-PRF=350000
+PRF=3500000
 #Image Capture Time 0.003
-tf=81.92
+tf=8.192
 
 #angular speed risley 1 rotations per sec
-w=6255.54063372
+w=62555.4063372
 #angula speed risley 2 rotations per sec
-w2=-2020.10559296
+w2=-20201.0559296
 
 #angula speed risley 2 rotations per sec
-w3=-1227.16073769
+w3=-12271.6073769
 
 #angula speed risley 2 rotations per sec
-w4=1227.40445477
+w4=12274.0445477
 
 a=10*(np.pi/180)    
 expected_dims=(512,1000,100)   
@@ -458,6 +566,13 @@ maximum_transmittance=0.43
 minimum_transmittance=0.0
 transmittance_distribution_fn='ga'
 sigma=150
+
+number_of_laser_sweeps=200
+steps_before_centering=10
+hand_tremor_period=1/9
+laser_time_between_sweeps=7.314285714285714e-05
+y_factor=50
+x_factor=50
 
 path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1253.mat'
 def read_data(path):
@@ -485,7 +600,13 @@ mask_risley=create_risley_pattern(expected_dims,
                           minimum_transmittance,
                           sigma,
                           transmittance_distribution_fn,
-                          plot_mask=True)
+                          number_of_laser_sweeps,
+                          steps_before_centering,
+                          hand_tremor_period,
+                          laser_time_between_sweeps,
+                          x_factor,
+                          y_factor,
+                          plot_mask=False)
 end = time.time()
 print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
 plt.rcParams["figure.figsize"] = (100,80)
@@ -494,3 +615,4 @@ plt.imshow(mask_risley[:,:,50],cmap='gray')
 import napari
 
 viewer = napari.view_image(mask_risley*255)
+'''

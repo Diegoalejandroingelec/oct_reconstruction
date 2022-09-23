@@ -229,17 +229,32 @@ def compute_bluness(pattern):
     score=(part_1+part_2)#the higher the better. For minimize, add - symbol
     return score
 
-    # DFT=np.fft.fftshift(np.fft.fft2(pattern))/float(np.size(pattern));
+    # DFT=np.fft.fftshift(np.fft.fft2(pattern))#/float(np.size(pattern));
     # Height,Width=pattern.shape;
     # ShiftY,ShiftX=(int(Height/2),int(Width/2));
     # plt.rcParams["figure.figsize"] = (8,8)
     
-    # plt.imshow(np.abs(DFT),
+    # plt.imshow(20*np.log(np.abs(DFT)),
     #             cmap="viridis",
     #             interpolation="nearest",
     #             vmin=0.0,
-    #             vmax=np.percentile(np.abs(DFT),99))
+    #             vmax=np.percentile(20*np.log(np.abs(DFT)),99))
     #             #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
+                
+                
+    # fig, ax1 = plt.subplots(1,1,figsize=(10, 5))
+    
+    # im = ax1.imshow(20*np.log(np.abs(DFT)),
+    #             cmap="viridis",
+    #             interpolation="nearest",
+    #             vmin=0.0,
+    #             vmax=np.percentile(20*np.log(np.abs(DFT)),99))
+    # plt.axis('off')
+    # cax = fig.add_axes([ax1.get_position().x1+0.01,
+    #                     ax1.get_position().y0,0.02,
+    #                     ax1.get_position().height])
+    # cb = plt.colorbar(im,cax=cax,extend="max")
+    # cb.ax.set_ylabel('Magnitude (dB)')
     # plt.show()
     # print('yupi')
 def plot_fn(x,y,title,fontsize,xlabel,ylabel,img_size=(20,20),draw_FOV=False):
@@ -438,10 +453,10 @@ def generate_2D_pattern(w1,
 #                             119538,
 #                             plot_mask=True)
 
-pattern=generate_2D_pattern(w1=-3428.22250471,
-                            w2=-1101.58077614,
-                            w3=-1530.3051244,
-                            w4=4721.40253875,plot_mask=True)
+# pattern=generate_2D_pattern(w1=-3428.22250471,
+#                             w2=-1101.58077614,
+#                             w3=-1530.3051244,
+#                             w4=4721.40253875,plot_mask=True)
 
 # cv2.imwrite('pattern.jpeg',pattern)
 compute_bluness(pattern)

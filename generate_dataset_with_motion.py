@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import time
 from scipy.signal import savgol_filter
 import cv2
-from risley_beam_steering_real_pattern import create_risley_pattern
+from risley_varying_all_parameters import create_risley_pattern
 from Brownian_movement import add_motion_to_en_face_images
 vol_dims=(512,1000,100)
 
@@ -340,31 +340,26 @@ def generate_real_gaussian_blue_noise_mask(blue_noise,
 ######################################################################################## 
 
 
-def generate_risley_gaussian_mask(original_volume,
-                                  sigma,
-                                  maximum_transmittance,
-                                  minimum_transmittance,
-                                  transmittance_distribution_fn,
-                                  plot_mask):
+def generate_risley_gaussian_mask(plot_mask):
 
     number_of_prisms=4
 
     #Laser Pulse Rate
     #PRF=required_prf(desired_transmittance)#1999000
-    PRF=None
+    PRF=3500000
     #Image Capture Time 0.003
-    tf=0.16
+    tf=8.192
 
     #angular speed risley 1 rotations per sec
-    w=-3428.22250471
+    w=62555.4063372
     #angula speed risley 2 rotations per sec
-    w2=-1101.58077614
+    w2=-20201.0559296
 
     #angula speed risley 2 rotations per sec
-    w3=-1530.3051244
+    w3=-12271.6073769
 
     #angula speed risley 2 rotations per sec
-    w4=4721.40253875
+    w4=12274.0445477
 
     a=10*(np.pi/180)    
     expected_dims=(512,1000,100)   
@@ -373,13 +368,22 @@ def generate_risley_gaussian_mask(original_volume,
     band_width=176
     line_width=band_width/expected_dims[0]
     start_wavelength=962
-    
 
+    maximum_transmittance=0.43
+    minimum_transmittance=0.0
+    transmittance_distribution_fn='ga'
+    sigma=150
 
+    number_of_laser_sweeps=200
+    steps_before_centering=10
+    hand_tremor_period=1/9
+    laser_time_between_sweeps=7.314285714285714e-05
+    y_factor=50
+    x_factor=50
 
 
         
-    
+    original_volume=None
     begin = time.time()
     mask_risley=create_risley_pattern(expected_dims,
                               line_width,
@@ -397,17 +401,18 @@ def generate_risley_gaussian_mask(original_volume,
                               minimum_transmittance,
                               sigma,
                               transmittance_distribution_fn,
+                              number_of_laser_sweeps,
+                              steps_before_centering,
+                              hand_tremor_period,
+                              laser_time_between_sweeps,
+                              x_factor,
+                              y_factor,
                               plot_mask)
     end = time.time()
     print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
-    print('')
-    if(plot_mask):
-        
-        plt.rcParams["figure.figsize"] = (100,80)
-        plt.imshow(mask_risley[:,:,50],cmap='gray')
-        plt.show()
+    # plt.rcParams["figure.figsize"] = (100,80)
+    # plt.imshow(mask_risley[:,:,50],cmap='gray')
     return mask_risley
-
 
 
 
@@ -426,8 +431,7 @@ def generate_risley_gaussian_mask(original_volume,
 ########################################################################################
 blue_noise=generate_shifting_blue_noise(expected_dims=vol_dims)
 
-def generate_dataset(generate_only_with_motion,
-                     denoised_dataset_folder_path,
+def generate_dataset(denoised_dataset_folder_path,
                      generate_ground_truth_denoised,
                      dataset_folder,
                      mask_dataset_training_path,
@@ -471,11 +475,11 @@ def generate_dataset(generate_only_with_motion,
     subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_subsampled_volumes.h5', 'w')
     volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_ground_truth.h5', 'w')
     
-    if(not generate_only_with_motion):
-        if(mask_dataset_training_path):
-            masks_dataset_train = h5py.File(mask_dataset_training_path, 'r')
-        else:
-            masks_dataset_train = h5py.File('./'+dataset_folder+'/masks_dataset_train.h5', 'w')
+    
+    if(mask_dataset_training_path):
+        masks_dataset_train = h5py.File(mask_dataset_training_path, 'r')
+    else:
+        masks_dataset_train = h5py.File('./'+dataset_folder+'/masks_dataset_train.h5', 'w')
 
         
     for volume_path in train_volumes_paths:
@@ -485,31 +489,23 @@ def generate_dataset(generate_only_with_motion,
             volume = read_data(volume_path)
             
             name=volume_path.split('/')[-1].split('.')[0]
-            if(not generate_only_with_motion):
-                if(mask_dataset_training_path):
-                    mask=np.array(masks_dataset_train.get(name))
-                    if(plot_mask):
-                        plt.imshow(mask[:,:,11],cmap='gray')
-                        plt.show() 
-                else:
-                    # mask=generate_real_gaussian_blue_noise_mask(blue_noise,
-                    #                                        volume,
-                    #                                        desired_transmittance,
-                    #                                        sigma,
-                    #                                        plot_mask)
-                    mask=generate_risley_gaussian_mask(volume,
-                                                      sigma,
-                                                      maximum_transmittance,
-                                                      minimum_transmittance,
-                                                      transmittance_distribution_fn,
-                                                      plot_mask)
-                    masks_dataset_train.create_dataset(name, data=mask)
+
+            if(mask_dataset_training_path):
+                mask=np.array(masks_dataset_train.get(name))
+                if(plot_mask):
+                    plt.imshow(mask[:,:,11],cmap='gray')
+                    plt.show() 
+            else:
+                # mask=generate_real_gaussian_blue_noise_mask(blue_noise,
+                #                                        volume,
+                #                                        desired_transmittance,
+                #                                        sigma,
+                #                                        plot_mask)
+                mask=generate_risley_gaussian_mask(plot_mask)
+                masks_dataset_train.create_dataset(name, data=mask)
             
-            subsampled_image = add_motion_to_en_face_images(original_volume=volume,
-                                                            plot_random_walk=plot_mask)
-            subsampled_image = subsampled_image[:,:,2:98]
-            if(not generate_only_with_motion):
-                subsampled_image = np.multiply(mask,subsampled_image).astype(np.uint8)
+
+            subsampled_image = np.multiply(mask,volume).astype(np.uint8)
                 
             
             
@@ -518,7 +514,7 @@ def generate_dataset(generate_only_with_motion,
             ################# BM3D #############################
             if(generate_ground_truth_denoised):
                 denoised_volume=find_denoised_volume(volume_path,denoised_dataset_folder_path)
-                denoised_volume = denoised_volume[:,:,2:98]
+                
                 #denoised_volume=median_filter_3D(volume,40,5)
                 #plt.imshow(denoised_volume[:,:,11],cmap='gray')
                 #plt.show()
@@ -546,8 +542,7 @@ def generate_dataset(generate_only_with_motion,
     
     subsampled_volumes_dataset_train.close()  
     volumes_dataset_train.close()
-    if(not generate_only_with_motion):
-        masks_dataset_train.close()
+    masks_dataset_train.close()
     
     ############################################################################################################
     
@@ -555,11 +550,11 @@ def generate_dataset(generate_only_with_motion,
     subsampled_volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_subsampled_volumes.h5', 'w')
     volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_ground_truth.h5', 'w')
     
-    if(not generate_only_with_motion):
-        if(mask_dataset_testing_path):
-            masks_dataset_test = h5py.File(mask_dataset_testing_path, 'r')
-        else:
-            masks_dataset_test = h5py.File('./'+dataset_folder+'/masks_dataset_test.h5', 'w')
+
+    if(mask_dataset_testing_path):
+        masks_dataset_test = h5py.File(mask_dataset_testing_path, 'r')
+    else:
+        masks_dataset_test = h5py.File('./'+dataset_folder+'/masks_dataset_test.h5', 'w')
         
     for volume_path in test_volumes_paths:
             
@@ -571,31 +566,23 @@ def generate_dataset(generate_only_with_motion,
                 name=volume_path.split('/')[-1].split('.')[0]
                 
                 
-                if(not generate_only_with_motion):
-                    if(mask_dataset_testing_path):
-                        mask=np.array(masks_dataset_test.get(name))
-                        if(plot_mask):
-                            plt.imshow(mask[:,:,11],cmap='gray')
-                            plt.show() 
-                    else:
-                        # mask=generate_real_gaussian_blue_noise_mask(blue_noise,
-                        #                                        volume,
-                        #                                        desired_transmittance,
-                        #                                        sigma,
-                        #                                        plot_mask)
-                        mask=generate_risley_gaussian_mask(volume,
-                                                          sigma,
-                                                          maximum_transmittance,
-                                                          minimum_transmittance,
-                                                          transmittance_distribution_fn,
-                                                          plot_mask)
-                        masks_dataset_test.create_dataset(name, data=mask)
+                if(mask_dataset_testing_path):
+                    mask=np.array(masks_dataset_test.get(name))
+                    if(plot_mask):
+                        plt.imshow(mask[:,:,11],cmap='gray')
+                        plt.show() 
+                else:
+                    # mask=generate_real_gaussian_blue_noise_mask(blue_noise,
+                    #                                        volume,
+                    #                                        desired_transmittance,
+                    #                                        sigma,
+                    #                                        plot_mask)
+                    mask=generate_risley_gaussian_mask(plot_mask)
+                    masks_dataset_test.create_dataset(name, data=mask)
                     
-                subsampled_image = add_motion_to_en_face_images(original_volume=volume,
-                                                                plot_random_walk=plot_mask)
-                subsampled_image = subsampled_image[:,:,2:98]
-                if(not generate_only_with_motion):
-                    subsampled_image = np.multiply(mask,subsampled_image).astype(np.uint8)
+
+                
+                subsampled_image = np.multiply(mask,volume).astype(np.uint8)
                     
                 
                 name='original_test_vol_'+str(volume_number)
@@ -603,7 +590,7 @@ def generate_dataset(generate_only_with_motion,
                 if(generate_ground_truth_denoised):
                     denoised_volume=find_denoised_volume(volume_path,denoised_dataset_folder_path)
                     #denoised_volume=median_filter_3D(volume,40,5)
-                    denoised_volume = denoised_volume[:,:,2:98]
+
                     extract_sub_volumes(denoised_volume,name,volumes_dataset_test)
                 else:
                     extract_sub_volumes(volume,name,volumes_dataset_test)
@@ -623,21 +610,19 @@ def generate_dataset(generate_only_with_motion,
             
     subsampled_volumes_dataset_test.close()  
     volumes_dataset_test.close()
-    if(not generate_only_with_motion):
-        masks_dataset_test.close()
+    masks_dataset_test.close()
 
 
 
 dataset_folder='MOTION_MAXIMUM_1X_1Y_CROP_DATASET'
-generate_ground_truth_denoised=False
-generate_only_with_motion=True
+generate_ground_truth_denoised=True
+
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
 #training_txt_path='./RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET/train_volumes_paths.txt'
 #testing_txt_path='./RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET/test_volumes_paths.txt'
-generate_dataset(generate_only_with_motion,
-                 denoised_dataset_folder_path,
+generate_dataset(denoised_dataset_folder_path,
                  generate_ground_truth_denoised,
                  dataset_folder,
                  mask_dataset_training_path='',
@@ -649,4 +634,4 @@ generate_dataset(generate_only_with_motion,
                  maximum_transmittance=0.41,
                  minimum_transmittance=0.0,
                  transmittance_distribution_fn='ga',
-                 plot_mask=False)
+                 plot_mask=True)

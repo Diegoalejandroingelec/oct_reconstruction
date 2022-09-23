@@ -36,8 +36,8 @@ class Brownian():
             A NumPy array with `n_steps` points
         """
         # Warning about the small number of steps
-        if n_step < 30:
-            print("WARNING! The number of steps is small. It may not generate a good stochastic process sequence!")
+        # if n_step < 30:
+        #     print("WARNING! The number of steps is small. It may not generate a good stochastic process sequence!")
         
         w = np.ones(n_step)*self.x0
         
@@ -83,8 +83,8 @@ def add_motion_to_en_face_images(original_volume,plot_random_walk):
         random_x_walk=b1.gen_random_walk(random_steps)
         random_y_walk=b2.gen_random_walk(random_steps)
         
-        x_factor=1
-        y_factor=1
+        x_factor=50
+        y_factor=50
         
         
         x=np.concatenate((x,(random_x_walk)*x_factor))
@@ -93,20 +93,42 @@ def add_motion_to_en_face_images(original_volume,plot_random_walk):
     
     x=x[0:512]
     y=y[0:512]
+    
+    # for indx in range(len(x)):
+    #     plt.plot(x[0:indx],y[0:indx],'-o',c='r')
+    #     plt.grid()
+    #     plt.show()
+        
     if(plot_random_walk):
         plt.plot(x,y,c='b')
+        plt.grid()
         plt.show()
         
     volume_with_motion=[]
     for i in range(len(x)):
-        #print(i)
         img=original_volume[i,:,:]
         num_rows, num_cols = img.shape[:2]
-        translation_matrix = np.float32([ [1,0,x[i]], [0,1,y[i] ]])   
-        img_translation = cv2.warpAffine(img, translation_matrix, (num_cols, num_rows)) 
-        # cv2.imshow('Translation', img_translation)    
-        # cv2.waitKey(100)
-        # cv2.destroyAllWindows()
+        
+        max_x_shift=int(np.max(np.abs(np.round(x))))
+        max_y_shift=int(np.max(np.abs(np.round(y))))
+        max_translation_matrix = np.float32([ [1,0,max_x_shift], [0,1,max_y_shift ]])  
+        max_img_translation = cv2.warpAffine(img, max_translation_matrix, (num_cols+2*max_x_shift, num_rows+2*max_y_shift))
+        
+        
+        #print(i)
+        
+        max_num_rows, max_num_cols = max_img_translation.shape[:2]
+        
+
+        translation_matrix = np.float32([ [1,0,int(np.round(x[i]))], [0,1,int(np.round(y[i])) ]])   
+        img_translation = cv2.warpAffine(max_img_translation,
+                                         translation_matrix,
+                                         (max_num_cols, max_num_rows))
+        
+        print(np.round(x[i]),np.round(y[i]))
+        cv2.imshow('Translation', img_translation)    
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
         volume_with_motion.append(img_translation)
         
     volume_with_motion=np.array(volume_with_motion)
@@ -114,6 +136,38 @@ def add_motion_to_en_face_images(original_volume,plot_random_walk):
     return volume_with_motion
 
 
+
+def create_2D_brownian_motion(steps,steps_before_centering,plot_random_walk,x_factor,y_factor):
+    b1 = Brownian()
+    b2 = Brownian()
+    total_steps=0
+    x=np.empty(shape=[0])
+    y=np.empty(shape=[0])
+    while(total_steps<steps):
+        random_x_walk=b1.gen_random_walk(steps_before_centering)
+        random_y_walk=b2.gen_random_walk(steps_before_centering)
+        
+        
+        
+        x=np.concatenate((x,(random_x_walk)*x_factor))
+        y=np.concatenate((y,(random_y_walk)*y_factor))
+        total_steps+=steps_before_centering
+        
+    x=x[0:int(steps)]
+    y=y[0:int(steps)]
+        
+    if(plot_random_walk):
+        # for indx in range(len(x)):
+        #     plt.plot(x[0:indx],y[0:indx],'-o',c='r')
+        #     plt.grid()
+        #     plt.show()  
+        plt.plot(x,y,c='b')
+        plt.grid()
+        plt.show()  
+        
+    return x,y
+
+# import napari
 # path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1253.mat'
 # def read_data(path):
 #     data = loadmat(path)
