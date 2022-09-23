@@ -357,7 +357,7 @@ def create_risley_pattern(expected_dims,
                        motion=True
                        motion_counter+=1
                        translation_matrix=np.float32([ [1,0,int(np.round(rand_x[motion_counter]))], [0,1,int(np.round(rand_y[motion_counter])) ]]) 
-                       print('MOTION!!!!!')
+                       #print('MOTION!!!!!')
                        #translation_matrix=np.float32([ [1,0,30], [0,1,30 ]])
                     
                     #Risley optical index fused silica
