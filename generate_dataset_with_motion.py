@@ -614,7 +614,7 @@ def generate_dataset(denoised_dataset_folder_path,
 
 
 
-dataset_folder='MOTION_MAXIMUM_1X_1Y_CROP_DATASET'
+dataset_folder='MOTION_MAXIMUM_50X_50Y_CROP_DATASET'
 generate_ground_truth_denoised=True
 
 denoised_dataset_folder_path='./DATASET_DENOISED'
@@ -634,4 +634,4 @@ generate_dataset(denoised_dataset_folder_path,
                  maximum_transmittance=0.41,
                  minimum_transmittance=0.0,
                  transmittance_distribution_fn='ga',
-                 plot_mask=True)
+                 plot_mask=False)
