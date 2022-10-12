@@ -380,7 +380,7 @@ def generate_risley_gaussian_mask(original_volume,plot_mask):
     laser_time_between_sweeps=7.314285714285714e-05
     y_factor=50
     x_factor=50
-    generate_volume_with_motion=False
+    generate_volume_with_motion=True
 
         
     
@@ -620,7 +620,7 @@ def generate_dataset(denoised_dataset_folder_path,
 
 
 dataset_folder='REAL_MOTION_DATASET'
-generate_ground_truth_denoised=True
+generate_ground_truth_denoised=False
 generate_volume_aligned=False
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
@@ -641,3 +641,10 @@ generate_dataset(denoised_dataset_folder_path,
                  minimum_transmittance=0.0,
                  transmittance_distribution_fn='ga',
                  plot_mask=False)
+
+
+plt.imshow(volume_sampled[:,:,50],cmap='gray')
+plt.show()
+
+plt.imshow(volume[:,:,50],cmap='gray')
+plt.show()
