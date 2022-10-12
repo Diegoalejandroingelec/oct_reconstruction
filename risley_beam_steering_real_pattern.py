@@ -13,6 +13,8 @@ import cv2
 from scipy.io import loadmat
 from scipy.signal import savgol_filter
 import time
+from scipy.interpolate import interp1d
+
 
 def plot_fn(x,y,title,fontsize,xlabel,ylabel,img_size=(20,20),draw_FOV=False):
     plt.rcParams["figure.figsize"] = img_size
@@ -30,6 +32,16 @@ def plot_fn(x,y,title,fontsize,xlabel,ylabel,img_size=(20,20),draw_FOV=False):
 def risley_optical_index_fused_silica(l):
     n=np.sqrt((((0.6961663)*l**2)/(l**2-0.0684043**2))+((0.4079426*l**2)/(l**2-0.1162414**2))+((0.8974794*l**2)/(l**2-9.896161**2))+1)
     return n
+
+# import numpy as np
+# plt.rcParams["figure.figsize"] = (7,5)
+# x=np.linspace(0.21,6.7,2000)
+# y=risley_optical_index_fused_silica(x)
+# plt.plot(x,y,linewidth=3)
+# plt.xlabel("Wavelength (\u03bcm) ")
+# plt.ylabel("Refractive Index n")
+
+
 
 def generate_2D_pattern(tf,
                         PRF,
@@ -259,6 +271,9 @@ def get_transmittances(original_volume,
     means=np.argmax(mean_b_scans,0)
     means_smooth=savgol_filter(means,51,1)
     means=means_smooth
+    
+    
+    
     total_mean=np.mean(means)
 
     x=np.linspace(0,511,512)

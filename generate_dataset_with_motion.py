@@ -64,7 +64,7 @@ def find_denoised_volume(volume_path,denoised_dataset_folder_path):
 def extract_sub_volumes(volume,name,h5_file):
     w_div_factor = 64
     h_div_factor = 512
-    d_div_factor = 32
+    d_div_factor = 16
     
     overlap_pixels_w=w_div_factor//2
     overlap_pixels_h=0
@@ -340,7 +340,7 @@ def generate_real_gaussian_blue_noise_mask(blue_noise,
 ######################################################################################## 
 
 
-def generate_risley_gaussian_mask(plot_mask):
+def generate_risley_gaussian_mask(original_volume,plot_mask):
 
     number_of_prisms=4
 
@@ -380,12 +380,12 @@ def generate_risley_gaussian_mask(plot_mask):
     laser_time_between_sweeps=7.314285714285714e-05
     y_factor=50
     x_factor=50
-
+    generate_volume_with_motion=False
 
         
-    original_volume=None
+    
     begin = time.time()
-    mask_risley=create_risley_pattern(expected_dims,
+    mask_risley,volume_sampled=create_risley_pattern(expected_dims,
                               line_width,
                               start_wavelength,
                               tf,
@@ -407,12 +407,13 @@ def generate_risley_gaussian_mask(plot_mask):
                               laser_time_between_sweeps,
                               x_factor,
                               y_factor,
+                              generate_volume_with_motion,
                               plot_mask)
     end = time.time()
     print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
     # plt.rcParams["figure.figsize"] = (100,80)
     # plt.imshow(mask_risley[:,:,50],cmap='gray')
-    return mask_risley
+    return mask_risley,volume_sampled
 
 
 
@@ -433,6 +434,7 @@ blue_noise=generate_shifting_blue_noise(expected_dims=vol_dims)
 
 def generate_dataset(denoised_dataset_folder_path,
                      generate_ground_truth_denoised,
+                     generate_volume_aligned,
                      dataset_folder,
                      mask_dataset_training_path,
                      mask_dataset_testing_path,
@@ -475,11 +477,11 @@ def generate_dataset(denoised_dataset_folder_path,
     subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_subsampled_volumes.h5', 'w')
     volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_ground_truth.h5', 'w')
     
-    
-    if(mask_dataset_training_path):
-        masks_dataset_train = h5py.File(mask_dataset_training_path, 'r')
-    else:
-        masks_dataset_train = h5py.File('./'+dataset_folder+'/masks_dataset_train.h5', 'w')
+    if(generate_volume_aligned):
+        if(mask_dataset_training_path):
+            masks_dataset_train = h5py.File(mask_dataset_training_path, 'r')
+        else:
+            masks_dataset_train = h5py.File('./'+dataset_folder+'/masks_dataset_train.h5', 'w')
 
         
     for volume_path in train_volumes_paths:
@@ -501,13 +503,14 @@ def generate_dataset(denoised_dataset_folder_path,
                 #                                        desired_transmittance,
                 #                                        sigma,
                 #                                        plot_mask)
-                mask=generate_risley_gaussian_mask(plot_mask)
-                masks_dataset_train.create_dataset(name, data=mask)
+                mask,volume_sampled=generate_risley_gaussian_mask(volume,plot_mask)
+                if(generate_volume_aligned):
+                    masks_dataset_train.create_dataset(name, data=mask)
             
-
-            subsampled_image = np.multiply(mask,volume).astype(np.uint8)
-                
-            
+            if(generate_volume_aligned):
+                subsampled_image = np.multiply(mask,volume).astype(np.uint8)
+            else:    
+                subsampled_image = volume_sampled
             
             name='original_train_vol_'+str(volume_number)
             
@@ -550,11 +553,11 @@ def generate_dataset(denoised_dataset_folder_path,
     subsampled_volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_subsampled_volumes.h5', 'w')
     volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_ground_truth.h5', 'w')
     
-
-    if(mask_dataset_testing_path):
-        masks_dataset_test = h5py.File(mask_dataset_testing_path, 'r')
-    else:
-        masks_dataset_test = h5py.File('./'+dataset_folder+'/masks_dataset_test.h5', 'w')
+    if(generate_volume_aligned):
+        if(mask_dataset_testing_path):
+            masks_dataset_test = h5py.File(mask_dataset_testing_path, 'r')
+        else:
+            masks_dataset_test = h5py.File('./'+dataset_folder+'/masks_dataset_test.h5', 'w')
         
     for volume_path in test_volumes_paths:
             
@@ -577,13 +580,15 @@ def generate_dataset(denoised_dataset_folder_path,
                     #                                        desired_transmittance,
                     #                                        sigma,
                     #                                        plot_mask)
-                    mask=generate_risley_gaussian_mask(plot_mask)
-                    masks_dataset_test.create_dataset(name, data=mask)
+                    mask,volume_sampled=generate_risley_gaussian_mask(volume,plot_mask)
+                    if(generate_volume_aligned):
+                        masks_dataset_test.create_dataset(name, data=mask)
                     
 
-                
-                subsampled_image = np.multiply(mask,volume).astype(np.uint8)
-                    
+                if(generate_volume_aligned):
+                    subsampled_image = np.multiply(mask,volume).astype(np.uint8)
+                else:
+                    subsampled_image = volume_sampled
                 
                 name='original_test_vol_'+str(volume_number)
                 ################# BM3D #############################
@@ -614,9 +619,9 @@ def generate_dataset(denoised_dataset_folder_path,
 
 
 
-dataset_folder='MOTION_MAXIMUM_50X_50Y_CROP_DATASET'
+dataset_folder='REAL_MOTION_DATASET'
 generate_ground_truth_denoised=True
-
+generate_volume_aligned=False
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
@@ -624,6 +629,7 @@ denoised_dataset_folder_path='./DATASET_DENOISED'
 #testing_txt_path='./RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET/test_volumes_paths.txt'
 generate_dataset(denoised_dataset_folder_path,
                  generate_ground_truth_denoised,
+                 generate_volume_aligned,
                  dataset_folder,
                  mask_dataset_training_path='',
                  mask_dataset_testing_path='',

@@ -14,7 +14,27 @@ from scipy.io import loadmat
 from scipy.signal import savgol_filter
 import time
 from Brownian_movement import create_2D_brownian_motion
+import pandas as pd
+from scipy.interpolate import interp1d
+import napari
 
+
+
+def make_video_B_scan(volume,name):
+    
+    height, width,depth = volume.shape
+    size = (width,height)
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+
+    video = cv2.VideoWriter(name+'.avi',fourcc, 10, size)
+    for b in range(depth):
+        image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
+        video.write(image_for_video)
+    video.release()
+    
+    
+    
 def make_video(volume,name):
     
     height, width,depth = volume.shape
@@ -281,6 +301,90 @@ def get_transmittances(original_volume,
     # plt.show()
     return transmittances*100
 
+def pupil_movement(path):
+    x_factor=180#6.7
+    y_factor=90#50
+    z_factor=140#13.0859
+    fs=350
+    fs2=13671.875000000002
+    
+    df = pd.read_csv (path,header=None)
+    df=df.rename(columns={0: 'frame', 1: 'x', 2: 'y', 3: 'z'})
+    
+    
+    time1=np.linspace(0,len(df['x'])-1,len(df['x']))*(1/fs)
+    
+    
+    
+    # plt.plot(time1,np.array(df['x'])*1000,label='x')
+    # plt.plot(time1,np.array(df['y'])*1000,label='y')
+    # plt.plot(time1,np.array(df['z'])*1000,label='z')
+    # plt.xlabel('time(s)')
+    # plt.ylabel('mm')
+    # plt.legend()
+    # plt.grid()
+    # plt.show()
+    
+    fx = interp1d(time1,np.array(df['x']))
+    fy = interp1d(time1,np.array(df['y'])) 
+    fz = interp1d(time1,np.array(df['z'])) 
+           
+    new_t=np.linspace(0,(140976)-1,140976)/fs2
+                 
+    x_interpolation= fx(new_t)
+    y_interpolation= fy(new_t)
+    z_interpolation= fz(new_t)
+    
+    # plt.plot(new_t,x_interpolation,'o')
+    # plt.plot(time1,np.array(df['x']))
+    # plt.show()
+    
+    # plt.plot(new_t,y_interpolation,'o')
+    # plt.plot(time1,np.array(df['y']))
+    # plt.show()
+    
+    # plt.plot(new_t,z_interpolation,'o')
+    # plt.plot(time1,np.array(df['z']))
+    # plt.show()
+    # df=df.dropna()
+    
+    s=20431
+    e=131024
+    x=((x_interpolation*1000000)/x_factor)[s:e]
+    y=((y_interpolation*1000000)/y_factor)[s:e]
+    z=((z_interpolation*1000000)/z_factor)[s:e]
+    
+    
+    #time=np.linspace(0,len(x)-1,len(x))*(1/fs)
+    
+    
+    
+    
+    # plt.plot(new_t[s:e],x,label='x')
+    # plt.plot(new_t[s:e],y,label='y')
+    # plt.plot(new_t[s:e],z,label='z')
+    # plt.xlabel('time(s)')
+    # plt.ylabel('pixels')
+    
+    
+    # plt.legend()
+    # plt.grid()
+    # plt.show()
+    
+    
+    # plt.plot(new_t[s:e],x_interpolation[s:e]*1000,label='x')
+    # plt.plot(new_t[s:e],y_interpolation[s:e]*1000,label='y')
+    # plt.plot(new_t[s:e],z_interpolation[s:e]*1000,label='z')
+    # plt.xlabel('time(s)')
+    # plt.ylabel('mm')
+    
+    
+    # plt.legend()
+    # plt.grid()
+    # plt.show()
+    return (np.round(x).astype(int),
+            np.round(y).astype(int),
+            np.round(z).astype(int),fs2)
 
 def create_risley_pattern(expected_dims,
                           line_width,
@@ -304,6 +408,7 @@ def create_risley_pattern(expected_dims,
                           laser_time_between_sweeps,
                           x_factor,
                           y_factor,
+                          generate_volume_with_motion,
                           plot_mask):
     
     mask_risley=np.zeros(expected_dims)
@@ -322,13 +427,16 @@ def create_risley_pattern(expected_dims,
 
         try:
             layer_counter=0
-            change_in_transmittance_per_sweep=[]
-            steps=((expected_dims[0]*number_of_laser_sweeps)/np.round((hand_tremor_period)/(t_step*(1/PRF))))
-            rand_x,rand_y=create_2D_brownian_motion(np.ceil(steps),
-                                                     steps_before_centering,
-                                                     plot_mask,
-                                                     x_factor,y_factor)
+            # change_in_transmittance_per_sweep=[]
+            # change_in_transmittance_per_sweep_B=[]
+            # steps=((expected_dims[0]*number_of_laser_sweeps)/np.round((hand_tremor_period)/(t_step*(1/PRF))))
+            # rand_x,rand_y=create_2D_brownian_motion(np.ceil(steps),
+            #                                          steps_before_centering,
+            #                                          plot_mask,
+            #                                          x_factor,y_factor)
             
+            rand_x,rand_y,rand_z,fs=pupil_movement('./EyeTrackingData/pupil-0.csv')
+            hand_tremor_period=1/fs
             num_rows, num_cols = expected_dims[1],expected_dims[2]
             
             max_x_shift=int(np.max(np.abs(np.round(rand_x))))
@@ -337,16 +445,23 @@ def create_risley_pattern(expected_dims,
             size_of_max_translation=(num_cols+2*max_x_shift, num_rows+2*max_y_shift)
             motion_counter=0
             translation_matrix=np.float32([[1,0,0], [0,1,0]]) 
-
+            z_translation=0
 
             ones_matrix=np.ones((expected_dims[1],expected_dims[2]))
             en_face_initial_shift=cv2.warpAffine(ones_matrix,
                                                  max_translation_matrix,
                                                  size_of_max_translation)
             
-            max_num_rows, max_num_cols = en_face_initial_shift.shape[:2]
+            volume_expanded=np.pad(original_volume, ((0,0), 
+                                                     (max_y_shift,max_y_shift), 
+                                                     (max_x_shift,max_x_shift)), 'constant')
             
+            
+            
+            max_num_rows, max_num_cols = en_face_initial_shift.shape[:2]
             motion=True
+            
+            volume_sampled_with_motion=np.zeros(original_volume.shape)
             for l in range(number_of_laser_sweeps):
                 #print(l)
                 for i in range(1,expected_dims[0]+1):
@@ -355,8 +470,9 @@ def create_risley_pattern(expected_dims,
                  #   print(i)
                     if(layer_counter % np.round((hand_tremor_period)/(t_step*(1/PRF)))==0):
                        motion=True
-                       motion_counter+=1
                        translation_matrix=np.float32([ [1,0,int(np.round(rand_x[motion_counter]))], [0,1,int(np.round(rand_y[motion_counter])) ]]) 
+                       z_translation=int(np.round(rand_z[motion_counter]))
+                       motion_counter+=1
                        #print('MOTION!!!!!')
                        #translation_matrix=np.float32([ [1,0,30], [0,1,30 ]])
                     
@@ -386,6 +502,7 @@ def create_risley_pattern(expected_dims,
                     #     cv2.destroyAllWindows()
                     
                     if(motion):
+                        en_face_initial_shift=volume_expanded[i-1,:,:].copy()
                         en_face_shift=cv2.warpAffine(en_face_initial_shift,
                                                      translation_matrix,
                                                      (max_num_cols,max_num_rows))
@@ -404,8 +521,18 @@ def create_risley_pattern(expected_dims,
                                                  cv2.BORDER_CONSTANT,value=[0,0,0])
                 
 
-                    
+
                     sampling=np.multiply(mask_2D_static,en_face_shift)
+                    
+                    
+                    if(generate_volume_with_motion):
+                        sampling_cropped=sampling[max_y_shift:en_face_initial_shift.shape[0]-max_y_shift,max_x_shift:en_face_initial_shift.shape[1]-max_x_shift]
+                        div=np.logical_and((volume_sampled_with_motion[i-1,:,:]!=0), (sampling_cropped!=0))*1/2## this one has 1/2
+                        div_p=np.logical_not(div)*1## this one has 1
+                        
+                        div=div+div_p
+                        volume_sampled_with_motion[i-1,:,:]=(volume_sampled_with_motion[i-1,:,:]+sampling_cropped)*div
+                    
                     # if(motion):
                     #     example=np.logical_or(mask_2D_static,en_face_shift)*255
                     #     cv2.imshow('2D ORIGINAL MASK', mask_2D*255) 
@@ -441,13 +568,17 @@ def create_risley_pattern(expected_dims,
                     #     cv2.waitKey(0)
                     #     cv2.destroyAllWindows()
                         
-                        
-                    mask_risley[i-1,:,:]=np.logical_or(mask_risley[i-1,:,:],sampling) 
+                    layer_index=(i-1)-z_translation
+                    if(layer_index>=0 and layer_index<=expected_dims[0]-1 ):
+                        mask_risley[layer_index,:,:]=np.logical_or(mask_risley[layer_index,:,:],sampling) 
                     t_start=t_start+t_step
                     
                     # end1 = time.time()
                     # print(f'{end1-start1} s')   
                     # print('uy')
+                    
+                # change_in_transmittance_per_sweep.append(volume_sampled_with_motion[50,:,:].copy())
+                # change_in_transmittance_per_sweep_B.append(volume_sampled_with_motion[:,:,50].copy())
                 # print(f'{l} scan finished')
                 # total_transmittance=((mask_risley.sum()*100)/(expected_dims[0]*expected_dims[1]*expected_dims[2]))
                 # print('-----------TOTAL TRANSMITTANCE------------------',total_transmittance)
@@ -456,8 +587,11 @@ def create_risley_pattern(expected_dims,
                 #     change_in_transmittance_per_sweep.append(mask_risley[50,:,:].copy())
                     # plt.imshow(mask_risley[50,:,:],cmap='gray')
                     # plt.show()
-            #make_video(np.array(change_in_transmittance_per_sweep).astype(np.uint8)*255,'change_in_transmittance_per_sweep.avi')
-        except:
+                           
+            # make_video(np.array(change_in_transmittance_per_sweep).astype(np.uint8),'change_in_transmittance_per_sweep_C_scan.avi')
+            # make_video_B_scan(np.transpose(np.array(change_in_transmittance_per_sweep_B).astype(np.uint8),(1,2,0)),'change_in_transmittance_per_sweep_B_scan.avi')
+        except Exception as e: 
+            print(e)
             print('Process Finished')
             
             
@@ -527,92 +661,114 @@ def create_risley_pattern(expected_dims,
     # print('MEAN TRANSMTTANCE B-SCAN',np.mean(transmittance_list))
     total_transmittance=((mask_risley.sum()*100)/(expected_dims[0]*expected_dims[1]*expected_dims[2]))
     print('-----------TOTAL TRANSMITTANCE------------------',total_transmittance)
-    return mask_risley.astype(np.uint8)
+    return mask_risley.astype(np.uint8),volume_sampled_with_motion
 
 
 ##################################################################################################################
-'''
-number_of_prisms=4
+
+# number_of_prisms=4
 
 
-desired_transmittance=1.74
+# desired_transmittance=1.74
 
-#Laser Pulse Rate
-#PRF=required_prf(desired_transmittance)#1999000
-PRF=3500000
-#Image Capture Time 0.003
-tf=8.192
+# #Laser Pulse Rate
+# #PRF=required_prf(desired_transmittance)#1999000
+# PRF=3500000
+# #Image Capture Time 0.003
+# tf=8.192
 
-#angular speed risley 1 rotations per sec
-w=62555.4063372
-#angula speed risley 2 rotations per sec
-w2=-20201.0559296
+# #angular speed risley 1 rotations per sec
+# w=62555.4063372
+# #angula speed risley 2 rotations per sec
+# w2=-20201.0559296
 
-#angula speed risley 2 rotations per sec
-w3=-12271.6073769
+# #angula speed risley 2 rotations per sec
+# w3=-12271.6073769
 
-#angula speed risley 2 rotations per sec
-w4=12274.0445477
+# #angula speed risley 2 rotations per sec
+# w4=12274.0445477
 
-a=10*(np.pi/180)    
-expected_dims=(512,1000,100)   
+# a=10*(np.pi/180)    
+# expected_dims=(512,1000,100)   
 
 
-band_width=176
-line_width=band_width/expected_dims[0]
-start_wavelength=962
+# band_width=176
+# line_width=band_width/expected_dims[0]
+# start_wavelength=962
 
-maximum_transmittance=0.43
-minimum_transmittance=0.0
-transmittance_distribution_fn='ga'
-sigma=150
+# maximum_transmittance=0.43
+# minimum_transmittance=0.0
+# transmittance_distribution_fn='ga'
+# sigma=150
 
-number_of_laser_sweeps=200
-steps_before_centering=10
-hand_tremor_period=1/9
-laser_time_between_sweeps=7.314285714285714e-05
-y_factor=50
-x_factor=50
+# number_of_laser_sweeps=200
+# steps_before_centering=10
+# hand_tremor_period=1/9
+# laser_time_between_sweeps=7.314285714285714e-05
+# y_factor=50
+# x_factor=50
 
-path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1253.mat'
-def read_data(path):
-    data = loadmat(path)
-    oct_volume = data['images']
-    return oct_volume
+# path='../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1253.mat'
+# def read_data(path):
+#     data = loadmat(path)
+#     oct_volume = data['images']
+#     return oct_volume
 
-original_volume=read_data(path)
+# original_volume=read_data(path)
     
 
-begin = time.time()
-mask_risley=create_risley_pattern(expected_dims,
-                          line_width,
-                          start_wavelength,
-                          tf,
-                          PRF,
-                          w,
-                          w2,
-                          w3,
-                          w4,
-                          a,
-                          number_of_prisms,
-                          original_volume,
-                          maximum_transmittance,
-                          minimum_transmittance,
-                          sigma,
-                          transmittance_distribution_fn,
-                          number_of_laser_sweeps,
-                          steps_before_centering,
-                          hand_tremor_period,
-                          laser_time_between_sweeps,
-                          x_factor,
-                          y_factor,
-                          plot_mask=False)
-end = time.time()
-print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
-plt.rcParams["figure.figsize"] = (100,80)
-plt.imshow(mask_risley[:,:,50],cmap='gray')
+# begin = time.time()
+# mask_risley,volume_sampled_with_motion=create_risley_pattern(expected_dims,
+#                           line_width,
+#                           start_wavelength,
+#                           tf,
+#                           PRF,
+#                           w,
+#                           w2,
+#                           w3,
+#                           w4,
+#                           a,
+#                           number_of_prisms,
+#                           original_volume,
+#                           maximum_transmittance,
+#                           minimum_transmittance,
+#                           sigma,
+#                           transmittance_distribution_fn,
+#                           number_of_laser_sweeps,
+#                           steps_before_centering,
+#                           hand_tremor_period,
+#                           laser_time_between_sweeps,
+#                           x_factor,
+#                           y_factor,
+#                           generate_volume_with_motion=False,
+#                           plot_mask=False)
+# end = time.time()
+# print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
+# plt.rcParams["figure.figsize"] = (100,80)
+# plt.imshow(mask_risley[:,:,50],cmap='gray')
 
-import napari
 
-viewer = napari.view_image(mask_risley*255)
-'''
+
+
+
+
+# viewer = napari.view_image(mask_risley*255)
+# volume_aligned=np.multiply(original_volume,mask_risley)
+
+
+
+# import numpy as np
+# import napari
+# r='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/TRANSMITTANCE_VIDEOS/'
+# volume_sampled_with_motion=np.load(r+'volume_sampled_with_motion.npy')
+# original_volume=np.load(r+'original_volume.npy')
+# volume_aligned=np.load(r+'volume_aligned.npy')
+
+# viewer1 = napari.view_image(volume_sampled_with_motion) 
+# viewer2 = napari.view_image(original_volume) 
+# viewer3= napari.view_image(volume_aligned)
+
+
+
+
+

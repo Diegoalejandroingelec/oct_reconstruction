@@ -297,10 +297,11 @@ def generate_real_gaussian_blue_noise_mask(blue_noise,
     means_smooth=savgol_filter(means,51,1)
     means=means_smooth
     if(plot_mask):
+        plt.rcParams["figure.figsize"] = (50,50)
         plt.imshow(mean_b_scans,cmap='gray')
-        plt.plot(means_smooth,label='means')
-        plt.title('Average of B-scans')
-        plt.legend()
+        plt.plot(means_smooth,label='means',linewidth=10)
+        plt.legend(prop={'size': 50})
+        plt.axis('off')
         plt.show()
 
 
@@ -320,7 +321,7 @@ def generate_real_gaussian_blue_noise_mask(blue_noise,
         
         # cv2.imwrite('GAUSSIAN_BLUE_NOISE.jpeg',binary_blue_noise_mask[:,:,0]*255)
         plt.imshow(binary_blue_noise_mask[:,:,0],cmap='gray')
-        plt.title('Binary gaussian blue noise mask')
+        plt.axis('off')
         plt.show()
 
 
@@ -488,10 +489,10 @@ def generate_dataset(denoised_dataset_folder_path,
                     plt.show() 
             else:
                 # mask=generate_real_gaussian_blue_noise_mask(blue_noise,
-                #                                        volume,
-                #                                        desired_transmittance,
-                #                                        sigma,
-                #                                        plot_mask)
+                #                                         volume,
+                #                                         desired_transmittance,
+                #                                         sigma=100,
+                #                                         plot_mask=True)
                 mask=generate_risley_gaussian_mask(volume,
                                                   sigma,
                                                   maximum_transmittance,

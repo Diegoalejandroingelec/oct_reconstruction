@@ -15,9 +15,9 @@ import cv2
 
 
 
-expected_dimensions=(1000,100)
+expected_dimensions=(100,1000)
 
-expected_dimensions=(512,1000)
+# expected_dimensions=(512,1000)
 blue=np.load('./blue_noise_cubes/bluenoise1024.npy')
 mask=generate_binary_blue_noise_mask(blue,subsampling_percentage=0.75)
 mask=mask[0:expected_dimensions[0],0:expected_dimensions[1]]
@@ -52,6 +52,7 @@ def analyze_pattern(pattern):
                 vmin=0.0,
                 vmax=np.percentile(np.abs(DFT),99))
                 #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
+    plt.axis('off') 
     plt.show()
 def create_low_frecuencies_mask(expected_dimensions,axesLength,additional_mask=None,use_additional_mask=False):
     center_coordinates = (expected_dimensions[1]//2,expected_dimensions[0]//2)
@@ -150,15 +151,15 @@ def compute_bluness(pattern):
     # plt.imshow(mask_low_frecuency)
     # plt.show()
 
-    pattern=pattern-np.mean(pattern)
+    pattern=pattern-np.mean(pattern)##########################################################################
     # plt.imshow(pattern)
     # plt.show()
     f = np.fft.fft2(pattern.astype(np.float32))
     fshift = np.fft.fftshift(f)
     magnitude_spectrum = np.abs(fshift)
     # magnitude_spectrum[np.isneginf(magnitude_spectrum)]=0
-    plt.imshow(20*np.log(np.abs(fshift)))#[475:525,40:60]
-    plt.show()
+    # plt.imshow(20*np.log(np.abs(fshift)))#[475:525,40:60]
+    # plt.show()
     
     
     
@@ -230,31 +231,38 @@ def compute_bluness(pattern):
     return score
 
     # DFT=np.fft.fftshift(np.fft.fft2(pattern))#/float(np.size(pattern));
-    # Height,Width=pattern.shape;
-    # ShiftY,ShiftX=(int(Height/2),int(Width/2));
-    # plt.rcParams["figure.figsize"] = (8,8)
+    # # Height,Width=pattern.shape;
+    # # ShiftY,ShiftX=(int(Height/2),int(Width/2));
+    # # plt.rcParams["figure.figsize"] = (8,8)
     
-    # plt.imshow(20*np.log(np.abs(DFT)),
-    #             cmap="viridis",
-    #             interpolation="nearest",
-    #             vmin=0.0,
-    #             vmax=np.percentile(20*np.log(np.abs(DFT)),99))
-    #             #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
-                
-                
-    # fig, ax1 = plt.subplots(1,1,figsize=(10, 5))
-    
+    # # plt.imshow(20*np.log(np.abs(DFT)),
+    # #             cmap="viridis",
+    # #             interpolation="nearest",
+    # #             vmin=0.0,
+    # #             vmax=np.percentile(20*np.log(np.abs(DFT)),99))
+    # #             #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
+    # fontsize=60
+    # fontsizet=80
+    # fig, (ax2, ax1) = plt.subplots(2,1)
+    # fig.tight_layout(pad=-2.5)
+    # fig.set_size_inches(50, 40)
+    # ax2.imshow(pattern*255,cmap='gray')
+    # ax2.set_title('Blue Noise Pattern',fontsize=fontsizet)
     # im = ax1.imshow(20*np.log(np.abs(DFT)),
     #             cmap="viridis",
     #             interpolation="nearest",
     #             vmin=0.0,
     #             vmax=np.percentile(20*np.log(np.abs(DFT)),99))
-    # plt.axis('off')
+    # ax1.set_title('Magnitude Spectrum',fontsize=fontsizet)
+    # ax2.axis('off')
+    # ax1.axis('off')
     # cax = fig.add_axes([ax1.get_position().x1+0.01,
     #                     ax1.get_position().y0,0.02,
     #                     ax1.get_position().height])
     # cb = plt.colorbar(im,cax=cax,extend="max")
-    # cb.ax.set_ylabel('Magnitude (dB)')
+    # cb.ax.tick_params(labelsize=fontsize)
+    # cb.ax.set_ylabel('Magnitude (dB)',fontsize=fontsize)
+    
     # plt.show()
     # print('yupi')
 def plot_fn(x,y,title,fontsize,xlabel,ylabel,img_size=(20,20),draw_FOV=False):
@@ -459,7 +467,7 @@ def generate_2D_pattern(w1,
 #                             w4=4721.40253875,plot_mask=True)
 
 # cv2.imwrite('pattern.jpeg',pattern)
-compute_bluness(pattern)
+# compute_bluness(pattern)
 
 
 # pattern=generate_2D_pattern(w1=6255.54063372,w2=-2020.10559296,w3=-1227.16073769,w4=1227.40445477,plot_mask=True)

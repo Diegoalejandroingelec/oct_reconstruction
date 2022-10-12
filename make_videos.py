@@ -6,7 +6,7 @@ Created on Fri Sep  9 16:27:51 2022
 @author: diego
 """
 
-'''
+
 
 import numpy as np
 import cv2
@@ -92,9 +92,9 @@ total_vid=np.concatenate((vert_gap,GT_vid,
 c=total_vid[0:80,:,:]
 make_video(c,'/home/diego/Downloads/SUPER_VIDEO/reconstructions')
 
+
+
 '''
-
-
 import cv2
 import numpy as np
 
@@ -206,7 +206,7 @@ cap.release()
 
 make_video(final_video,'/home/diego/Downloads/SUPER_VIDEO/reconstructions1')
 
-
+'''
 
 
 
