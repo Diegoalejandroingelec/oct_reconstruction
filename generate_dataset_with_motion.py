@@ -620,8 +620,8 @@ def generate_dataset(denoised_dataset_folder_path,
 
 
 dataset_folder='REAL_MOTION_DATASET'
-generate_ground_truth_denoised=False
-generate_volume_aligned=False
+generate_ground_truth_denoised=True
+generate_volume_aligned=True
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
@@ -641,4 +641,5 @@ generate_dataset(denoised_dataset_folder_path,
                  minimum_transmittance=0.0,
                  transmittance_distribution_fn='ga',
                  plot_mask=False)
+
 
