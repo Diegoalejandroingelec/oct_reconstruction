@@ -642,9 +642,3 @@ generate_dataset(denoised_dataset_folder_path,
                  transmittance_distribution_fn='ga',
                  plot_mask=False)
 
-
-plt.imshow(volume_sampled[:,:,50],cmap='gray')
-plt.show()
-
-plt.imshow(volume[:,:,50],cmap='gray')
-plt.show()
