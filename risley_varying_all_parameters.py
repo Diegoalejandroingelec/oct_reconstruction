@@ -16,7 +16,7 @@ import time
 from Brownian_movement import create_2D_brownian_motion
 import pandas as pd
 from scipy.interpolate import interp1d
-import napari
+#import napari
 
 
 
