@@ -413,7 +413,7 @@ def generate_risley_gaussian_mask(original_volume,plot_mask):
     print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
     # plt.rcParams["figure.figsize"] = (100,80)
     # plt.imshow(mask_risley[:,:,50],cmap='gray')
-    return mask_risley,volume_sampled
+    return mask_risley,volume_sampled.astype(np.uint8)
 
 
 
