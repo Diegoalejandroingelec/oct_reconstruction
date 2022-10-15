@@ -263,7 +263,6 @@ def get_transmittances(original_volume,
                        maximum_transmittance,
                        sigma,
                        function='ga'):
-    
 
     mean_b_scans=np.mean(original_volume,2)
     mean_b_scans=mean_b_scans[30:,:].astype(np.uint8)
@@ -287,7 +286,27 @@ def get_transmittances(original_volume,
     # plt.show()
     return transmittances*100
 
+# ga=get_transmittances(original_volume,
+#                        maximum_transmittance=0.60,
+#                        sigma=100,
+#                        function='ga')
 
+# ca=get_transmittances(original_volume,
+#                        maximum_transmittance=0.66,
+#                        sigma=100,
+#                        function='ca')
+
+# la=get_transmittances(original_volume,
+#                        maximum_transmittance=0.70,
+#                        sigma=100,
+#                        function='la')
+
+# plt.rcParams["figure.figsize"] = (10,10)
+# plt.plot(ga,label='Gaussian')
+# plt.plot(la,label='Laplace')
+# plt.plot(ca,label='Cauchy')
+# plt.show()
+# plt.legend()
 def create_risley_pattern(expected_dims,
                           line_width,
                           start_wavelength,
@@ -406,20 +425,20 @@ def create_risley_pattern(expected_dims,
 # #Laser Pulse Rate
 # #PRF=required_prf(desired_transmittance)#1999000
 # #PRF=199900
-# PRF=None
+# PRF=199900
 # #Image Capture Time 0.003
 # tf=0.16
 
 # #angular speed risley 1 rotations per sec
-# w=-3428.22250471
+# w=-2950.95688018
 # #angula speed risley 2 rotations per sec
-# w2=-1101.58077614
+# w2=574.29017883
 
 # #angula speed risley 2 rotations per sec
-# w3=-1530.3051244
+# w3=-1063.96443385
 
 # #angula speed risley 2 rotations per sec
-# w4=4721.40253875
+# w4=3211.84017228
 
 # a=10*(np.pi/180)    
 # expected_dims=(512,1000,100)   

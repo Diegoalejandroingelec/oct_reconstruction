@@ -473,79 +473,79 @@ def generate_dataset(denoised_dataset_folder_path,
     
     ###############################################################################################################
     
-    volume_number=0
-    subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_subsampled_volumes.h5', 'w')
-    volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_ground_truth.h5', 'w')
+    # volume_number=0
+    # subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_subsampled_volumes.h5', 'w')
+    # volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_ground_truth.h5', 'w')
     
-    if(generate_volume_aligned):
-        if(mask_dataset_training_path):
-            masks_dataset_train = h5py.File(mask_dataset_training_path, 'r')
-        else:
-            masks_dataset_train = h5py.File('./'+dataset_folder+'/masks_dataset_train.h5', 'w')
+    # if(generate_volume_aligned):
+    #     if(mask_dataset_training_path):
+    #         masks_dataset_train = h5py.File(mask_dataset_training_path, 'r')
+    #     else:
+    #         masks_dataset_train = h5py.File('./'+dataset_folder+'/masks_dataset_train.h5', 'w')
 
         
-    for volume_path in train_volumes_paths:
-        volume_path=volume_path.strip('\n')
-        print(volume_path)
-        try: 
-            volume = read_data(volume_path)
+    # for volume_path in train_volumes_paths:
+    #     volume_path=volume_path.strip('\n')
+    #     print(volume_path)
+    #     try: 
+    #         volume = read_data(volume_path)
             
-            name=volume_path.split('/')[-1].split('.')[0]
+    #         name=volume_path.split('/')[-1].split('.')[0]
 
-            if(mask_dataset_training_path):
-                mask=np.array(masks_dataset_train.get(name))
-                if(plot_mask):
-                    plt.imshow(mask[:,:,11],cmap='gray')
-                    plt.show() 
-            else:
-                # mask=generate_real_gaussian_blue_noise_mask(blue_noise,
-                #                                        volume,
-                #                                        desired_transmittance,
-                #                                        sigma,
-                #                                        plot_mask)
-                mask,volume_sampled=generate_risley_gaussian_mask(volume,plot_mask)
-                if(generate_volume_aligned):
-                    masks_dataset_train.create_dataset(name, data=mask)
+    #         if(mask_dataset_training_path):
+    #             mask=np.array(masks_dataset_train.get(name))
+    #             if(plot_mask):
+    #                 plt.imshow(mask[:,:,11],cmap='gray')
+    #                 plt.show() 
+    #         else:
+    #             # mask=generate_real_gaussian_blue_noise_mask(blue_noise,
+    #             #                                        volume,
+    #             #                                        desired_transmittance,
+    #             #                                        sigma,
+    #             #                                        plot_mask)
+    #             mask,volume_sampled=generate_risley_gaussian_mask(volume,plot_mask)
+    #             if(generate_volume_aligned):
+    #                 masks_dataset_train.create_dataset(name, data=mask)
             
-            if(generate_volume_aligned):
-                subsampled_image = np.multiply(mask,volume).astype(np.uint8)
-            else:    
-                subsampled_image = volume_sampled
+    #         if(generate_volume_aligned):
+    #             subsampled_image = np.multiply(mask,volume).astype(np.uint8)
+    #         else:    
+    #             subsampled_image = volume_sampled
             
-            name='original_train_vol_'+str(volume_number)
+    #         name='original_train_vol_'+str(volume_number)
             
-            ################# BM3D #############################
-            if(generate_ground_truth_denoised):
-                denoised_volume=find_denoised_volume(volume_path,denoised_dataset_folder_path)
+    #         ################# BM3D #############################
+    #         if(generate_ground_truth_denoised):
+    #             denoised_volume=find_denoised_volume(volume_path,denoised_dataset_folder_path)
                 
-                #denoised_volume=median_filter_3D(volume,40,5)
-                #plt.imshow(denoised_volume[:,:,11],cmap='gray')
-                #plt.show()
-                #plt.imshow(volume[:,:,11],cmap='gray')
-                #plt.show()
-                extract_sub_volumes(denoised_volume,name,volumes_dataset_train)
-            else:
-                extract_sub_volumes(volume,name,volumes_dataset_train)
+    #             #denoised_volume=median_filter_3D(volume,40,5)
+    #             #plt.imshow(denoised_volume[:,:,11],cmap='gray')
+    #             #plt.show()
+    #             #plt.imshow(volume[:,:,11],cmap='gray')
+    #             #plt.show()
+    #             extract_sub_volumes(denoised_volume,name,volumes_dataset_train)
+    #         else:
+    #             extract_sub_volumes(volume,name,volumes_dataset_train)
                 
-            name='subsampled_train_vol_'+str(volume_number)
-            # cv2.imshow('a',subsampled_image[50,:,:])
-            # cv2.waitKey(0)
-            # cv2.destroyAllWindows()
+    #         name='subsampled_train_vol_'+str(volume_number)
+    #         # cv2.imshow('a',subsampled_image[50,:,:])
+    #         # cv2.waitKey(0)
+    #         # cv2.destroyAllWindows()
             
             
-            extract_sub_volumes(subsampled_image,name,subsampled_volumes_dataset_train)
+    #         extract_sub_volumes(subsampled_image,name,subsampled_volumes_dataset_train)
             
-            volume_number+=1
+    #         volume_number+=1
         
-        except Exception as e :
-            print(e)
-            print('WRONG dimentions'+volume_path)
+    #     except Exception as e :
+    #         print(e)
+    #         print('WRONG dimentions'+volume_path)
 
     
     
-    subsampled_volumes_dataset_train.close()  
-    volumes_dataset_train.close()
-    masks_dataset_train.close()
+    # subsampled_volumes_dataset_train.close()  
+    # volumes_dataset_train.close()
+    # masks_dataset_train.close()
     
     ############################################################################################################
     
@@ -621,20 +621,20 @@ def generate_dataset(denoised_dataset_folder_path,
 
 dataset_folder='REAL_MOTION_DATASET'
 generate_ground_truth_denoised=True
-generate_volume_aligned=True
+generate_volume_aligned=False
 denoised_dataset_folder_path='./DATASET_DENOISED'
 # mask_dataset_training_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_train.h5'
 # mask_dataset_testing_path='./BLUE_NOISE_GAUSSIAN_DATASET/masks_dataset_test.h5'
-#training_txt_path='./RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET/train_volumes_paths.txt'
-#testing_txt_path='./RISLEY_GAUSSIAN_TRANSMITTANCE_25_SIGMA_100_DATASET/test_volumes_paths.txt'
+training_txt_path='/home/diego/Documents/train_volumes_paths.txt'
+testing_txt_path='/home/diego/Documents/test_volumes_paths.txt'
 generate_dataset(denoised_dataset_folder_path,
                  generate_ground_truth_denoised,
                  generate_volume_aligned,
                  dataset_folder,
                  mask_dataset_training_path='',
                  mask_dataset_testing_path='',
-                 training_txt_path='',
-                 testing_txt_path='',
+                 training_txt_path=training_txt_path,
+                 testing_txt_path=testing_txt_path,
                  desired_transmittance=0.25,
                  sigma=200,
                  maximum_transmittance=0.41,

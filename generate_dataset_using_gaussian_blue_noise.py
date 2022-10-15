@@ -375,7 +375,63 @@ def generate_risley_gaussian_mask(original_volume,
     
 
 
+    def get_transmittances(original_volume,
+                           maximum_transmittance,
+                           sigma,
+                           function='ga'):
+        def gaussian(x, a, x0, sigma):
+            return a*np.exp(-(x-x0)**2/(2*sigma**2))  
+        def cauchy(x, a, x0, g):
+            return (a*(g**2/((x-x0)**2+g**2)))
 
+        def laplace(x, a, x0, b):
+            return a*np.exp(-np.abs(x-x0)/b)
+
+        mean_b_scans=np.mean(original_volume,2)
+        mean_b_scans=mean_b_scans[30:,:].astype(np.uint8)
+        
+        means=np.argmax(mean_b_scans,0)
+        means_smooth=savgol_filter(means,51,1)
+        means=means_smooth
+        
+        
+        
+        total_mean=np.mean(means)
+
+        x=np.linspace(0,511,512)
+        if(function=='ga'):
+            transmittances=gaussian(x, maximum_transmittance, total_mean, sigma)
+        elif(function=='la'):
+            transmittances=laplace(x, maximum_transmittance, total_mean, sigma)
+        elif(function=='ca'):
+            transmittances=cauchy(x, maximum_transmittance, total_mean, sigma)    
+        # plt.plot(x,transmittances)
+        # plt.show()
+        return transmittances*100
+
+    ga=get_transmittances(original_volume,
+                           maximum_transmittance=0.60,
+                           sigma=100,
+                           function='ga')
+
+    ca=get_transmittances(original_volume,
+                           maximum_transmittance=0.66,
+                           sigma=100,
+                           function='ca')
+
+    la=get_transmittances(original_volume,
+                           maximum_transmittance=0.70,
+                           sigma=100,
+                           function='la')
+
+    plt.rcParams["figure.figsize"] = (10,10)
+    plt.plot(ga,label='Gaussian')
+    plt.plot(la,label='Laplace')
+    plt.plot(ca,label='Cauchy')
+    plt.ylabel('Transmittance %')
+    plt.legend()
+    plt.show()
+    
 
         
     
@@ -401,9 +457,15 @@ def generate_risley_gaussian_mask(original_volume,
     print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
     print('')
     if(plot_mask):
-        
         plt.rcParams["figure.figsize"] = (100,80)
-        plt.imshow(mask_risley[:,:,50],cmap='gray')
+        plt.imshow(mask_risley[:,:,55],cmap='gray')
+        
+        xx=np.linspace(0,999,1000)
+        y = np.ones(1000)*250
+        mean_b_scans=np.mean(original_volume,2)
+        plt.plot(xx,y,linewidth=25,label='mean')
+        plt.imshow(mean_b_scans,cmap='gray')
+        plt.legend(fontsize = 100)
         plt.show()
     return mask_risley
 
@@ -620,8 +682,8 @@ generate_dataset(denoised_dataset_folder_path,
                  training_txt_path='',
                  testing_txt_path='',
                  desired_transmittance=0.25,
-                 sigma=200,
-                 maximum_transmittance=0.41,
+                 sigma=100,
+                 maximum_transmittance=0.60,
                  minimum_transmittance=0.0,
                  transmittance_distribution_fn='ga',
                  plot_mask=False)
