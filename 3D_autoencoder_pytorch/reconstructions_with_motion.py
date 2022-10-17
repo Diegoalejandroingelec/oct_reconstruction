@@ -20,13 +20,15 @@ import bm3d
 from skimage import img_as_float
 import time
 from scipy.io import loadmat
+from risley_varying_all_parameters import create_risley_pattern
+
 
 os.chdir("../")
 from Brownian_movement import add_motion_to_en_face_images
 os.chdir("./3D_autoencoder_pytorch/")
 
 bigger_sub_volumes_dim=(512,1000,16)
-original_volume_dim=(512,1000,100-22)
+original_volume_dim=(512,1000,100)
 ngpu=2
 denoised_dataset_folder_path='../DATASET_DENOISED'
 results_dir='MOTION_MAXIMUM_10X_10Y_DATASET_GT_MEDIAN_FILTER_MEDIAN_FILTER_GT'
@@ -120,7 +122,84 @@ def make_video(volume,name):
         image_for_video=cv2.cvtColor(np.squeeze(volume[:,:,b]),cv2.COLOR_GRAY2BGR)
         video.write(image_for_video)
     video.release()
-      
+    
+    
+def generate_risley_gaussian_mask(original_volume,plot_mask=False):
+
+    number_of_prisms=4
+
+    #Laser Pulse Rate
+    #PRF=required_prf(desired_transmittance)#1999000
+    PRF=3500000
+    #Image Capture Time 0.003
+    tf=8.192
+
+    #angular speed risley 1 rotations per sec
+    w=62555.4063372
+    #angula speed risley 2 rotations per sec
+    w2=-20201.0559296
+
+    #angula speed risley 2 rotations per sec
+    w3=-12271.6073769
+
+    #angula speed risley 2 rotations per sec
+    w4=12274.0445477
+
+    a=10*(np.pi/180)    
+    expected_dims=(512,1000,100)   
+
+
+    band_width=176
+    line_width=band_width/expected_dims[0]
+    start_wavelength=962
+
+    maximum_transmittance=0.43
+    minimum_transmittance=0.0
+    transmittance_distribution_fn='ga'
+    sigma=150
+
+    number_of_laser_sweeps=200
+    steps_before_centering=10
+    hand_tremor_period=1/9
+    laser_time_between_sweeps=7.314285714285714e-05
+    y_factor=50
+    x_factor=50
+    generate_volume_with_motion=True
+
+        
+    
+    begin = time.time()
+    mask_risley,volume_sampled=create_risley_pattern(expected_dims,
+                              line_width,
+                              start_wavelength,
+                              tf,
+                              PRF,
+                              w,
+                              w2,
+                              w3,
+                              w4,
+                              a,
+                              number_of_prisms,
+                              original_volume,
+                              maximum_transmittance,
+                              minimum_transmittance,
+                              sigma,
+                              transmittance_distribution_fn,
+                              number_of_laser_sweeps,
+                              steps_before_centering,
+                              hand_tremor_period,
+                              laser_time_between_sweeps,
+                              x_factor,
+                              y_factor,
+                              generate_volume_with_motion,
+                              plot_mask)
+    end = time.time()
+    print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
+    # plt.rcParams["figure.figsize"] = (100,80)
+    # plt.imshow(mask_risley[:,:,50],cmap='gray')
+    return mask_risley,volume_sampled.astype(np.uint8)
+
+
 def reconstruct_volume_batches(volume,reconstruction_model,sub_volumes_dim):
     batch_size_for_inference=1
     batch_for_inference=[]
@@ -440,8 +519,8 @@ def evaluate_model(denoised_dataset_folder_path,
             if(not only_motion):
                 sub_sampled_volume=np.multiply(mask,original_volume).astype(np.uint8)
             else:
-                sub_sampled_volume=add_motion_to_en_face_images(original_volume,plot_random_walk=False)
-                sub_sampled_volume=sub_sampled_volume[:,:,11:89]
+                #sub_sampled_volume=add_motion_to_en_face_images(original_volume,plot_random_walk=False)
+                _,sub_sampled_volume=generate_risley_gaussian_mask(original_volume)
             
             ######## Normalize matrix###############################
             sub_sampled_volume_normalized,max_value=normalize(sub_sampled_volume)
@@ -466,8 +545,8 @@ def evaluate_model(denoised_dataset_folder_path,
                     print('TA MAL!!!!!!!')
                     sub_sampled_denoised_original_volume=np.multiply(mask,denoised_original_volume).astype(np.uint8)
                     bigger_reconstruction=bigger_reconstruction+sub_sampled_denoised_original_volume
-            else:
-                bigger_reconstruction=bigger_reconstruction+sub_sampled_volume
+            # else:
+            #     bigger_reconstruction=bigger_reconstruction+sub_sampled_volume
             
             
             if(compare_with_roi):
@@ -476,8 +555,8 @@ def evaluate_model(denoised_dataset_folder_path,
                 
                 if(denoised_ground_truth_for_comparison):
                     
-                    volume_for_comparison=np.multiply(denoised_original_volume[:,:,11:89],window_for_comparison).astype(np.uint8)
-                    original_volume=denoised_original_volume[:,:,11:89]
+                    volume_for_comparison=np.multiply(denoised_original_volume,window_for_comparison).astype(np.uint8)
+                    original_volume=denoised_original_volume
                 else:
                     volume_for_comparison=np.multiply(original_volume,window_for_comparison).astype(np.uint8)
                 
