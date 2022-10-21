@@ -17,7 +17,7 @@ import cv2
 
 expected_dimensions=(1000,100)
 
-# expected_dimensions=(512,1000)
+# expected_dimensions=(100,1000)
 # blue=np.load('./blue_noise_cubes/bluenoise1024.npy')
 # mask=generate_binary_blue_noise_mask(blue,subsampling_percentage=0.75)
 # mask=mask[0:expected_dimensions[0],0:expected_dimensions[1]]
@@ -150,7 +150,8 @@ def create_low_frecuencies_mask(expected_dimensions,axesLength,additional_mask=N
 def compute_bluness(pattern):
     # plt.imshow(mask_low_frecuency)
     # plt.show()
-
+    pattern=pattern/255
+    pattern=np.transpose(pattern)
     pattern=pattern-np.mean(pattern)##########################################################################
     # plt.imshow(pattern)
     # plt.show()
@@ -240,14 +241,14 @@ def compute_bluness(pattern):
     #             interpolation="nearest",
     #             vmin=0.0,
     #             vmax=np.percentile(20*np.log(np.abs(DFT)),99))
-    #             #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
+                #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
     fontsize=60
     fontsizet=80
-    fig, (ax2, ax1) = plt.subplots(1,2)
+    fig, (ax2, ax1) = plt.subplots(2,1)
     fig.tight_layout(pad=-2.5)
     fig.set_size_inches(50, 40)
     ax2.imshow(pattern*255,cmap='gray')
-    ax2.set_title('Blue Noise Pattern',fontsize=fontsizet)
+    ax2.set_title('Risley Beam Steering Pattern Optimized',fontsize=fontsizet)
     im = ax1.imshow(20*np.log(np.abs(DFT)),
                 cmap="viridis",
                 interpolation="nearest",
@@ -282,7 +283,7 @@ def generate_2D_pattern(w1,
                         w3,
                         w4,
                         tf=0.16,
-                        PRF=50000,
+                        PRF=199900,
                         a=10*(np.pi/180),
                         number_of_prisms=4,
                         n_prism=1.444,
@@ -461,10 +462,10 @@ def generate_2D_pattern(w1,
 #                             119538,
 #                             plot_mask=True)
 
-pattern=generate_2D_pattern(w1=-467.92468557,
-                            w2=-4855.51593486,
-                            w3=3361.6026242,
-                            w4=3108.43067635,plot_mask=True)
+pattern=generate_2D_pattern(w1=-3428.22250471,
+                            w2=-1101.58077614,
+                            w3=-1530.3051244,
+                            w4=4721.40253875,plot_mask=True)
 
 # cv2.imwrite('pattern.jpeg',pattern)
 compute_bluness(pattern)

@@ -13,7 +13,7 @@ import cv2
 from scipy.io import loadmat
 from scipy.signal import savgol_filter
 import time
-from Brownian_movement import create_2D_brownian_motion
+#from Brownian_movement import create_2D_brownian_motion
 import pandas as pd
 from scipy.interpolate import interp1d
 #import napari
@@ -355,20 +355,20 @@ def pupil_movement(path):
     z=((z_interpolation*1000000)/z_factor)[s:e]
     
     
-    #time=np.linspace(0,len(x)-1,len(x))*(1/fs)
+    # time=np.linspace(0,len(x)-1,len(x))*(1/fs)
     
     
     
-    
+    # plt.rcParams["figure.figsize"] = (7,5)
     # plt.plot(new_t[s:e],x,label='x')
     # plt.plot(new_t[s:e],y,label='y')
     # plt.plot(new_t[s:e],z,label='z')
     # plt.xlabel('time(s)')
-    # plt.ylabel('pixels')
+    # plt.ylabel('motion (pixels)')
     
     
     # plt.legend()
-    # plt.grid()
+    
     # plt.show()
     
     
@@ -376,11 +376,11 @@ def pupil_movement(path):
     # plt.plot(new_t[s:e],y_interpolation[s:e]*1000,label='y')
     # plt.plot(new_t[s:e],z_interpolation[s:e]*1000,label='z')
     # plt.xlabel('time(s)')
-    # plt.ylabel('mm')
+    # plt.ylabel('motion (mm)')
     
     
     # plt.legend()
-    # plt.grid()
+   
     # plt.show()
     return (np.round(x).astype(int),
             np.round(y).astype(int),
@@ -675,7 +675,7 @@ def create_risley_pattern(expected_dims,
 # #PRF=required_prf(desired_transmittance)#1999000
 # PRF=3500000
 # #Image Capture Time 0.003
-# tf=8.192
+# tf=12.192
 
 # #angular speed risley 1 rotations per sec
 # w=62555.4063372
@@ -701,7 +701,7 @@ def create_risley_pattern(expected_dims,
 # transmittance_distribution_fn='ga'
 # sigma=150
 
-# number_of_laser_sweeps=200
+# number_of_laser_sweeps=250
 # steps_before_centering=10
 # hand_tremor_period=1/9
 # laser_time_between_sweeps=7.314285714285714e-05

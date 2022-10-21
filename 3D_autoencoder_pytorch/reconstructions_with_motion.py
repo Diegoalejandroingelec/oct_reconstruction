@@ -23,9 +23,7 @@ from scipy.io import loadmat
 from risley_varying_all_parameters import create_risley_pattern
 
 
-os.chdir("../")
-from Brownian_movement import add_motion_to_en_face_images
-os.chdir("./3D_autoencoder_pytorch/")
+
 
 bigger_sub_volumes_dim=(512,1000,16)
 original_volume_dim=(512,1000,100)

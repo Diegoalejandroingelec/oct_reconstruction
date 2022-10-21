@@ -16,13 +16,17 @@ import pickle
 import h5py
 import matplotlib.pyplot as plt
 from risley_beam_steering_real_pattern import create_risley_pattern,required_prf
-sub_sampling_percentage=75
+
+from data_evaluation import add_motion_to_volume
+
+
+sub_sampling_percentage=100
 
 #'blue_noise_subsampling'
 #'raster_subsampling'
 #'random_subsampling'
 #'risley_subsampling'
-subsampling_method='risley_subsampling_4_prisms'
+subsampling_method='raster_subsampling'
 
 def read_data(path):
     data = loadmat(path)
@@ -425,7 +429,7 @@ def generate_dataset(denoised_dataset_folder_path,
         try: 
             volume = read_data(volume_path)
         
-            subsampled_image = np.multiply(mask,volume).astype(np.uint8)
+            subsampled_image = np.multiply(mask,add_motion_to_volume(volume)).astype(np.uint8)
 
             
             name='original_train_vol_'+str(volume_number)
@@ -469,7 +473,7 @@ def generate_dataset(denoised_dataset_folder_path,
         
                 volume = read_data(volume_path)
                 
-                subsampled_image = np.multiply(mask,volume).astype(np.uint8)
+                subsampled_image = np.multiply(mask,add_motion_to_volume(volume)).astype(np.uint8)
                 
                 
                 name='original_test_vol_'+str(volume_number)
@@ -498,9 +502,9 @@ def generate_dataset(denoised_dataset_folder_path,
     subsampled_volumes_dataset_test.close()  
     volumes_dataset_test.close()
 
-dataset_folder='RISLEY_BEAM_STEERING_25_TRANSMITTANCE_4_PRISMS_DATASET'
+dataset_folder='RASTER_SCAN_WITH_MOTION_DATASET'
 denoised_dataset_folder_path='./DATASET_DENOISED'
-generate_ground_truth_denoised=False
+generate_ground_truth_denoised=True
 # training_txt_path='./TEST_DATASET_FIXED_MASK/train_volumes_paths.txt'
 # testing_txt_path='./TEST_DATASET_FIXED_MASK/test_volumes_paths.txt'
 # mask_path='./TEST_DATASET_FIXED_MASK/mask75.pkl'

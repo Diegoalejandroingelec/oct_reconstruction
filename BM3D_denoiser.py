@@ -57,20 +57,25 @@ def median_filter_3D(volume,threshold,window_size):
 #     with open( name, 'rb') as f:
 #         return pickle.load(f)
 
-# original_volume =load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_volumes/Farsiu_Ophthalmology_2013_AMD_Subject_1001.pkl')
+# original_volume =load_obj('/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/sub_sampled_data/original_volumes/Farsiu_Ophthalmology_2013_AMD_Subject_1040.pkl')
 
-# median2=median_filter_3D(original_volume[:,:,0:1],40,5)
+# median2=median_filter_3D(original_volume[:,:,50:51],40,5)
 
-# cv2.imshow('original Image',original_volume[:,:,0])
+# cv2.imshow('original Image',original_volume[:,:,50])
 # cv2.imshow('denoised Image2',median2[:,:,0].astype(np.uint8))
 # cv2.waitKey(0)
 # cv2.destroyAllWindows()
 
+
+
+# cv2.imwrite('original_volume.png',original_volume[:,:,50])
+# cv2.imwrite('denoised_volume.png',median2[:,:,0].astype(np.uint8))
+
 # import matplotlib.pyplot as plt
 # for h in range(1000):
-#     plt.plot(original_volume[:,h,0],'-o',label='Original Volume')
+#     plt.plot(original_volume[:,h,50],'-o',label='Original Volume')
 #     plt.plot(median2[:,h,0],'.',label='Denoised Original Volume')
 #     plt.plot([40]*512,color='r',linestyle='--',label='Filtering Threshold')
-#     plt.title('Depth scan profile')
+    
 #     plt.legend()
 #     plt.show()

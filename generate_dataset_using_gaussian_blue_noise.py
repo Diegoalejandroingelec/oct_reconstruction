@@ -424,7 +424,7 @@ def generate_risley_gaussian_mask(original_volume,
                            sigma=100,
                            function='la')
 
-    plt.rcParams["figure.figsize"] = (10,10)
+    plt.rcParams["figure.figsize"] = (6,4.5)
     plt.plot(ga,label='Gaussian')
     plt.plot(la,label='Laplace')
     plt.plot(ca,label='Cauchy')
