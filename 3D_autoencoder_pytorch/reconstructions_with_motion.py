@@ -21,9 +21,14 @@ from skimage import img_as_float
 import time
 from scipy.io import loadmat
 from risley_varying_all_parameters import create_risley_pattern
+# importing sys
+import sys
+ 
+# adding Folder_2/subfolder to the system path
+sys.path.insert(0, '../EyeTrackingData')
 
+#from data_evaluation import add_motion_to_volume
 from data_evaluation import add_motion_to_volume
-
 
 bigger_sub_volumes_dim=(512,1000,16)
 original_volume_dim=(512,1000,100)

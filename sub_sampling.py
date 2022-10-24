@@ -16,8 +16,12 @@ import pickle
 import h5py
 import matplotlib.pyplot as plt
 from risley_beam_steering_real_pattern import create_risley_pattern,required_prf
+import sys
+sys.path.insert(0, '/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/EyeTrackingData')
 
+#from data_evaluation import add_motion_to_volume
 from data_evaluation import add_motion_to_volume
+
 
 
 sub_sampling_percentage=100

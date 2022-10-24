@@ -13,7 +13,7 @@ import cv2
 from scipy.io import loadmat
 from scipy.signal import savgol_filter
 import time
-from Brownian_movement import create_2D_brownian_motion
+#from Brownian_movement import create_2D_brownian_motion
 import pandas as pd
 from scipy.interpolate import interp1d
 #import napari
