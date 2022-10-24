@@ -22,24 +22,24 @@ import time
 from scipy.io import loadmat
 from risley_varying_all_parameters import create_risley_pattern
 
-
+from data_evaluation import add_motion_to_volume
 
 
 bigger_sub_volumes_dim=(512,1000,16)
 original_volume_dim=(512,1000,100)
 ngpu=2
 denoised_dataset_folder_path='../DATASET_DENOISED'
-results_dir='MOTION_MAXIMUM_10X_10Y_DATASET_GT_MEDIAN_FILTER_MEDIAN_FILTER_GT'
-model_path='./MOTION_MAXIMUM_10X_10Y_DATASET_GT_MEDIAN_FILTER/BEST_MODEL_1.pth.tar'
-mask_path=''
+results_dir='MODEL_EVALUATION_BLUE_NOISE_WITH_MOTION_GT_MEDIAN_FILTER'
+model_path='./BLUE_NOISE_WITH_MOTION_GT_MEDIAN_FILTER/BEST_MODEL_2.pth.tar'
+mask_path='../BLUE_NOISE_WITH_MOTION_DATASET/mask75.pkl'
 masks_dataset_path=''
 masks_dataset_path_train=''
-txt_test_path='../RISLEY_BEAM_STEERING_25_TRANSMITTANCE_DATASET/test_volumes_paths.txt'
+txt_test_path='./fast_test_paths.txt'
 original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 comparison_size=100
 compare_with_roi=True
 denoised_ground_truth_for_comparison=True
-only_motion=True
+only_motion=False
 
 # Decide which device we want to run on
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
@@ -515,7 +515,7 @@ def evaluate_model(denoised_dataset_folder_path,
                     mask=np.array(f_gt.get(vol_name))
             
             if(not only_motion):
-                sub_sampled_volume=np.multiply(mask,original_volume).astype(np.uint8)
+                sub_sampled_volume=np.multiply(mask,add_motion_to_volume(original_volume)).astype(np.uint8)
             else:
                 #sub_sampled_volume=add_motion_to_en_face_images(original_volume,plot_random_walk=False)
                 _,sub_sampled_volume=generate_risley_gaussian_mask(original_volume)
@@ -530,19 +530,19 @@ def evaluate_model(denoised_dataset_folder_path,
             bigger_reconstruction=(bigger_reconstruction*max_value)+max_value
             bigger_reconstruction = bigger_reconstruction.astype(np.uint8)
             
-            if(not only_motion):
-                mask_blue_noise_prima= (~mask.astype(bool)).astype(int)
+            # if(not only_motion):######################################################
+            #     mask_blue_noise_prima= (~mask.astype(bool)).astype(int)
     
-                bigger_reconstruction=np.multiply(mask_blue_noise_prima,bigger_reconstruction).astype(np.uint8)
+            #     bigger_reconstruction=np.multiply(mask_blue_noise_prima,bigger_reconstruction).astype(np.uint8)
             
             if(denoised_ground_truth_for_comparison):
                 print('ahi vaaaaa')
                 denoised_original_volume=find_denoised_volume(test_volume_path,denoised_dataset_folder_path)
                 #denoised_original_volume=median_filter_3D(original_volume,40,5)
-                if(not only_motion):
-                    print('TA MAL!!!!!!!')
-                    sub_sampled_denoised_original_volume=np.multiply(mask,denoised_original_volume).astype(np.uint8)
-                    bigger_reconstruction=bigger_reconstruction+sub_sampled_denoised_original_volume
+                # if(not only_motion):
+                #     print('TA MAL!!!!!!!')
+                #     sub_sampled_denoised_original_volume=np.multiply(mask,denoised_original_volume).astype(np.uint8)
+                #     bigger_reconstruction=bigger_reconstruction+sub_sampled_denoised_original_volume
             # else:
             #     bigger_reconstruction=bigger_reconstruction+sub_sampled_volume
             

@@ -495,7 +495,6 @@ def generate_dataset(denoised_dataset_folder_path,
             
             except:
                 print('WRONG dimentions'+volume_path)
-            
 
             
             
