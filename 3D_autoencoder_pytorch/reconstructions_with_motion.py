@@ -34,9 +34,9 @@ bigger_sub_volumes_dim=(512,1000,16)
 original_volume_dim=(512,1000,100)
 ngpu=2
 denoised_dataset_folder_path='../DATASET_DENOISED'
-results_dir='MODEL_EVALUATION_BLUE_NOISE_WITH_MOTION_GT_MEDIAN_FILTER'
-model_path='./BLUE_NOISE_WITH_MOTION_GT_MEDIAN_FILTER/BEST_MODEL_2.pth.tar'
-mask_path='../BLUE_NOISE_WITH_MOTION_DATASET/mask75.pkl'
+results_dir='MODEL_EVALUATION_RISLEY_REAL_MOTION_GT_MEDIAN_FILTER'
+model_path='./REAL_MOTION_GT_MEDIAN_FILTER/BEST_MODEL_4.pth.tar'
+mask_path=''
 masks_dataset_path=''
 masks_dataset_path_train=''
 txt_test_path='./fast_test_paths.txt'
@@ -44,7 +44,7 @@ original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 comparison_size=100
 compare_with_roi=True
 denoised_ground_truth_for_comparison=True
-only_motion=False
+only_motion=True
 
 # Decide which device we want to run on
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
