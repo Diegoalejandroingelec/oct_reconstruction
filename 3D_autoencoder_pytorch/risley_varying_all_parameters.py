@@ -435,7 +435,7 @@ def create_risley_pattern(expected_dims,
             #                                          plot_mask,
             #                                          x_factor,y_factor)
             
-            rand_x,rand_y,rand_z,fs=pupil_movement('./EyeTrackingData/pupil-0.csv')
+            rand_x,rand_y,rand_z,fs=pupil_movement('../EyeTrackingData/pupil-0.csv')
             hand_tremor_period=1/fs
             num_rows, num_cols = expected_dims[1],expected_dims[2]
             
