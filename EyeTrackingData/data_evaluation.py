@@ -11,6 +11,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from scipy.interpolate import interp1d
 from scipy.io import loadmat
+import pandas as pd
+  
 
 def get_movement():
     x_factor=180
@@ -19,7 +21,7 @@ def get_movement():
     fs=350
     
     
-    df = pd.read_csv ('pupil-0.csv',header=None)
+    df = pd.read_csv ('./EyeTrackingData/pupil-0.csv',header=None)
     df=df.rename(columns={0: 'frame', 1: 'x', 2: 'y', 3: 'z'})
     
     
@@ -66,10 +68,17 @@ def get_movement():
     z=((z_interpolation*1000000)/z_factor)[s:e]
     
     
-    time=np.linspace(0,len(x)-1,len(x))*(1/fs)
+    # time=np.linspace(0,len(x)-1,len(x))*(1/fs)
     
     
-    
+
+      
+    # # Calling DataFrame constructor after zipping
+    # # both lists, with columns specified
+    # df = pd.DataFrame(list(zip(x, y, z)),
+    #                columns =['x', 'y', 'z'])
+    # corr = df.corr()
+    # plt.rcParams["figure.figsize"] = (7,5)
     
     # plt.plot(new_t[s:e],x,label='x')
     # plt.plot(new_t[s:e],y,label='y')
@@ -79,31 +88,25 @@ def get_movement():
     
     
     # plt.legend()
-    # plt.grid()
+    # #plt.grid()
     # plt.show()
     
     
     # plt.plot(new_t[s:e],x_interpolation[s:e]*1000,label='x')
     # plt.plot(new_t[s:e],y_interpolation[s:e]*1000,label='y')
     # plt.plot(new_t[s:e],z_interpolation[s:e]*1000,label='z')
-    # plt.xlabel('time(s)')
-    # plt.ylabel('mm')
+    # plt.xlabel('time (s)')
+    # plt.ylabel('motion (mm)')
     
     
     # plt.legend()
-    # plt.grid()
+    # #plt.grid()
     # plt.show()
     return np.round(x).astype(int),np.round(y).astype(int),np.round(z).astype(int)
 
 
 
-# path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1243.mat'
-# def read_data(path):
-#     data = loadmat(path)
-#     oct_volume = data['images']
-#     return oct_volume
 
-# original_volume=read_data(path)
 
 
 def add_motion_to_volume(original_volume):
@@ -145,7 +148,14 @@ def add_motion_to_volume(original_volume):
         return volume_with_motion
     except:
         print('error') 
-    
+
+# path='/home/diego/Documents/Delaware/tensorflow/training_3D_images/oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1243.mat'
+# def read_data(path):
+#     data = loadmat(path)
+#     oct_volume = data['images']
+#     return oct_volume
+
+# original_volume=read_data(path)
 # volume_with_motion=add_motion_to_volume(original_volume)  
 # import napari
 # viewer = napari.view_image(volume_with_motion)

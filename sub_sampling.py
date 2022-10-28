@@ -427,7 +427,7 @@ def generate_dataset(denoised_dataset_folder_path,
     subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_subsampled_volumes.h5', 'w')
     volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_ground_truth.h5', 'w')
         
-    for volume_path in train_volumes_paths:
+    for volume_path in train_volumes_paths[0:10]:
         volume_path=volume_path.strip('\n')
         print(volume_path)
         try: 
@@ -469,7 +469,7 @@ def generate_dataset(denoised_dataset_folder_path,
     volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_random25_ground_truth.h5', 'w')
         
         
-    for volume_path in test_volumes_paths:
+    for volume_path in test_volumes_paths[0:10]:
             
             try:
                 volume_path=volume_path.strip('\n')
@@ -507,7 +507,7 @@ def generate_dataset(denoised_dataset_folder_path,
 
 dataset_folder='RASTER_SCAN_WITH_MOTION_DATASET'
 denoised_dataset_folder_path='./DATASET_DENOISED'
-generate_ground_truth_denoised=True
+generate_ground_truth_denoised=False
 # training_txt_path='./TEST_DATASET_FIXED_MASK/train_volumes_paths.txt'
 # testing_txt_path='./TEST_DATASET_FIXED_MASK/test_volumes_paths.txt'
 # mask_path='./TEST_DATASET_FIXED_MASK/mask75.pkl'
