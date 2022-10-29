@@ -18,7 +18,7 @@ model_betas = (0.9, 0.999)
 workers = 2
 
 # Batch size during training
-batch_size = 16
+batch_size = 2
 
 # Number of GPUs available. Use 0 for CPU mode.
 ngpu = 1

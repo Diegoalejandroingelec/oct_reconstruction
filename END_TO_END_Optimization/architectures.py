@@ -85,30 +85,30 @@ class Risley_Speeds(nn.Module):
             nn.BatchNorm3d(128),
             nn.LeakyReLU(0.2, True),
             
-            # nn.Conv3d(in_channels=128, out_channels=256, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1), bias=False),
-            # nn.BatchNorm3d(256),
-            # nn.LeakyReLU(0.2, True),
-            # # STATE SIZE 256 x 64 x 8 x 2
+            nn.Conv3d(in_channels=128, out_channels=256, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1), bias=True),
+            nn.BatchNorm3d(256),
+            nn.LeakyReLU(0.2, True),
+            # STATE SIZE 256 x 64 x 8 x 2
             
-            # nn.Conv3d(in_channels=256, out_channels=256, kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1), bias=False),
-            # nn.BatchNorm3d(256),
-            # nn.LeakyReLU(0.2, True),
+            nn.Conv3d(in_channels=256, out_channels=256, kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1), bias=True),
+            nn.BatchNorm3d(256),
+            nn.LeakyReLU(0.2, True),
             
-            # nn.Conv3d(in_channels=256, out_channels=512, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1), bias=False),
-            # nn.BatchNorm3d(512),
-            # nn.LeakyReLU(0.2, True),
+            nn.Conv3d(in_channels=256, out_channels=512, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1), bias=True),
+            nn.BatchNorm3d(512),
+            nn.LeakyReLU(0.2, True),
             
-            # # STATE SIZE 512 x 32 x 4 x 1
-            # nn.Conv3d(in_channels=512, out_channels=512, kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1), bias=False),
-            # nn.BatchNorm3d(512),
-            # nn.LeakyReLU(0.2, True),
+            # STATE SIZE 512 x 32 x 4 x 1
+            nn.Conv3d(in_channels=512, out_channels=512, kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1), bias=True),
+            nn.BatchNorm3d(512),
+            nn.LeakyReLU(0.2, True),
         )
 
         self.classifier = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(1048576, 64),
+            nn.Linear(65536, 1024),
             nn.LeakyReLU(0.2, True),
-            nn.Linear(64, 4),
+            nn.Linear(1024, 4),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

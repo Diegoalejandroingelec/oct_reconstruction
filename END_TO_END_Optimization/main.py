@@ -301,7 +301,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
         
         
         if(train_speeds):
-            print('training speeds generator')
+            #print('training speeds generator')
             # During speeds generator training, turn off autoencoder backpropagation
             for autoencoder_parameters in netG.parameters():
                 autoencoder_parameters.requires_grad = False
@@ -313,7 +313,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
             
             
         else:
-            print('training autoencoder')
+            #print('training autoencoder')
             # During autoencoder training, turn on autoencoder backpropagation
             for autoencoder_parameters in netG.parameters():
                 autoencoder_parameters.requires_grad = True
@@ -326,46 +326,50 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
             
             
         
-        for cube in targets:
-            cube=torch.unsqueeze(cube,0)
-            speeds=speeds_generator(cube).cpu().detach().numpy()
-            mask=create_3D_mask(w1=speeds[0,0]*100000,
-                            w2=speeds[0,1]*100000,
-                            w3=speeds[0,2]*100000,
-                            w4=speeds[0,3]*100000,
-                            original_volume=None)
-            
-            #print(mask.shape)
-            
-            
-            subsampled_volume=np.multiply(mask,torch.squeeze(cube).cpu().detach().numpy())
-            subsampled_volume_normalized=normalize(subsampled_volume)
-            reconstruction = netG(torch.unsqueeze(torch.tensor(subsampled_volume_normalized,
-                                                                requires_grad=True).to(config_autoencoder.device,
-                                                                                      dtype=torch.float),0))
-                                                                                       
-                                                                                       
-                                                                                       
-            ground_truth=torch.squeeze(cube).cpu().detach().numpy()
-            ground_truth_normalized=torch.unsqueeze(torch.tensor(normalize(ground_truth),
-                                                                requires_grad=True).to(config_autoencoder.device,
-                                                                                      dtype=torch.float),0)
-                                                              
-            loss = criterion(reconstruction, torch.unsqueeze(ground_truth_normalized,0))
-            
-            loss.backward()
-            # update model weights
-            
-            if(train_speeds):
-                optimizer_speeds.step()
-            else:
-                optimizer.step()
-               
-                
+        
+        #cube=torch.unsqueeze(cube,0)
+        speeds=speeds_generator(targets).cpu().detach().numpy()
+        speeds_avg=np.mean(speeds,0)
+        
+        mask=create_3D_mask(w1=speeds_avg[0]*100000,
+                        w2=speeds_avg[1]*100000,
+                        w3=speeds_avg[2]*100000,
+                        w4=speeds_avg[3]*100000,
+                        original_volume=None)
+        
+        #print(mask.shape)
+        # clear the gradients
+        if(train_speeds):
+            optimizer_speeds.zero_grad()
+        else:
+            optimizer.zero_grad()
+        
+        
+        subsampled_volumes=[np.multiply(mask,cube.cpu().detach().numpy()) for cube in targets]
+        subsampled_volumes_normalized=np.array([normalize(subsampled_volume) for subsampled_volume in subsampled_volumes])
+        reconstructions = netG(torch.tensor(subsampled_volumes_normalized,
+                                                            requires_grad=True).to(config_autoencoder.device,
+                                                                                  dtype=torch.float))
+                                                                                   
+                                                                                   
+                                                                                   
+        ground_truths=torch.squeeze(targets).cpu().detach().numpy()
+        ground_truth_normalized=torch.tensor(np.array([normalize(ground_truth) for ground_truth in ground_truths]),
+                                                            requires_grad=True).to(config_autoencoder.device,
+                                                                                  dtype=torch.float)
+                                                          
+        loss = criterion(reconstructions, torch.unsqueeze(ground_truth_normalized,1))
+        
+        loss.backward()
+        # update model weights
+        
         if(train_speeds):
             train_speeds=False
+            optimizer_speeds.step()
         else:
             train_speeds=True
+            optimizer.step()
+            
             
             
         
