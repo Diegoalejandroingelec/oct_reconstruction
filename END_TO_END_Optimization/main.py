@@ -404,11 +404,35 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
     for j, data_test in enumerate(dataloader_test, 0):  
          inputs_test = data_test[0].to(config_autoencoder.device, dtype=torch.float)
          targets_test = data_test[1].to(config_autoencoder.device, dtype=torch.float)
+         
+         speeds_pred=speeds_generator(targets_test).cpu().detach().numpy()
+         
+         
+         mask_test=create_3D_mask(w1=speeds_pred[0]*100000,
+                         w2=speeds_pred[1]*100000,
+                         w3=speeds_pred[2]*100000,
+                         w4=speeds_pred[3]*100000,
+                         original_volume=None)
+         
+         
+         subsampled_volumes_test=[np.multiply(mask_test,cube.cpu().detach().numpy()) for cube in targets_test]
+         subsampled_volumes_test_normalized=np.array([normalize(subsampled_volume) for subsampled_volume in subsampled_volumes_test])
+         
+         
          # compute the model output
-         reconstructions_test = netG(inputs_test)
+
+         
+         reconstructions_test = netG(torch.tensor(subsampled_volumes_normalized,
+                                                             requires_grad=True).to(config_autoencoder.device,
+                                                                                   dtype=torch.float))
+                                                                                    
+         ground_truths_test=torch.squeeze(targets_test).cpu().detach().numpy()
+         ground_truth_normalized_test=torch.tensor(np.array([normalize(ground_truth) for ground_truth in ground_truths_test]),
+                                                            requires_grad=True).to(config_autoencoder.device,
+                                                                                  dtype=torch.float)
          # calculate loss
          
-         loss_test = criterion_for_testing(reconstructions_test, torch.unsqueeze(targets_test,1))
+         loss_test = criterion_for_testing(reconstructions_test, torch.unsqueeze(ground_truth_normalized_test,1))
          test_losses.append(loss_test.item())
          
          reconstructed_8bit=np.squeeze(((reconstructions_test.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
