@@ -391,7 +391,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
                 print('[%d/%d][%d/%d]\tLoss: %.4f' % (epoch, config_autoencoder.num_epochs, i, len(dataloader),loss.item()))
                 
             losses.append(loss.item())
-        break
+        
 
 
     # Update LR
