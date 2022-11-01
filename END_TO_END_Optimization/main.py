@@ -210,8 +210,11 @@ if (config_autoencoder.device.type == 'cuda') and (config_autoencoder.ngpu > 1):
 
 
 
-
+speed_criterion= nn.L1Loss()
 criterion = nn.L1Loss()
+
+
+
 criterion_for_testing=nn.L1Loss()
 print("Define all loss functions successfully.")
 optimizer,optimizer_speeds=define_optimizer(netG,speeds_generator)
@@ -358,18 +361,22 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
                                                             requires_grad=True).to(config_autoencoder.device,
                                                                                   dtype=torch.float)
                                                           
-        loss = criterion(reconstructions, torch.unsqueeze(ground_truth_normalized,1))
         
-        loss.backward()
         # update model weights
         
         if(train_speeds):
-            train_speeds=False
+            loss_speeds=speed_criterion(reconstructions,torch.unsqueeze(ground_truth_normalized,1))
+            loss_speeds.backward()
             optimizer_speeds.step()
+            
+            train_speeds=False
         else:
-            train_speeds=True
+            
+            loss = criterion(reconstructions, torch.unsqueeze(ground_truth_normalized,1))
+            loss.backward()
             optimizer.step()
             
+            train_speeds=True
             
             
         
