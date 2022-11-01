@@ -441,8 +441,8 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
     
     
     if is_best:
-        print(speeds*100000)
-        save_obj(speeds*100000,os.path.join(config_autoencoder.results_dir, 'BEST_SPEEDS' ))
+        print(speeds_avg*100000)
+        save_obj(speeds_avg*100000,os.path.join(config_autoencoder.results_dir, 'BEST_SPEEDS' ))
         best_psnr=current_psnr
         best_ssim=current_ssim
         torch.save({"epoch": epoch + 1,
