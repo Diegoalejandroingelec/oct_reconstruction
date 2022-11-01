@@ -156,8 +156,7 @@ train_batch = next(iter(dataloader))
 
 h5_dataset_test=HDF5Dataset(config_autoencoder.subsampled_volumes_path_test,
                             config_autoencoder.original_volumes_path_test,
-                            'original_test',
-                            normalize)
+                            'original_test')
 # Create the dataloader
 dataloader_test = torch.utils.data.DataLoader(h5_dataset_test,
                                               batch_size=1,
@@ -392,6 +391,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
                 print('[%d/%d][%d/%d]\tLoss: %.4f' % (epoch, config_autoencoder.num_epochs, i, len(dataloader),loss.item()))
                 
             losses.append(loss.item())
+        break
 
 
     # Update LR
@@ -423,7 +423,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
          # compute the model output
 
          
-         reconstructions_test = netG(torch.tensor(subsampled_volumes_normalized,
+         reconstructions_test = netG(torch.tensor(subsampled_volumes_test_normalized,
                                                              requires_grad=True).to(config_autoencoder.device,
                                                                                    dtype=torch.float))
                                                                                     
@@ -433,7 +433,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
                                                                                   dtype=torch.float)
          # calculate loss
          
-         loss_test = criterion_for_testing(reconstructions_test, torch.unsqueeze(ground_truth_normalized_test,1))
+         loss_test = criterion_for_testing(torch.squeeze(reconstructions_test), ground_truth_normalized_test)
          test_losses.append(loss_test.item())
          
          reconstructed_8bit=np.squeeze(((reconstructions_test.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
