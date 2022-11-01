@@ -392,6 +392,8 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
                 print('[%d/%d][%d/%d]\tLoss: %.4f' % (epoch, config_autoencoder.num_epochs, i, len(dataloader),loss.item()))
                 
             losses.append(loss.item())
+        break
+
 
     # Update LR
     scheduler.step()
@@ -408,10 +410,10 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
          speeds_pred=speeds_generator(targets_test).cpu().detach().numpy()
          
          
-         mask_test=create_3D_mask(w1=speeds_pred[0]*100000,
-                         w2=speeds_pred[1]*100000,
-                         w3=speeds_pred[2]*100000,
-                         w4=speeds_pred[3]*100000,
+         mask_test=create_3D_mask(w1=speeds_pred[0,0]*100000,
+                         w2=speeds_pred[0,1]*100000,
+                         w3=speeds_pred[0,2]*100000,
+                         w4=speeds_pred[0,3]*100000,
                          original_volume=None)
          
          
