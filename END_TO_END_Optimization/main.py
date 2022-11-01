@@ -370,6 +370,13 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
             optimizer_speeds.step()
             
             train_speeds=False
+            
+            # Output training stats
+            if i % 5 == 0:
+                print('[%d/%d][%d/%d]\tLoss_speeds: %.4f' % (epoch, config_autoencoder.num_epochs, i, len(dataloader),loss_speeds.item()))
+                
+            
+            
         else:
             
             loss = criterion(reconstructions, torch.unsqueeze(ground_truth_normalized,1))
@@ -380,11 +387,11 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
             
             
         
-        # Output training stats
-        if i % 5 == 0:
-            print('[%d/%d][%d/%d]\tLoss: %.4f' % (epoch, config_autoencoder.num_epochs, i, len(dataloader),loss.item()))
-            
-        losses.append(loss.item())
+            # Output training stats
+            if i % 5 == 0:
+                print('[%d/%d][%d/%d]\tLoss: %.4f' % (epoch, config_autoencoder.num_epochs, i, len(dataloader),loss.item()))
+                
+            losses.append(loss.item())
 
     # Update LR
     scheduler.step()
