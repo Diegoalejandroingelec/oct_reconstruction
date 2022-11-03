@@ -29,7 +29,11 @@ import config_autoencoder
 from torch.optim import lr_scheduler
 from risley_varying_all_parameters import create_risley_pattern 
 
-def create_3D_mask(w1,w2,w3,w4,original_volume=None):
+
+
+train_with_motion=True
+
+def create_3D_mask(w1,w2,w3,w4,original_volume=None,train_with_motion=False):
     
     expected_dims=config_autoencoder.sub_volumes_dim
     band_width=176
@@ -37,7 +41,7 @@ def create_3D_mask(w1,w2,w3,w4,original_volume=None):
     start_wavelength=962 
 
 
-
+    
     mask_risley=create_risley_pattern(w1,
                               w2,
                               w3,
@@ -60,11 +64,13 @@ def create_3D_mask(w1,w2,w3,w4,original_volume=None):
                               laser_time_between_sweeps=7.314285714285714e-05,
                               x_factor=50,
                               y_factor=50,
-                              generate_volume_with_motion=False,
-                              apply_motion=False,
+                              generate_volume_with_motion=True,
+                              apply_motion=True,
                               plot_mask=False)
-    
-    return mask_risley
+    if(train_with_motion):
+        return mask_risley[0],mask_risley[1]
+    else:
+        return mask_risley
 
 
 def compute_PSNR(original,reconstruction,bit_representation=8):
@@ -333,11 +339,36 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
         speeds=speeds_generator(targets).cpu().detach().numpy()
         speeds_avg=np.mean(speeds,0)
         
-        mask=create_3D_mask(w1=speeds_avg[0]*100000,
-                        w2=speeds_avg[1]*100000,
-                        w3=speeds_avg[2]*100000,
-                        w4=speeds_avg[3]*100000,
-                        original_volume=None)
+        
+        
+        
+        if(train_with_motion):
+            subsampled_volumes_normalized=[]
+            for cube in targets:
+                mask,subsampled_volume=create_3D_mask(w1=speeds_avg[0]*100000,
+                                w2=speeds_avg[1]*100000,
+                                w3=speeds_avg[2]*100000,
+                                w4=speeds_avg[3]*100000,
+                                original_volume=cube.cpu().detach().numpy(),
+                                train_with_motion=True)
+                subsampled_volumes_normalized.append(normalize(subsampled_volume))
+            subsampled_volumes_normalized=np.array(subsampled_volumes_normalized)
+                 
+        else:
+            mask=create_3D_mask(w1=speeds_avg[0]*100000,
+                            w2=speeds_avg[1]*100000,
+                            w3=speeds_avg[2]*100000,
+                            w4=speeds_avg[3]*100000,
+                            original_volume=None)
+            
+            subsampled_volumes=[np.multiply(mask,cube.cpu().detach().numpy()) for cube in targets]
+            subsampled_volumes_normalized=np.array([normalize(subsampled_volume) for subsampled_volume in subsampled_volumes])
+            
+        # mask=create_3D_mask(w1=speeds_avg[0]*100000,
+        #                 w2=speeds_avg[1]*100000,
+        #                 w3=speeds_avg[2]*100000,
+        #                 w4=speeds_avg[3]*100000,
+        #                 original_volume=None)
         
         #print(mask.shape)
         # clear the gradients
@@ -346,9 +377,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
         else:
             optimizer.zero_grad()
         
-        
-        subsampled_volumes=[np.multiply(mask,cube.cpu().detach().numpy()) for cube in targets]
-        subsampled_volumes_normalized=np.array([normalize(subsampled_volume) for subsampled_volume in subsampled_volumes])
+                
         reconstructions = netG(torch.tensor(subsampled_volumes_normalized,
                                                             requires_grad=True).to(config_autoencoder.device,
                                                                                   dtype=torch.float))
@@ -391,7 +420,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
                 print('[%d/%d][%d/%d]\tLoss: %.4f' % (epoch, config_autoencoder.num_epochs, i, len(dataloader),loss.item()))
                 
             losses.append(loss.item())
-        
+        break
 
 
     # Update LR
@@ -408,17 +437,25 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
          
          speeds_pred=speeds_generator(targets_test).cpu().detach().numpy()
          
+         if (train_with_motion):
+             mask_test,subsampled_volume_test=create_3D_mask(w1=speeds_pred[0,0]*100000,
+                             w2=speeds_pred[0,1]*100000,
+                             w3=speeds_pred[0,2]*100000,
+                             w4=speeds_pred[0,3]*100000,
+                             original_volume=np.squeeze(targets_test.cpu().detach().numpy()),
+                             train_with_motion=True)
+             subsampled_volumes_test_normalized=normalize(subsampled_volume_test)
+         else:
+             mask_test=create_3D_mask(w1=speeds_pred[0,0]*100000,
+                             w2=speeds_pred[0,1]*100000,
+                             w3=speeds_pred[0,2]*100000,
+                             w4=speeds_pred[0,3]*100000,
+                             original_volume=None)
          
-         mask_test=create_3D_mask(w1=speeds_pred[0,0]*100000,
-                         w2=speeds_pred[0,1]*100000,
-                         w3=speeds_pred[0,2]*100000,
-                         w4=speeds_pred[0,3]*100000,
-                         original_volume=None)
          
-         
-         subsampled_volumes_test=[np.multiply(mask_test,cube.cpu().detach().numpy()) for cube in targets_test]
-         subsampled_volumes_test_normalized=np.array([normalize(subsampled_volume) for subsampled_volume in subsampled_volumes_test])
-         
+             subsampled_volumes_test=[np.multiply(mask_test,cube.cpu().detach().numpy()) for cube in targets_test]
+             subsampled_volumes_test_normalized=np.array([normalize(subsampled_volume) for subsampled_volume in subsampled_volumes_test])
+             
          
          # compute the model output
 

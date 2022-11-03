@@ -39,11 +39,11 @@ resume_model_path=''
 ############RESUME MODEL SPEEDS##########
 resume_model_speeds_path=''
 ################TRAINING#################
-subsampled_volumes_path='../TEST_DATASET/training_subsampled_volumes.h5'
-original_volumes_path='../TEST_DATASET/training_ground_truth.h5'
+subsampled_volumes_path='../RASTER_SCAN_WITH_MOTION_DATASET/training_subsampled_volumes.h5'
+original_volumes_path='../RASTER_SCAN_WITH_MOTION_DATASET/training_ground_truth.h5'
 
 
 ################TESTING#################
-subsampled_volumes_path_test='../TEST_DATASET/testing_subsampled_volumes.h5'
-original_volumes_path_test='../TEST_DATASET/testing_ground_truth.h5'
+subsampled_volumes_path_test='../RASTER_SCAN_WITH_MOTION_DATASET/testing_subsampled_volumes.h5'
+original_volumes_path_test='../RASTER_SCAN_WITH_MOTION_DATASET/testing_ground_truth.h5'
 

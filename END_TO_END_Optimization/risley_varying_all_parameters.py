@@ -438,7 +438,7 @@ def create_risley_pattern(w,
             #                                          plot_mask,
             #                                          x_factor,y_factor)
             if(apply_motion):
-                rand_x,rand_y,rand_z,fs=pupil_movement('./EyeTrackingData/pupil-0.csv')
+                rand_x,rand_y,rand_z,fs=pupil_movement('../EyeTrackingData/pupil-0.csv')
                 hand_tremor_period=1/fs
                 num_rows, num_cols = expected_dims[1],expected_dims[2]
             
@@ -727,7 +727,7 @@ def create_risley_pattern(w,
 #     oct_volume = data['images']
 #     return oct_volume
 
-# original_volume=read_data(path)
+# original_volume=read_data(path)[:,0:64,0:16]
 # w=62555.4063372
 # w2=-20201.0559296
 # w3=-12271.6073769
@@ -739,7 +739,7 @@ def create_risley_pattern(w,
 
 
 
-# mask_risley=create_risley_pattern(w,
+# mask_risley,volume_with_motion=create_risley_pattern(w,
 #                           w2,
 #                           w3,
 #                           w4,
@@ -761,8 +761,8 @@ def create_risley_pattern(w,
 #                           laser_time_between_sweeps=7.314285714285714e-05,
 #                           x_factor=50,
 #                           y_factor=50,
-#                           generate_volume_with_motion=False,
-#                           apply_motion=False,
+#                           generate_volume_with_motion=True,
+#                           apply_motion=True,
 #                           plot_mask=False)
 # end = time.time()
 # print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
@@ -774,10 +774,10 @@ def create_risley_pattern(w,
 
 
 # import napari
-# viewer = napari.view_image(mask_risley*255)
+# viewer = napari.view_image(volume_with_motion)
+# viewer1 = napari.view_image(original_volume)
 
-
-
+# viewer2 = napari.view_image(np.multiply(original_volume,mask_risley))
 #volume_aligned=np.multiply(original_volume,mask_risley)
 
 
