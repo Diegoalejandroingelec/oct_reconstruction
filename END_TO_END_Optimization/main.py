@@ -31,7 +31,7 @@ from risley_varying_all_parameters import create_risley_pattern
 
 
 
-train_with_motion=True
+train_with_motion=False
 
 def create_3D_mask(w1,w2,w3,w4,original_volume=None,train_with_motion=False):
     
@@ -64,8 +64,8 @@ def create_3D_mask(w1,w2,w3,w4,original_volume=None,train_with_motion=False):
                               laser_time_between_sweeps=7.314285714285714e-05,
                               x_factor=50,
                               y_factor=50,
-                              generate_volume_with_motion=True,
-                              apply_motion=True,
+                              generate_volume_with_motion=train_with_motion,
+                              apply_motion=train_with_motion,
                               plot_mask=False)
     if(train_with_motion):
         return mask_risley[0],mask_risley[1]
@@ -165,7 +165,7 @@ h5_dataset_test=HDF5Dataset(config_autoencoder.subsampled_volumes_path_test,
                             'original_test')
 # Create the dataloader
 dataloader_test = torch.utils.data.DataLoader(h5_dataset_test,
-                                              batch_size=1,
+                                              batch_size=config_autoencoder.batch_size,
                                               shuffle=True,
                                               num_workers=config_autoencoder.workers)
 
@@ -400,7 +400,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
             train_speeds=False
             
             # Output training stats
-            if i % 5 == 0:
+            if i % 50 == 0:
                 print('[%d/%d][%d/%d]\tLoss_speeds: %.4f' % (epoch, config_autoencoder.num_epochs, i, len(dataloader),loss_speeds.item()))
                 
             
@@ -416,13 +416,11 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
             
         
             # Output training stats
-            if i % 5 == 0:
+            if i % 50 == 0:
                 print('[%d/%d][%d/%d]\tLoss: %.4f' % (epoch, config_autoencoder.num_epochs, i, len(dataloader),loss.item()))
                 
             losses.append(loss.item())
-        break
-
-
+            
     # Update LR
     scheduler.step()
     
@@ -432,24 +430,24 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
     print('Evaluation...')
     
     for j, data_test in enumerate(dataloader_test, 0):  
-         inputs_test = data_test[0].to(config_autoencoder.device, dtype=torch.float)
          targets_test = data_test[1].to(config_autoencoder.device, dtype=torch.float)
          
          speeds_pred=speeds_generator(targets_test).cpu().detach().numpy()
+         speeds_avg_test=np.mean(speeds_pred,0)
          
          if (train_with_motion):
-             mask_test,subsampled_volume_test=create_3D_mask(w1=speeds_pred[0,0]*100000,
-                             w2=speeds_pred[0,1]*100000,
-                             w3=speeds_pred[0,2]*100000,
-                             w4=speeds_pred[0,3]*100000,
+             mask_test,subsampled_volume_test=create_3D_mask(w1=speeds_avg_test[0]*100000,
+                             w2=speeds_avg_test[1]*100000,
+                             w3=speeds_avg_test[2]*100000,
+                             w4=speeds_avg_test[3]*100000,
                              original_volume=np.squeeze(targets_test.cpu().detach().numpy()),
                              train_with_motion=True)
              subsampled_volumes_test_normalized=normalize(subsampled_volume_test)
          else:
-             mask_test=create_3D_mask(w1=speeds_pred[0,0]*100000,
-                             w2=speeds_pred[0,1]*100000,
-                             w3=speeds_pred[0,2]*100000,
-                             w4=speeds_pred[0,3]*100000,
+             mask_test=create_3D_mask(w1=speeds_avg_test[0]*100000,
+                             w2=speeds_avg_test[1]*100000,
+                             w3=speeds_avg_test[2]*100000,
+                             w4=speeds_avg_test[3]*100000,
                              original_volume=None)
          
          
@@ -473,18 +471,22 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
          loss_test = criterion_for_testing(torch.squeeze(reconstructions_test), ground_truth_normalized_test)
          test_losses.append(loss_test.item())
          
-         reconstructed_8bit=np.squeeze(((reconstructions_test.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
-         original_8bit=np.squeeze(((targets_test.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
-         # Statistical loss value for terminal data output
-         psnr_value = compute_PSNR(reconstructed_8bit, original_8bit)
-         ssim_value = ssim(reconstructed_8bit, original_8bit)
-         psnr_list.append(psnr_value)
-         ssim_list.append(ssim_value)
+         for single_reconstrucion_sub_volume, single_target_sub_volume in zip(reconstructions_test,targets_test):
+             reconstructed_8bit=np.squeeze(((single_reconstrucion_sub_volume.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
+             original_8bit=np.squeeze(((single_target_sub_volume.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
+             # Statistical loss value for terminal data output
+             psnr_value = compute_PSNR(reconstructed_8bit, original_8bit)
+             ssim_value = ssim(reconstructed_8bit, original_8bit)
+             psnr_list.append(psnr_value)
+             ssim_list.append(ssim_value)
          
          
-         if j % 5000 == 0:
-             print(j)
-
+         if j % 100 == 0:
+             total_samples=len(dataloader_test)
+             print(f"{j}\{total_samples}  Loss_test={loss_test.item()}")
+         if j % 5000== 0 and j!=0:
+             break
+         
     current_loss=np.mean(test_losses)
     current_psnr=np.mean(psnr_list)
     current_ssim=np.mean(ssim_list)

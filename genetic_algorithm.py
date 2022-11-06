@@ -231,7 +231,7 @@ def compute_bluness(pattern):
     score=(part_1+part_2)#the higher the better. For minimize, add - symbol
     return score
 
-    DFT=np.fft.fftshift(np.fft.fft2(pattern))#/float(np.size(pattern));
+    # DFT=np.fft.fftshift(np.fft.fft2(pattern))#/float(np.size(pattern));
     # Height,Width=pattern.shape;
     # ShiftY,ShiftX=(int(Height/2),int(Width/2));
     # plt.rcParams["figure.figsize"] = (8,8)
@@ -242,30 +242,30 @@ def compute_bluness(pattern):
     #             vmin=0.0,
     #             vmax=np.percentile(20*np.log(np.abs(DFT)),99))
                 #extent=(-ShiftX-0.5,Width-ShiftX-0.5,-ShiftY+0.5,Height-ShiftY+0.5));
-    fontsize=60
-    fontsizet=80
-    fig, (ax2, ax1) = plt.subplots(2,1)
-    fig.tight_layout(pad=-2.5)
-    fig.set_size_inches(50, 40)
-    ax2.imshow(pattern*255,cmap='gray')
-    ax2.set_title('Risley Beam Steering Pattern Optimized',fontsize=fontsizet)
-    im = ax1.imshow(20*np.log(np.abs(DFT)),
-                cmap="viridis",
-                interpolation="nearest",
-                vmin=0.0,
-                vmax=np.percentile(20*np.log(np.abs(DFT)),99))
-    ax1.set_title('Magnitude Spectrum',fontsize=fontsizet)
-    ax2.axis('off')
-    ax1.axis('off')
-    cax = fig.add_axes([ax1.get_position().x1+0.01,
-                        ax1.get_position().y0,0.02,
-                        ax1.get_position().height])
-    cb = plt.colorbar(im,cax=cax,extend="max")
-    cb.ax.tick_params(labelsize=fontsize)
-    cb.ax.set_ylabel('Magnitude (dB)',fontsize=fontsize)
+    # fontsize=60
+    # fontsizet=80
+    # fig, (ax2, ax1) = plt.subplots(2,1)
+    # fig.tight_layout(pad=-2.5)
+    # fig.set_size_inches(50, 40)
+    # ax2.imshow(pattern*255,cmap='gray')
+    # ax2.set_title('Risley Beam Steering Pattern Optimized',fontsize=fontsizet)
+    # im = ax1.imshow(20*np.log(np.abs(DFT)),
+    #             cmap="viridis",
+    #             interpolation="nearest",
+    #             vmin=0.0,
+    #             vmax=np.percentile(20*np.log(np.abs(DFT)),99))
+    # ax1.set_title('Magnitude Spectrum',fontsize=fontsizet)
+    # ax2.axis('off')
+    # ax1.axis('off')
+    # cax = fig.add_axes([ax1.get_position().x1+0.01,
+    #                     ax1.get_position().y0,0.02,
+    #                     ax1.get_position().height])
+    # cb = plt.colorbar(im,cax=cax,extend="max")
+    # cb.ax.tick_params(labelsize=fontsize)
+    # cb.ax.set_ylabel('Magnitude (dB)',fontsize=fontsize)
     
-    plt.show()
-    print('yupi')
+    # plt.show()
+    # print('yupi')
 def plot_fn(x,y,title,fontsize,xlabel,ylabel,img_size=(20,20),draw_FOV=False):
     plt.rcParams["figure.figsize"] = img_size
     plt.plot(x,y,'.')

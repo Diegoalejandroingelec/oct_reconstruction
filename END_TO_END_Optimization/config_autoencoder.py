@@ -33,7 +33,7 @@ device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else 
 lr_scheduler_step_size = num_epochs // 2
 lr_scheduler_gamma = 0.1
 
-results_dir='END_TO_END_OPTIMIZATION'
+results_dir='END_TO_END_OPTIMIZATION_TEST_2'
 resume_model_path=''
 
 ############RESUME MODEL SPEEDS##########
