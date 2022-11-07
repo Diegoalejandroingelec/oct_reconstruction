@@ -400,7 +400,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
             train_speeds=False
             
             # Output training stats
-            if i % 50 == 0:
+            if i % 5 == 0:
                 psnr_value_train_=[]
                 ssim_value_train_=[]
                 for r,o in zip(reconstructions,ground_truth_normalized):
@@ -432,7 +432,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
             
         
             # Output training stats
-            if i % 50 == 0:
+            if i % 5 == 0:
                 psnr_value_train_=[]
                 ssim_value_train_=[]
                 for r,o in zip(reconstructions,ground_truth_normalized):
