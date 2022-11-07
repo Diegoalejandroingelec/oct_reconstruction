@@ -20,7 +20,7 @@ import sys
 sys.path.insert(0, '/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/EyeTrackingData')
 
 #from data_evaluation import add_motion_to_volume
-from data_evaluation import add_motion_to_volume
+#from data_evaluation import add_motion_to_volume
 
 
 
@@ -433,7 +433,7 @@ def generate_dataset(denoised_dataset_folder_path,
         try: 
             volume = read_data(volume_path)
         
-            subsampled_image = np.multiply(mask,add_motion_to_volume(volume)).astype(np.uint8)
+            subsampled_image = np.multiply(mask,volume).astype(np.uint8)
 
             
             name='original_train_vol_'+str(volume_number)
@@ -477,7 +477,7 @@ def generate_dataset(denoised_dataset_folder_path,
         
                 volume = read_data(volume_path)
                 
-                subsampled_image = np.multiply(mask,add_motion_to_volume(volume)).astype(np.uint8)
+                subsampled_image = np.multiply(mask,volume).astype(np.uint8)
                 
                 
                 name='original_test_vol_'+str(volume_number)
