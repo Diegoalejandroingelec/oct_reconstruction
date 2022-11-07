@@ -23,7 +23,7 @@ batch_size = 2
 # Number of GPUs available. Use 0 for CPU mode.
 ngpu = 1
 
-sub_volumes_dim=(512,64,16)
+sub_volumes_dim=(512,200,16)
 original_dims=(512,1000,100)
 
 # Decide which device we want to run on
@@ -34,16 +34,16 @@ lr_scheduler_step_size = num_epochs // 2
 lr_scheduler_gamma = 0.1
 
 results_dir='END_TO_END_OPTIMIZATION_TEST_2'
-resume_model_path='./END_TO_END_OPTIMIZATION_TEST_2/autoencoder_model_epoch_1.pth.tar'
+resume_model_path=''
 
 ############RESUME MODEL SPEEDS##########
-resume_model_speeds_path='./END_TO_END_OPTIMIZATION_TEST_2/speeds_model_epoch_1.pth.tar'
+resume_model_speeds_path=''
 ################TRAINING#################
-subsampled_volumes_path='../RASTER_SCAN_WITH_MOTION_DATASET/training_subsampled_volumes.h5'
-original_volumes_path='../RASTER_SCAN_WITH_MOTION_DATASET/training_ground_truth.h5'
+subsampled_volumes_path='../TEST_DATASET/training_subsampled_volumes.h5'
+original_volumes_path='../TEST_DATASET/training_ground_truth.h5'
 
 
 ################TESTING#################
-subsampled_volumes_path_test='../RASTER_SCAN_WITH_MOTION_DATASET/testing_subsampled_volumes.h5'
-original_volumes_path_test='../RASTER_SCAN_WITH_MOTION_DATASET/testing_ground_truth.h5'
+subsampled_volumes_path_test='../TEST_DATASET/testing_subsampled_volumes.h5'
+original_volumes_path_test='../TEST_DATASET/testing_ground_truth.h5'
 

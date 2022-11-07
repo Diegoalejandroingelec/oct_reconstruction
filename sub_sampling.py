@@ -291,7 +291,7 @@ def load_obj(name):
 ########################################################################################
 
 def extract_sub_volumes(volume,name,h5_file):
-    w_div_factor = 64
+    w_div_factor = 200
     h_div_factor = 512
     d_div_factor = 16
     
@@ -318,7 +318,7 @@ def extract_sub_volumes(volume,name,h5_file):
                 # print('width: ',(w_end,w_end+w_div_factor))
                 # print('depth: ',(d_end,d_end+d_div_factor))
                 sub_volume=volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]
-                if(sub_volume.shape!=(512,64,16)):
+                if(sub_volume.shape!=(512,200,16)):
                     raise Exception("ERROR GENERATING SUB VOLUMES")
                     
                     
@@ -505,7 +505,7 @@ def generate_dataset(denoised_dataset_folder_path,
     subsampled_volumes_dataset_test.close()  
     volumes_dataset_test.close()
 
-dataset_folder='RASTER_SCAN_WITH_MOTION_DATASET'
+dataset_folder='TEST_DATASET'
 denoised_dataset_folder_path='./DATASET_DENOISED'
 generate_ground_truth_denoised=False
 # training_txt_path='./TEST_DATASET_FIXED_MASK/train_volumes_paths.txt'
