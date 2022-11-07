@@ -401,7 +401,23 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
             
             # Output training stats
             if i % 50 == 0:
-                print('[%d/%d][%d/%d]\tLoss_speeds: %.4f' % (epoch, config_autoencoder.num_epochs, i, len(dataloader),loss_speeds.item()))
+                psnr_value_train_=[]
+                ssim_value_train_=[]
+                for r,o in zip(reconstructions,ground_truth_normalized):
+                    reconstructed_8bit=np.squeeze(((r.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
+                    original_8bit=np.squeeze(((o.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
+                    # Statistical loss value for terminal data output
+                    psnr_value_train_.append(compute_PSNR(reconstructed_8bit, original_8bit))
+                    ssim_value_train_.append(ssim(reconstructed_8bit, original_8bit))
+                    
+                    
+                print('[%d/%d][%d/%d]\tLoss_speeds: %.4f  PSNR: %.4f SSIM:%.4f' % (epoch,
+                                                                                   config_autoencoder.num_epochs,
+                                                                                   i,
+                                                                                   len(dataloader),
+                                                                                   loss_speeds.item(),
+                                                                                   np.array(psnr_value_train_).mean(),
+                                                                                   np.array(ssim_value_train_).mean()))
                 
             
             
@@ -417,7 +433,24 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
         
             # Output training stats
             if i % 50 == 0:
-                print('[%d/%d][%d/%d]\tLoss: %.4f' % (epoch, config_autoencoder.num_epochs, i, len(dataloader),loss.item()))
+                psnr_value_train_=[]
+                ssim_value_train_=[]
+                for r,o in zip(reconstructions,ground_truth_normalized):
+                    reconstructed_8bit=np.squeeze(((r.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
+                    original_8bit=np.squeeze(((o.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
+                    # Statistical loss value for terminal data output
+                    psnr_value_train_.append(compute_PSNR(reconstructed_8bit, original_8bit))
+                    ssim_value_train_.append(ssim(reconstructed_8bit, original_8bit))
+                    
+                    
+                print('[%d/%d][%d/%d]\tLoss_autoencoder: %.4f  PSNR: %.4f SSIM:%.4f' % (epoch,
+                                                                                   config_autoencoder.num_epochs,
+                                                                                   i,
+                                                                                   len(dataloader),
+                                                                                   loss_speeds.item(),
+                                                                                   np.array(psnr_value_train_).mean(),
+                                                                                   np.array(ssim_value_train_).mean()))
+
                 
             losses.append(loss.item())
             
