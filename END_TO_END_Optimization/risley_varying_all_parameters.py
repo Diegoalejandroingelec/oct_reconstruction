@@ -53,7 +53,7 @@ def plot_fn(x,y,title,fontsize,xlabel,ylabel,img_size=(20,20),draw_FOV=False):
     plt.rcParams["figure.figsize"] = img_size
     plt.plot(x,y,'.')
     if(draw_FOV):
-        plt.plot([0,0,64,64,0],[16,0,0,16,16],'r')#plt.plot([0,0,1000,1000,0],[100,0,0,100,100],'r')
+        plt.plot([0,0,200,200,0],[16,0,0,16,16],'r')#plt.plot([0,0,1000,1000,0],[100,0,0,100,100],'r')
     plt.title(title,fontsize=fontsize)
     plt.grid()
     plt.xticks(fontsize=fontsize)
@@ -192,20 +192,17 @@ def generate_2D_pattern(t1,
     A8=A8+A7
     
     
-
-    
     x_max=np.max(A8[1,:])
     y_max=np.max(A8[0,:])
     x_factor=np.abs((expected_dims[1]/2)/x_max)
     y_factor=np.abs((expected_dims[2]/2)/y_max)
     
-    x=(A8[1,:]*(x_factor+0.17))#5.5
-    y=(A8[0,:]*(y_factor+0.079))#0.35
+    x=(A8[1,:]*(x_factor+0.3))#5.5
+    y=(A8[0,:]*(y_factor+0.15))#0.35
     
-    x = x+32
+    x = x+100
     y = y+8
 
-    
     risley_pattern_2D=np.zeros((expected_dims[1],expected_dims[2]))
     
     aa=ndarray.round(x)
@@ -231,6 +228,7 @@ def generate_2D_pattern(t1,
     # cv2.destroyAllWindows()
     transmittance=(risley_pattern_2D.sum()*100)/(expected_dims[1]*expected_dims[2])
     #print('TRANSMTTANCE C-SCAN',transmittance)
+    
 
     if(False):
         # plot_fn(x=A4[1,:],y=A4[0,:],title='PATTERN USING 2 PRISMS',fontsize=25,xlabel='Distance(mm)',ylabel='Distance(mm)')
@@ -668,7 +666,7 @@ def create_risley_pattern(w,
     #     transmittance_list.append((mask_risley[:,:,m].sum()*100)/(expected_dims[0]*expected_dims[1]))
     # print('MEAN TRANSMTTANCE B-SCAN',np.mean(transmittance_list))
     total_transmittance=((mask_risley.sum()*100)/(expected_dims[0]*expected_dims[1]*expected_dims[2]))
-    #print('-----------TOTAL TRANSMITTANCE------------------',total_transmittance)
+    print('-----------TOTAL TRANSMITTANCE------------------',total_transmittance)
     
     if(apply_motion):
         return mask_risley.astype(np.uint8),volume_sampled_with_motion
@@ -732,14 +730,14 @@ def create_risley_pattern(w,
 # w2=-20201.0559296
 # w3=-12271.6073769
 # w4=12274.0445477  
-# expected_dims=(512,64,16)   
+# expected_dims=(512,200,16)   
 # band_width=176
 # line_width=band_width/expected_dims[0]
 # start_wavelength=962 
 
 
 
-# mask_risley,volume_with_motion=create_risley_pattern(w,
+# mask_risley=create_risley_pattern(w,
 #                           w2,
 #                           w3,
 #                           w4,
@@ -748,7 +746,7 @@ def create_risley_pattern(w,
 #                           start_wavelength,
 #                           original_volume,
 #                           tf=8.192,
-#                           PRF=650000,
+#                           PRF=2500000,
 #                           a=10*(np.pi/180),
 #                           number_of_prisms=4,
 #                           maximum_transmittance=0.43,
@@ -761,8 +759,8 @@ def create_risley_pattern(w,
 #                           laser_time_between_sweeps=7.314285714285714e-05,
 #                           x_factor=50,
 #                           y_factor=50,
-#                           generate_volume_with_motion=True,
-#                           apply_motion=True,
+#                           generate_volume_with_motion=False,
+#                           apply_motion=False,
 #                           plot_mask=False)
 # end = time.time()
 # print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
@@ -774,7 +772,7 @@ def create_risley_pattern(w,
 
 
 # import napari
-# viewer = napari.view_image(volume_with_motion)
+# viewer = napari.view_image(mask_risley*255)
 # viewer1 = napari.view_image(original_volume)
 
 # viewer2 = napari.view_image(np.multiply(original_volume,mask_risley))
