@@ -21,7 +21,7 @@ workers = 2
 batch_size = 2
 
 # Number of GPUs available. Use 0 for CPU mode.
-ngpu = 1
+ngpu = 2
 
 sub_volumes_dim=(512,200,16)
 original_dims=(512,1000,100)
