@@ -291,7 +291,7 @@ def load_obj(name):
 ########################################################################################
 
 def extract_sub_volumes(volume,name,h5_file):
-    w_div_factor = 200
+    w_div_factor = 300
     h_div_factor = 512
     d_div_factor = 16
     
@@ -318,7 +318,7 @@ def extract_sub_volumes(volume,name,h5_file):
                 # print('width: ',(w_end,w_end+w_div_factor))
                 # print('depth: ',(d_end,d_end+d_div_factor))
                 sub_volume=volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]
-                if(sub_volume.shape!=(512,200,16)):
+                if(sub_volume.shape!=(h_div_factor,w_div_factor,d_div_factor)):
                     raise Exception("ERROR GENERATING SUB VOLUMES")
                     
                     
