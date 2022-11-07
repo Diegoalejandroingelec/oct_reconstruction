@@ -666,12 +666,12 @@ def create_risley_pattern(w,
     #     transmittance_list.append((mask_risley[:,:,m].sum()*100)/(expected_dims[0]*expected_dims[1]))
     # print('MEAN TRANSMTTANCE B-SCAN',np.mean(transmittance_list))
     total_transmittance=((mask_risley.sum()*100)/(expected_dims[0]*expected_dims[1]*expected_dims[2]))
-    print('-----------TOTAL TRANSMITTANCE------------------',total_transmittance)
+    #print('-----------TOTAL TRANSMITTANCE------------------',total_transmittance)
     
     if(apply_motion):
         return mask_risley.astype(np.uint8),volume_sampled_with_motion
     else:
-        return mask_risley.astype(np.uint8)
+        return mask_risley.astype(np.uint8),total_transmittance
 
 ##################################################################################################################
 

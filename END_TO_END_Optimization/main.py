@@ -70,7 +70,7 @@ def create_3D_mask(w1,w2,w3,w4,original_volume=None,train_with_motion=False):
     if(train_with_motion):
         return mask_risley[0],mask_risley[1]
     else:
-        return mask_risley
+        return mask_risley[0],mask_risley[1]
 
 
 def compute_PSNR(original,reconstruction,bit_representation=8):
@@ -355,7 +355,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
             subsampled_volumes_normalized=np.array(subsampled_volumes_normalized)
                  
         else:
-            mask=create_3D_mask(w1=speeds_avg[0]*100000,
+            mask,total_transmittance=create_3D_mask(w1=speeds_avg[0]*100000,
                             w2=speeds_avg[1]*100000,
                             w3=speeds_avg[2]*100000,
                             w4=speeds_avg[3]*100000,
@@ -411,13 +411,14 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
                     ssim_value_train_.append(ssim(reconstructed_8bit, original_8bit))
                     
                     
-                print('[%d/%d][%d/%d]\tLoss_speeds: %.4f  PSNR: %.4f SSIM:%.4f' % (epoch,
+                print('[%d/%d][%d/%d]\tLoss_speeds: %.4f  PSNR: %.4f SSIM:%.4f Transmittance: %.4f' % (epoch,
                                                                                    config_autoencoder.num_epochs,
                                                                                    i,
                                                                                    len(dataloader),
                                                                                    loss_speeds.item(),
                                                                                    np.array(psnr_value_train_).mean(),
-                                                                                   np.array(ssim_value_train_).mean()))
+                                                                                   np.array(ssim_value_train_).mean(),
+                                                                                   total_transmittance))
                 
             
             
@@ -443,13 +444,14 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
                     ssim_value_train_.append(ssim(reconstructed_8bit, original_8bit))
                     
                     
-                print('[%d/%d][%d/%d]\tLoss_autoencoder: %.4f  PSNR: %.4f SSIM:%.4f' % (epoch,
+                print('[%d/%d][%d/%d]\tLoss_autoencoder: %.4f  PSNR: %.4f SSIM:%.4f Transmittance: %.4f' % (epoch,
                                                                                    config_autoencoder.num_epochs,
                                                                                    i,
                                                                                    len(dataloader),
                                                                                    loss_speeds.item(),
                                                                                    np.array(psnr_value_train_).mean(),
-                                                                                   np.array(ssim_value_train_).mean()))
+                                                                                   np.array(ssim_value_train_).mean(),
+                                                                                   total_transmittance))
 
                 
             losses.append(loss.item())
@@ -476,7 +478,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
                              train_with_motion=True)
              subsampled_volumes_test_normalized=normalize(subsampled_volume_test)
          else:
-             mask_test=create_3D_mask(w1=speeds_avg_test[0]*100000,
+             mask_test,total_transmittance=create_3D_mask(w1=speeds_avg_test[0]*100000,
                              w2=speeds_avg_test[1]*100000,
                              w3=speeds_avg_test[2]*100000,
                              w4=speeds_avg_test[3]*100000,
@@ -513,7 +515,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
          
          if j % 100 == 0:
              total_samples=len(dataloader_test)
-             print(f"{j}\{total_samples}  Loss_test={loss_test.item()} PSNR_test={np.mean(psnr_list)} SSIM_test={np.mean(ssim_list)}")
+             print(f"{j}\{total_samples}  Loss_test={loss_test.item()} PSNR_test={np.mean(psnr_list)} SSIM_test={np.mean(ssim_list)} Transmittance={total_transmittance}")
 
          
     current_loss=np.mean(test_losses)
