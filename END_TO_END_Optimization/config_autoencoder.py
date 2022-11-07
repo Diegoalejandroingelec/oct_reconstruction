@@ -18,10 +18,10 @@ model_betas = (0.9, 0.999)
 workers = 2
 
 # Batch size during training
-batch_size = 16
+batch_size = 2
 
 # Number of GPUs available. Use 0 for CPU mode.
-ngpu = 2
+ngpu = 1
 
 sub_volumes_dim=(512,64,16)
 original_dims=(512,1000,100)
@@ -34,10 +34,10 @@ lr_scheduler_step_size = num_epochs // 2
 lr_scheduler_gamma = 0.1
 
 results_dir='END_TO_END_OPTIMIZATION_TEST_2'
-resume_model_path=''
+resume_model_path='./END_TO_END_OPTIMIZATION_TEST_2/autoencoder_model_epoch_1.pth.tar'
 
 ############RESUME MODEL SPEEDS##########
-resume_model_speeds_path=''
+resume_model_speeds_path='./END_TO_END_OPTIMIZATION_TEST_2/speeds_model_epoch_1.pth.tar'
 ################TRAINING#################
 subsampled_volumes_path='../RASTER_SCAN_WITH_MOTION_DATASET/training_subsampled_volumes.h5'
 original_volumes_path='../RASTER_SCAN_WITH_MOTION_DATASET/training_ground_truth.h5'

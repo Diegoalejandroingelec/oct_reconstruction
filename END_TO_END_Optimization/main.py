@@ -238,8 +238,8 @@ if(config_autoencoder.resume_model_path):
     best_ssim = checkpoint["best_ssim"]
     # Load checkpoint state dict. Extract the fitted model weights
     model_state_dict = netG.state_dict()
-    new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
-                      k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
+    new_state_dict = {k.replace('module.', ''): v for k, v in checkpoint["state_dict"].items() if
+                      k.replace('module.', '') in model_state_dict.keys() and v.size() == model_state_dict[k.replace('module.', '')].size()}
     # Overwrite the pretrained model weights to the current model
     model_state_dict.update(new_state_dict)
     netG.load_state_dict(model_state_dict)
@@ -268,8 +268,8 @@ if(config_autoencoder.resume_model_speeds_path):
    
     # Load checkpoint state dict. Extract the fitted model weights
     model_state_dict = speeds_generator.state_dict()
-    new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
-                      k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
+    new_state_dict = {k.replace('module.', ''): v for k, v in checkpoint["state_dict"].items() if
+                      k.replace('module.', '') in model_state_dict.keys() and v.size() == model_state_dict[k.replace('module.', '')].size()}
     # Overwrite the pretrained model weights to the current model
     model_state_dict.update(new_state_dict)
     speeds_generator.load_state_dict(model_state_dict)
