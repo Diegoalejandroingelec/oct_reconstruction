@@ -453,7 +453,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
 
                 
             losses.append(loss.item())
-            
+        break       
     # Update LR
     scheduler.step()
     
@@ -491,22 +491,20 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
          # compute the model output
 
          
-         reconstructions_test = netG(torch.tensor(subsampled_volumes_test_normalized,
-                                                             requires_grad=True).to(config_autoencoder.device,
+         reconstructions_test = netG(torch.tensor(subsampled_volumes_test_normalized).to(config_autoencoder.device,
                                                                                    dtype=torch.float))
                                                                                     
          ground_truths_test=torch.squeeze(targets_test).cpu().detach().numpy()
-         ground_truth_normalized_test=torch.tensor(np.array([normalize(ground_truth) for ground_truth in ground_truths_test]),
-                                                            requires_grad=True).to(config_autoencoder.device,
+         ground_truth_normalized_test=torch.tensor(np.array([normalize(ground_truth) for ground_truth in ground_truths_test])).to(config_autoencoder.device,
                                                                                   dtype=torch.float)
          # calculate loss
          
          loss_test = criterion_for_testing(torch.squeeze(reconstructions_test), ground_truth_normalized_test)
          test_losses.append(loss_test.item())
          
-         for single_reconstrucion_sub_volume, single_target_sub_volume in zip(reconstructions_test,targets_test):
-             reconstructed_8bit=np.squeeze(((single_reconstrucion_sub_volume.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
-             original_8bit=np.squeeze(((single_target_sub_volume.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
+         for r_t, o_t in zip(reconstructions_test,ground_truth_normalized_test):
+             reconstructed_8bit=np.squeeze(((r_t.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
+             original_8bit=np.squeeze(((o_t.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
              # Statistical loss value for terminal data output
              psnr_value = compute_PSNR(reconstructed_8bit, original_8bit)
              ssim_value = ssim(reconstructed_8bit, original_8bit)
@@ -516,9 +514,8 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
          
          if j % 100 == 0:
              total_samples=len(dataloader_test)
-             print(f"{j}\{total_samples}  Loss_test={loss_test.item()}")
-         if j % 5000== 0 and j!=0:
-             break
+             print(f"{j}\{total_samples}  Loss_test={loss_test.item()} PSNR_test={np.mean(psnr_list)} SSIM_test={np.mean(ssim_list)}")
+
          
     current_loss=np.mean(test_losses)
     current_psnr=np.mean(psnr_list)
