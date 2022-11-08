@@ -507,7 +507,7 @@ def generate_dataset(denoised_dataset_folder_path,
 
 dataset_folder='TEST_DATASET'
 denoised_dataset_folder_path='./DATASET_DENOISED'
-generate_ground_truth_denoised=False
+generate_ground_truth_denoised=True
 # training_txt_path='./TEST_DATASET_FIXED_MASK/train_volumes_paths.txt'
 # testing_txt_path='./TEST_DATASET_FIXED_MASK/test_volumes_paths.txt'
 # mask_path='./TEST_DATASET_FIXED_MASK/mask75.pkl'
