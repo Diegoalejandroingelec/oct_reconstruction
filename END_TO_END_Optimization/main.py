@@ -6,13 +6,6 @@ Created on Wed Oct 26 17:53:01 2022
 @author: diego
 """
 
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Jul 16 12:53:40 2022
-
-@author: diego
-"""
 import os
 import h5py
 import numpy as np
@@ -90,49 +83,27 @@ def save_obj(obj,path ):
 
 class HDF5Dataset(data.Dataset):
 
-    def __init__(self, file_path, ground_truth_path,prefix_for_test, transform=None):
+    def __init__(self, ground_truth_path):
         super().__init__()
-        self.file_path = file_path
         self.ground_truth_path = ground_truth_path
-        self.transform = transform
-        self.prefix_for_test=prefix_for_test
         
     def __getitem__(self, index):
         # get data
-        x,name = self.get_data(index)
-        if self.transform:
-            x = self.transform(x)
-
-        x = torch.from_numpy(x)
-
-        # get label
-        y = self.get_ground_truth(name)
-        
-        if self.transform:
-            y = self.transform(y)
-        
-        y = torch.from_numpy(y)
-        return (x, y)
+        return self.get_data(index)
     
-    def get_ground_truth(self,reference_name):
-        f_gt = h5py.File(self.ground_truth_path, 'r')
-        name = self.prefix_for_test+'_'+ '_'.join(reference_name.split('_')[-3:])
-        value=np.array(f_gt.get(name))
-        f_gt.close()
-        return value
     
     def __len__(self):
         return self.get_info()
     
     def get_data(self,index):
-        f = h5py.File(self.file_path, 'r')
+        f = h5py.File(self.ground_truth_path, 'r')
         name=list(f.keys())[index]
         value=np.array(f.get(name))
         f.close()
-        return value,name
+        return torch.from_numpy(value)
     
     def get_info(self):
-        f = h5py.File(self.file_path, 'r')
+        f = h5py.File(self.ground_truth_path, 'r')
         info=len(list(f.keys()))
         f.close()
         return info
@@ -144,25 +115,21 @@ def normalize(volume):
     return (volume.astype(np.float32)-(np.max(volume.astype(np.float32))/2))/(np.max(volume.astype(np.float32))/2)
 
 
-h5_dataset=HDF5Dataset(config_autoencoder.subsampled_volumes_path,
-                       config_autoencoder.original_volumes_path,
-                       'original_train')
+h5_dataset=HDF5Dataset(config_autoencoder.original_volumes_path)
 # Create the dataloader
 dataloader = torch.utils.data.DataLoader(h5_dataset,
                                          batch_size=config_autoencoder.batch_size,
                                          shuffle=True,
                                          num_workers=config_autoencoder.workers)
 
-train_batch = next(iter(dataloader))
+#train_batch = next(iter(dataloader))
 
 # plt.imshow(np.squeeze(np.array(train_batch[1][4,:,:,0].cpu())), cmap="gray")
 # plt.show()
 # plt.imshow(np.squeeze(np.array(train_batch[0][4,:,:,0].cpu())), cmap="gray")
 # plt.show()
 
-h5_dataset_test=HDF5Dataset(config_autoencoder.subsampled_volumes_path_test,
-                            config_autoencoder.original_volumes_path_test,
-                            'original_test')
+h5_dataset_test=HDF5Dataset(config_autoencoder.original_volumes_path_test)
 # Create the dataloader
 dataloader_test = torch.utils.data.DataLoader(h5_dataset_test,
                                               batch_size=config_autoencoder.batch_size,
@@ -305,7 +272,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
     for i, data_train in enumerate(dataloader, 0):  
         
         #inputs = data_train[0].to(config_autoencoder.device, dtype=torch.float)
-        targets = data_train[1].to(config_autoencoder.device, dtype=torch.float)
+        targets = data_train.to(config_autoencoder.device, dtype=torch.float)
         
         
         if(train_speeds):
@@ -464,7 +431,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
     print('Evaluation...')
     
     for j, data_test in enumerate(dataloader_test, 0):  
-         targets_test = data_test[1].to(config_autoencoder.device, dtype=torch.float)
+         targets_test = data_test.to(config_autoencoder.device, dtype=torch.float)
          
          speeds_pred=speeds_generator(targets_test).cpu().detach().numpy()
          speeds_avg_test=np.mean(speeds_pred,0)
