@@ -202,6 +202,15 @@ def generate_2D_pattern(t1,
     
     x = x+100
     y = y+8
+    
+    # plot_fn(x,
+    #         y,
+    #         title='Pattern',
+    #         fontsize=80,
+    #         xlabel='Pixels',
+    #         ylabel='Pixels',
+    #         img_size=(80,25),
+    #         draw_FOV=True)
 
     risley_pattern_2D=np.zeros((expected_dims[1],expected_dims[2]))
     
@@ -737,7 +746,7 @@ def create_risley_pattern(w,
 
 
 
-# mask_risley=create_risley_pattern(w,
+# mask_risley,tr=create_risley_pattern(w,
 #                           w2,
 #                           w3,
 #                           w4,
@@ -746,7 +755,7 @@ def create_risley_pattern(w,
 #                           start_wavelength,
 #                           original_volume,
 #                           tf=8.192,
-#                           PRF=2500000,
+#                           PRF=3000000,
 #                           a=10*(np.pi/180),
 #                           number_of_prisms=4,
 #                           maximum_transmittance=0.43,
@@ -763,6 +772,7 @@ def create_risley_pattern(w,
 #                           apply_motion=False,
 #                           plot_mask=False)
 # end = time.time()
+# print(f"Transmittance {tr}")
 # print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
 # plt.rcParams["figure.figsize"] = (100,80)
 # plt.imshow(mask_risley[:,:,8],cmap='gray')

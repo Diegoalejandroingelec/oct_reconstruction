@@ -51,7 +51,7 @@ def create_3D_mask(w1,w2,w3,w4,original_volume=None,train_with_motion=False):
                               start_wavelength,
                               original_volume,
                               tf=8.192,
-                              PRF=2500000,
+                              PRF=3000000,
                               a=10*(np.pi/180),
                               number_of_prisms=4,
                               maximum_transmittance=0.43,

@@ -58,7 +58,7 @@ def create_3D_mask(w1,w2,w3,w4,original_volume=None,create_with_motion=False):
                               start_wavelength,
                               original_volume,
                               tf=8.192,
-                              PRF=650000,
+                              PRF=2500000,
                               a=10*(np.pi/180),
                               number_of_prisms=4,
                               maximum_transmittance=0.43,
@@ -218,7 +218,7 @@ def reconstruct_volume_batches(volume,reconstruction_model,speeds_generator,sub_
                                         w3=speeds_pred[0,2]*100000,
                                         w4=speeds_pred[0,3]*100000,
                                         original_volume=None)
-                    
+                    ####################3 mask is a tuple because of the transmittance
                         sub_sampled_volume=np.multiply(mask,batch_for_inference).astype(np.uint8)
                     
                     #create_mask_spectrum(mask)
@@ -310,8 +310,8 @@ def reconstruct_volume_batches(volume,reconstruction_model,speeds_generator,sub_
                 reconstructed_volume[h_start:h_finish,w_start:w_finish,d_start:d_finish]=vol[:,:,:]
                 big_mask[h_start:h_finish,w_start:w_finish,d_start:d_finish]=mask[:,:,:]
             else:
-                reconstructed_volume[h_start:h_finish,w_start:w_finish,d_start:d_finish]=vol[:,15:,:]
-                big_mask[h_start:h_finish,w_start:w_finish,d_start:d_finish]=mask[:,15:,:]
+                reconstructed_volume[h_start:h_finish,w_start:w_finish,d_start:d_finish]=vol[:,30:,:]
+                big_mask[h_start:h_finish,w_start:w_finish,d_start:d_finish]=mask[:,30:,:]
                 
                 
     return reconstructed_volume, big_mask, np.multiply(big_mask,reconstructed_volume)
