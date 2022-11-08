@@ -291,13 +291,13 @@ def load_obj(name):
 ########################################################################################
 
 def extract_sub_volumes(volume,name,h5_file):
-    w_div_factor = 300
+    w_div_factor = 200
     h_div_factor = 512
     d_div_factor = 16
     
-    overlap_pixels_w=w_div_factor//2
+    overlap_pixels_w=w_div_factor-50
     overlap_pixels_h=0
-    overlap_pixels_d=d_div_factor//2
+    overlap_pixels_d=d_div_factor-4
     
     index=0
     d_end=0
@@ -427,7 +427,7 @@ def generate_dataset(denoised_dataset_folder_path,
     subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_subsampled_volumes.h5', 'w')
     volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_ground_truth.h5', 'w')
         
-    for volume_path in train_volumes_paths:
+    for volume_path in train_volumes_paths[0:4]:
         volume_path=volume_path.strip('\n')
         print(volume_path)
         try: 
@@ -469,7 +469,7 @@ def generate_dataset(denoised_dataset_folder_path,
     volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_random25_ground_truth.h5', 'w')
         
         
-    for volume_path in test_volumes_paths:
+    for volume_path in test_volumes_paths[0:4]:
             
             try:
                 volume_path=volume_path.strip('\n')
