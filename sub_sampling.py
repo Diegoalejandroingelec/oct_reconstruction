@@ -302,7 +302,7 @@ def extract_sub_volumes(volume,name,h5_file):
     index=0
     d_end=0
     can_iterate_over_d=True
-    
+    cc=0
     while can_iterate_over_d:
     #for d in range(int(np.ceil(volume.shape[2]/d_div_factor))):
         w_end=0
@@ -317,6 +317,7 @@ def extract_sub_volumes(volume,name,h5_file):
                 # print('heigh: ',(h_end,h_end+h_div_factor))
                 # print('width: ',(w_end,w_end+w_div_factor))
                 # print('depth: ',(d_end,d_end+d_div_factor))
+                # cc+=1
                 sub_volume=volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]
                 if(sub_volume.shape!=(h_div_factor,w_div_factor,d_div_factor)):
                     raise Exception("ERROR GENERATING SUB VOLUMES")
@@ -327,21 +328,23 @@ def extract_sub_volumes(volume,name,h5_file):
                 index+=1
                 
                 h_end=h_end+h_div_factor-overlap_pixels_h
-                if(h_end+h_div_factor>=volume.shape[0]):
+                if(h_end+h_div_factor>volume.shape[0]):
                     h_end=volume.shape[0]-h_div_factor
                     can_iterate_over_h=False
                 
             w_end=w_end+w_div_factor-overlap_pixels_w
-            if(w_end+w_div_factor>=volume.shape[1]):
+            if(w_end+w_div_factor>volume.shape[1]):
                 w_end=volume.shape[1]-w_div_factor
                 can_iterate_over_w=False
                 
+                # print(cc)
+                # cc=0
+                
         d_end=d_end+d_div_factor-overlap_pixels_d
-        if(d_end+d_div_factor>=volume.shape[2]):
+        if(d_end+d_div_factor>volume.shape[2]):
             d_end=volume.shape[2]-d_div_factor
             can_iterate_over_d=False
-         
-    # print(index)
+
     
     
 
@@ -427,7 +430,7 @@ def generate_dataset(denoised_dataset_folder_path,
     subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_subsampled_volumes.h5', 'w')
     volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_ground_truth.h5', 'w')
         
-    for volume_path in train_volumes_paths[0:4]:
+    for volume_path in train_volumes_paths:
         volume_path=volume_path.strip('\n')
         print(volume_path)
         try: 
@@ -469,7 +472,7 @@ def generate_dataset(denoised_dataset_folder_path,
     volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_random25_ground_truth.h5', 'w')
         
         
-    for volume_path in test_volumes_paths[0:4]:
+    for volume_path in test_volumes_paths:
             
             try:
                 volume_path=volume_path.strip('\n')
