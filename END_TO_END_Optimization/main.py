@@ -132,7 +132,7 @@ dataloader = torch.utils.data.DataLoader(h5_dataset,
 h5_dataset_test=HDF5Dataset(config_autoencoder.original_volumes_path_test)
 # Create the dataloader
 dataloader_test = torch.utils.data.DataLoader(h5_dataset_test,
-                                              batch_size=config_autoencoder.batch_size,
+                                              batch_size=config_autoencoder.batch_size_testing,
                                               shuffle=True,
                                               num_workers=config_autoencoder.workers)
 
@@ -428,6 +428,20 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
     test_losses=[]
     psnr_list=[]
     ssim_list=[]
+    print('Saving weights...')
+    torch.save({"epoch": epoch + 1,
+                "best_psnr": np.mean(psnr_value_train_),
+                "best_ssim": np.mean(ssim_value_train_),
+                "state_dict": netG.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "scheduler": scheduler.state_dict()},
+                os.path.join(config_autoencoder.results_dir, f"autoencoder_model_epoch_{epoch}.pth.tar"))
+
+
+    torch.save({"state_dict": speeds_generator.state_dict(),
+                "optimizer": optimizer_speeds.state_dict()},
+                os.path.join(config_autoencoder.results_dir, f"speeds_model_epoch_{epoch}.pth.tar"))
+    
     print('Evaluation...')
     
     for j, data_test in enumerate(dataloader_test, 0):  
@@ -483,7 +497,8 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
          if j % 100 == 0:
              total_samples=len(dataloader_test)
              print(f"{j}\{total_samples}  Loss_test={loss_test.item()} PSNR_test={np.mean(psnr_list)} SSIM_test={np.mean(ssim_list)} Transmittance={total_transmittance}")
-
+         if j % 2000 ==0:
+             break
          
     current_loss=np.mean(test_losses)
     current_psnr=np.mean(psnr_list)

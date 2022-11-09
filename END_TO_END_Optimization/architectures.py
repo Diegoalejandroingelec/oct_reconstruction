@@ -106,7 +106,7 @@ class Risley_Speeds(nn.Module):
 
         self.classifier = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(212992, 1024),
+            nn.Linear(65536, 1024),
             nn.LeakyReLU(0.2, True),
             nn.Linear(1024, 4),
         )

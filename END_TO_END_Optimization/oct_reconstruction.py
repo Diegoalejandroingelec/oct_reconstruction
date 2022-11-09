@@ -58,7 +58,7 @@ def create_3D_mask(w1,w2,w3,w4,original_volume=None,create_with_motion=False):
                               start_wavelength,
                               original_volume,
                               tf=8.192,
-                              PRF=2500000,
+                              PRF=650000,#2500000,
                               a=10*(np.pi/180),
                               number_of_prisms=4,
                               maximum_transmittance=0.43,
@@ -213,7 +213,7 @@ def reconstruct_volume_batches(volume,reconstruction_model,speeds_generator,sub_
                                         original_volume=batch_for_inference,
                                         create_with_motion=True)
                     else:
-                        mask=create_3D_mask(w1=speeds_pred[0,0]*100000,
+                        mask,transmittance=create_3D_mask(w1=speeds_pred[0,0]*100000,
                                         w2=speeds_pred[0,1]*100000,
                                         w3=speeds_pred[0,2]*100000,
                                         w4=speeds_pred[0,3]*100000,

@@ -197,10 +197,10 @@ def generate_2D_pattern(t1,
     x_factor=np.abs((expected_dims[1]/2)/x_max)
     y_factor=np.abs((expected_dims[2]/2)/y_max)
     
-    x=(A8[1,:]*(x_factor+0.3))#5.5
-    y=(A8[0,:]*(y_factor+0.15))#0.35
+    x=(A8[1,:]*(x_factor+0.17))#0.3 #5.5
+    y=(A8[0,:]*(y_factor+0.079))#0.15 #0.35
     
-    x = x+100
+    x = x+32#100
     y = y+8
     
     # plot_fn(x,
