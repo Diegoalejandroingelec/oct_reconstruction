@@ -427,7 +427,6 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
 
                 
             losses.append(loss.item())
-        break
     # Update LR
     scheduler.step()
     
