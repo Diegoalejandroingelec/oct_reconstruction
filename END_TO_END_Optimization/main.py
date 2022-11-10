@@ -205,8 +205,10 @@ if(config_autoencoder.resume_model_path):
     best_ssim = checkpoint["best_ssim"]
     # Load checkpoint state dict. Extract the fitted model weights
     model_state_dict = netG.state_dict()
-    new_state_dict = {k.replace('module.', ''): v for k, v in checkpoint["state_dict"].items() if
-                      k.replace('module.', '') in model_state_dict.keys() and v.size() == model_state_dict[k.replace('module.', '')].size()}
+    # new_state_dict = {k.replace('module.', ''): v for k, v in checkpoint["state_dict"].items() if
+    #                   k.replace('module.', '') in model_state_dict.keys() and v.size() == model_state_dict[k.replace('module.', '')].size()}
+    new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
+                      k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
     # Overwrite the pretrained model weights to the current model
     model_state_dict.update(new_state_dict)
     netG.load_state_dict(model_state_dict)
@@ -235,8 +237,11 @@ if(config_autoencoder.resume_model_speeds_path):
    
     # Load checkpoint state dict. Extract the fitted model weights
     model_state_dict = speeds_generator.state_dict()
-    new_state_dict = {k.replace('module.', ''): v for k, v in checkpoint["state_dict"].items() if
-                      k.replace('module.', '') in model_state_dict.keys() and v.size() == model_state_dict[k.replace('module.', '')].size()}
+    # new_state_dict = {k.replace('module.', ''): v for k, v in checkpoint["state_dict"].items() if
+    #                   k.replace('module.', '') in model_state_dict.keys() and v.size() == model_state_dict[k.replace('module.', '')].size()}
+    
+    new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
+                      k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
     # Overwrite the pretrained model weights to the current model
     model_state_dict.update(new_state_dict)
     speeds_generator.load_state_dict(model_state_dict)
@@ -299,9 +304,9 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
             netG.zero_grad(set_to_none=True) 
            
             
-            
-        
-        
+        #######
+        ####### TODO: NORMALIZE IMAGE BEFORE PREDICTING SPEEDS
+        #######
         #cube=torch.unsqueeze(cube,0)
         speeds=speeds_generator(targets).cpu().detach().numpy()
         speeds_avg=np.mean(speeds,0)
@@ -422,6 +427,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
 
                 
             losses.append(loss.item())
+        break
     # Update LR
     scheduler.step()
     
@@ -497,7 +503,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
          if j % 100 == 0:
              total_samples=len(dataloader_test)
              print(f"{j}\{total_samples}  Loss_test={loss_test.item()} PSNR_test={np.mean(psnr_list)} SSIM_test={np.mean(ssim_list)} Transmittance={total_transmittance}")
-         if j % 2000 ==0:
+         if j % 2000 ==0 and j!=0:
              break
          
     current_loss=np.mean(test_losses)

@@ -430,7 +430,7 @@ def generate_dataset(denoised_dataset_folder_path,
     subsampled_volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_subsampled_volumes.h5', 'w')
     volumes_dataset_train = h5py.File('./'+dataset_folder+'/training_ground_truth.h5', 'w')
         
-    for volume_path in train_volumes_paths:
+    for volume_path in train_volumes_paths[0:3]:
         volume_path=volume_path.strip('\n')
         print(volume_path)
         try: 
@@ -472,7 +472,7 @@ def generate_dataset(denoised_dataset_folder_path,
     volumes_dataset_test = h5py.File('./'+dataset_folder+'/testing_random25_ground_truth.h5', 'w')
         
         
-    for volume_path in test_volumes_paths:
+    for volume_path in test_volumes_paths[0:3]:
             
             try:
                 volume_path=volume_path.strip('\n')

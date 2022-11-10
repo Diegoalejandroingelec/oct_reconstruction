@@ -53,7 +53,7 @@ def plot_fn(x,y,title,fontsize,xlabel,ylabel,img_size=(20,20),draw_FOV=False):
     plt.rcParams["figure.figsize"] = img_size
     plt.plot(x,y,'.')
     if(draw_FOV):
-        plt.plot([0,0,200,200,0],[16,0,0,16,16],'r')#plt.plot([0,0,1000,1000,0],[100,0,0,100,100],'r')
+        plt.plot([0,0,1000,1000,0],[100,0,0,100,100],'r')#plt.plot([0,0,1000,1000,0],[100,0,0,100,100],'r')
     plt.title(title,fontsize=fontsize)
     plt.grid()
     plt.xticks(fontsize=fontsize)
@@ -197,19 +197,19 @@ def generate_2D_pattern(t1,
     x_factor=np.abs((expected_dims[1]/2)/x_max)
     y_factor=np.abs((expected_dims[2]/2)/y_max)
     
-    x=(A8[1,:]*(x_factor+0.17))#0.3 #5.5
-    y=(A8[0,:]*(y_factor+0.079))#0.15 #0.35
+    x=(A8[1,:]*(x_factor+0.3))#0.17 #9.5 #5.5
+    y=(A8[0,:]*(y_factor+0.15))#0.079 #1.5 #0.35
     
-    x = x+32#100
-    y = y+8
+    x = x+100#32#100
+    y = y+8#8
     
     # plot_fn(x,
     #         y,
     #         title='Pattern',
-    #         fontsize=80,
+    #         fontsize=10,
     #         xlabel='Pixels',
     #         ylabel='Pixels',
-    #         img_size=(80,25),
+    #         img_size=(80//4,25//4),
     #         draw_FOV=True)
 
     risley_pattern_2D=np.zeros((expected_dims[1],expected_dims[2]))
@@ -474,7 +474,7 @@ def create_risley_pattern(w,
                 volume_sampled_with_motion=np.zeros(original_volume.shape)
                 
             for l in range(number_of_laser_sweeps):
-                #print(l)
+                print(l)
                 for i in range(1,expected_dims[0]+1):
                     # start1 = time.time()
                     layer_counter+=1
@@ -755,14 +755,14 @@ def create_risley_pattern(w,
 #                           start_wavelength,
 #                           original_volume,
 #                           tf=8.192,
-#                           PRF=3000000,
+#                           PRF=5000000,#650000,
 #                           a=10*(np.pi/180),
 #                           number_of_prisms=4,
 #                           maximum_transmittance=0.43,
 #                           minimum_transmittance=0.0,
 #                           sigma=150,
 #                           transmittance_distribution_fn='ga',
-#                           number_of_laser_sweeps=10,
+#                           number_of_laser_sweeps=217,
 #                           steps_before_centering=10,
 #                           hand_tremor_period=1/9,
 #                           laser_time_between_sweeps=7.314285714285714e-05,

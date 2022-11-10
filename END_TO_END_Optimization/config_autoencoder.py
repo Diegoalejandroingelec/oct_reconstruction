@@ -21,12 +21,12 @@ workers = 2
 batch_size = 8
 
 # Batch size for testing
-batch_size_testing = 4
+batch_size_testing = 2
 
 # Number of GPUs available. Use 0 for CPU mode.
-ngpu = 1
+ngpu = 2
 
-sub_volumes_dim=(512,64,16)
+sub_volumes_dim=(512,200,16)
 original_dims=(512,1000,100)
 
 # Decide which device we want to run on
@@ -36,11 +36,11 @@ device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else 
 lr_scheduler_step_size = num_epochs // 2
 lr_scheduler_gamma = 0.1
 
-results_dir='END_TO_END_OPTIMIZATION_TEST_2'
-resume_model_path=''
+results_dir='END_TO_END_OPTIMIZATION_big'
+resume_model_path='./END_TO_END_OPTIMIZATION/BEST_MODEL_autoencoder_0.pth.tar'
 
 ############RESUME MODEL SPEEDS##########
-resume_model_speeds_path=''
+resume_model_speeds_path='./END_TO_END_OPTIMIZATION/BEST_MODEL_speeds_epoch_0.pth.tar'
 ################TRAINING#################
 subsampled_volumes_path='../TEST_DATASET/training_subsampled_volumes.h5'
 original_volumes_path='../TEST_DATASET/training_ground_truth.h5'
