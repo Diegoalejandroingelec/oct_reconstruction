@@ -482,7 +482,7 @@ def create_risley_pattern(w,
                 volume_sampled_with_motion=np.zeros(original_volume.shape)
                 
             for l in range(number_of_laser_sweeps):
-                print(l)
+                #print(l)
                 for i in range(1,expected_dims[0]+1):
                     # start1 = time.time()
                     layer_counter+=1
