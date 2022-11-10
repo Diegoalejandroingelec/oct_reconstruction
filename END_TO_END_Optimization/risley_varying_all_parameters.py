@@ -76,6 +76,10 @@ def generate_2D_pattern(t1,
                         number_of_prisms,
                         n_prism,
                         expected_dims,
+                        x_translation,
+                        y_translation,
+                        x_factor_addition,
+                        y_factor_addition,
                         plot_mask):
     
 
@@ -197,11 +201,11 @@ def generate_2D_pattern(t1,
     x_factor=np.abs((expected_dims[1]/2)/x_max)
     y_factor=np.abs((expected_dims[2]/2)/y_max)
     
-    x=(A8[1,:]*(x_factor+0.3))#0.17 #9.5 #5.5
-    y=(A8[0,:]*(y_factor+0.15))#0.079 #1.5 #0.35
+    x=(A8[1,:]*(x_factor+x_factor_addition))#0.17 #9.5 #5.5
+    y=(A8[0,:]*(y_factor+y_factor_addition))#0.079 #1.5 #0.35
     
-    x = x+100#32#100
-    y = y+8#8
+    x = x+x_translation#32#100
+    y = y+y_translation#8
     
     # plot_fn(x,
     #         y,
@@ -403,6 +407,10 @@ def create_risley_pattern(w,
                           line_width,
                           start_wavelength,
                           original_volume,
+                          x_translation,
+                          y_translation,
+                          x_factor_addition,
+                          y_factor_addition,
                           tf,
                           PRF,
                           a,
@@ -501,6 +509,10 @@ def create_risley_pattern(w,
                                         number_of_prisms,
                                         n_prism,
                                         expected_dims,
+                                        x_translation,
+                                        y_translation,
+                                        x_factor_addition,
+                                        y_factor_addition,
                                         plot_mask)
                     # cv2.imshow('pattern',mask_2D)
                     # cv2.waitKey(0)
@@ -653,6 +665,10 @@ def create_risley_pattern(w,
                                 number_of_prisms,
                                 n_prism,
                                 expected_dims,
+                                x_translation,
+                                y_translation,
+                                x_factor_addition,
+                                y_factor_addition,
                                 plot_mask) 
             transmittance_list.append(transmittance)
             mask_risley[i,:,:]=mask_2D
