@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import pickle
 from skimage.metrics import structural_similarity as ssim
 from architectures import Autoencoder, Risley_Speeds
-import config_autoencoder
+import config
 from torch.optim import lr_scheduler
 from risley_varying_all_parameters import create_risley_pattern 
 
@@ -28,7 +28,7 @@ train_with_motion=False
 
 def create_3D_mask(w1,w2,w3,w4,original_volume=None,train_with_motion=False):
     
-    expected_dims=config_autoencoder.sub_volumes_dim
+    expected_dims=config.sub_volumes_dim
     band_width=176
     line_width=band_width/expected_dims[0]
     start_wavelength=962 
@@ -48,7 +48,7 @@ def create_3D_mask(w1,w2,w3,w4,original_volume=None,train_with_motion=False):
                               x_factor_addition=0.3,
                               y_factor_addition=0.15,
                               tf=8.192,
-                              PRF=3000000,
+                              PRF=5000000,#3000000,
                               a=10*(np.pi/180),
                               number_of_prisms=4,
                               maximum_transmittance=0.43,
@@ -114,17 +114,17 @@ class HDF5Dataset(data.Dataset):
     
 def normalize(volume):
     if((np.max(volume.astype(np.float32))/2)==0):
-        return np.ones(config_autoencoder.sub_volumes_dim)*-1
+        return np.ones(config.sub_volumes_dim)*-1
     
     return (volume.astype(np.float32)-(np.max(volume.astype(np.float32))/2))/(np.max(volume.astype(np.float32))/2)
 
 
-h5_dataset=HDF5Dataset(config_autoencoder.original_volumes_path)
+h5_dataset=HDF5Dataset(config.original_volumes_path)
 # Create the dataloader
 dataloader = torch.utils.data.DataLoader(h5_dataset,
-                                         batch_size=config_autoencoder.batch_size,
+                                         batch_size=config.batch_size,
                                          shuffle=True,
-                                         num_workers=config_autoencoder.workers)
+                                         num_workers=config.workers)
 
 #train_batch = next(iter(dataloader))
 
@@ -133,12 +133,12 @@ dataloader = torch.utils.data.DataLoader(h5_dataset,
 # plt.imshow(np.squeeze(np.array(train_batch[0][4,:,:,0].cpu())), cmap="gray")
 # plt.show()
 
-h5_dataset_test=HDF5Dataset(config_autoencoder.original_volumes_path_test)
+h5_dataset_test=HDF5Dataset(config.original_volumes_path_test)
 # Create the dataloader
 dataloader_test = torch.utils.data.DataLoader(h5_dataset_test,
-                                              batch_size=config_autoencoder.batch_size_testing,
+                                              batch_size=config.batch_size_testing,
                                               shuffle=True,
-                                              num_workers=config_autoencoder.workers)
+                                              num_workers=config.workers)
 
 # test_batch = next(iter(dataloader_test))
 
@@ -161,27 +161,27 @@ def weights_init(m):
         nn.init.constant_(m.bias.data, 0)
         
 def define_optimizer(netG: nn.Module, speeds_generator: nn.Module) -> [optim.Adam,optim.Adam]:
-    optimizer = optim.Adam(netG.parameters(), lr=config_autoencoder.model_lr, betas=config_autoencoder.model_betas)
-    optimizer_speeds = optim.Adam(speeds_generator.parameters(), lr=config_autoencoder.model_lr, betas=config_autoencoder.model_betas)
+    optimizer = optim.Adam(netG.parameters(), lr=config.model_lr, betas=config.model_betas)
+    optimizer_speeds = optim.Adam(speeds_generator.parameters(), lr=config.model_lr, betas=config.model_betas)
     return optimizer,optimizer_speeds  
      
 def define_scheduler(optimizer: optim.Adam) -> [lr_scheduler.StepLR]:
-    scheduler = lr_scheduler.StepLR(optimizer, config_autoencoder.lr_scheduler_step_size, config_autoencoder.lr_scheduler_gamma)
+    scheduler = lr_scheduler.StepLR(optimizer, config.lr_scheduler_step_size, config.lr_scheduler_gamma)
     return scheduler 
 
      
 
 
-speeds_generator=Risley_Speeds(config_autoencoder.ngpu).to(config_autoencoder.device)
-if (config_autoencoder.device.type == 'cuda') and (config_autoencoder.ngpu > 1):
-    speeds_generator = nn.DataParallel(speeds_generator, list(range(config_autoencoder.ngpu)))
-# summary(speeds_generator, config_autoencoder.sub_volumes_dim)
+speeds_generator=Risley_Speeds(config.ngpu).to(config.device)
+if (config.device.type == 'cuda') and (config.ngpu > 1):
+    speeds_generator = nn.DataParallel(speeds_generator, list(range(config.ngpu)))
+# summary(speeds_generator, config.sub_volumes_dim)
 
 
-netG = Autoencoder(config_autoencoder.ngpu).to(config_autoencoder.device)
+netG = Autoencoder(config.ngpu).to(config.device)
 # Handle multi-gpu if desired
-if (config_autoencoder.device.type == 'cuda') and (config_autoencoder.ngpu > 1):
-    netG = nn.DataParallel(netG, list(range(config_autoencoder.ngpu)))
+if (config.device.type == 'cuda') and (config.ngpu > 1):
+    netG = nn.DataParallel(netG, list(range(config.ngpu)))
 
 
 
@@ -200,9 +200,9 @@ print("Define all optimizer scheduler functions successfully.")
 
 
 
-if(config_autoencoder.resume_model_path):
+if(config.resume_model_path):
     # Load checkpoint model
-    checkpoint = torch.load(config_autoencoder.resume_model_path, map_location=lambda storage, loc: storage)
+    checkpoint = torch.load(config.resume_model_path, map_location=lambda storage, loc: storage)
     # Restore the parameters in the training node to this point
     start_epoch = checkpoint["epoch"]
     best_psnr = checkpoint["best_psnr"]
@@ -220,23 +220,23 @@ if(config_autoencoder.resume_model_path):
     optimizer.load_state_dict(checkpoint["optimizer"])
     # Load the scheduler model
     scheduler.load_state_dict(checkpoint["scheduler"])
-    print(f"Loaded `{config_autoencoder.resume_model_path}` resume netG model weights successfully. "
+    print(f"Loaded `{config.resume_model_path}` resume netG model weights successfully. "
           f"Resume training from epoch {start_epoch}.")
-    summary(netG, config_autoencoder.sub_volumes_dim)
+    summary(netG, config.sub_volumes_dim)
 else:
     # Apply the weights_init function to randomly initialize all weights
     #  to mean=0, stdev=0.02.
     print('AUTOENCODER Training from scratch...')
     netG.apply(weights_init)
-    summary(netG, config_autoencoder.sub_volumes_dim)
+    summary(netG, config.sub_volumes_dim)
     start_epoch=0
     best_psnr=0
     best_ssim=0
 
 
-if(config_autoencoder.resume_model_speeds_path):
+if(config.resume_model_speeds_path):
     # Load checkpoint model
-    checkpoint = torch.load(config_autoencoder.resume_model_speeds_path, map_location=lambda storage, loc: storage)
+    checkpoint = torch.load(config.resume_model_speeds_path, map_location=lambda storage, loc: storage)
     # Restore the parameters in the training node to this point
    
     # Load checkpoint state dict. Extract the fitted model weights
@@ -252,20 +252,20 @@ if(config_autoencoder.resume_model_speeds_path):
     # Load the optimizer model
     optimizer_speeds.load_state_dict(checkpoint["optimizer"])
     
-    print(f"Loaded `{config_autoencoder.resume_model_speeds_path}` resume speeds_generator model weights successfully.")
-    summary(speeds_generator, config_autoencoder.sub_volumes_dim)
+    print(f"Loaded `{config.resume_model_speeds_path}` resume speeds_generator model weights successfully.")
+    summary(speeds_generator, config.sub_volumes_dim)
 else:
     # Apply the weights_init function to randomly initialize all weights
     #  to mean=0, stdev=0.02.
     print('SPEEDS GENERATOR Training from scratch...')
     speeds_generator.apply(weights_init)
-    summary(speeds_generator, config_autoencoder.sub_volumes_dim)
+    summary(speeds_generator, config.sub_volumes_dim)
 
 
 
 
-if not os.path.exists(config_autoencoder.results_dir):
-    os.makedirs(config_autoencoder.results_dir)
+if not os.path.exists(config.results_dir):
+    os.makedirs(config.results_dir)
 
 
 print("Starting Training Loop...")
@@ -276,12 +276,12 @@ losses_val=[]
 
 train_speeds=True
 
-for epoch in range(start_epoch, config_autoencoder.num_epochs):
+for epoch in range(start_epoch, config.num_epochs):
     # For each batch in the dataloader
     for i, data_train in enumerate(dataloader, 0):  
         
-        #inputs = data_train[0].to(config_autoencoder.device, dtype=torch.float)
-        targets = data_train.to(config_autoencoder.device, dtype=torch.float)
+        #inputs = data_train[0].to(config.device, dtype=torch.float)
+        targets = data_train.to(config.device, dtype=torch.float)
         
         
         if(train_speeds):
@@ -308,11 +308,9 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
             netG.zero_grad(set_to_none=True) 
            
             
-        #######
-        ####### TODO: NORMALIZE IMAGE BEFORE PREDICTING SPEEDS
-        #######
-        #cube=torch.unsqueeze(cube,0)
-        speeds=speeds_generator(targets).cpu().detach().numpy()
+        # NORMALIZE IMAGE BEFORE PREDICTING SPEEDS
+        gt_normalized=torch.tensor(np.array([normalize(gt.cpu().detach().numpy()) for gt in targets]),requires_grad=True).to(config.device,dtype=torch.float)
+        speeds=speeds_generator(gt_normalized).cpu().detach().numpy()
         speeds_avg=np.mean(speeds,0)
         
         
@@ -355,14 +353,14 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
         
                 
         reconstructions = netG(torch.tensor(subsampled_volumes_normalized,
-                                                            requires_grad=True).to(config_autoencoder.device,
+                                                            requires_grad=True).to(config.device,
                                                                                   dtype=torch.float))
                                                                                    
                                                                                    
                                                                                    
         ground_truths=torch.squeeze(targets).cpu().detach().numpy()
         ground_truth_normalized=torch.tensor(np.array([normalize(ground_truth) for ground_truth in ground_truths]),
-                                                            requires_grad=True).to(config_autoencoder.device,
+                                                            requires_grad=True).to(config.device,
                                                                                   dtype=torch.float)
                                                           
         
@@ -388,7 +386,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
                     
                     
                 print('[%d/%d][%d/%d]\tLoss_speeds: %.4f  PSNR: %.4f SSIM:%.4f Transmittance: %.4f' % (epoch,
-                                                                                   config_autoencoder.num_epochs,
+                                                                                   config.num_epochs,
                                                                                    i,
                                                                                    len(dataloader),
                                                                                    loss_speeds.item(),
@@ -421,7 +419,7 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
                     
                     
                 print('[%d/%d][%d/%d]\tLoss_autoencoder: %.4f  PSNR: %.4f SSIM:%.4f Transmittance: %.4f' % (epoch,
-                                                                                   config_autoencoder.num_epochs,
+                                                                                   config.num_epochs,
                                                                                    i,
                                                                                    len(dataloader),
                                                                                    loss_speeds.item(),
@@ -444,17 +442,17 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
                 "state_dict": netG.state_dict(),
                 "optimizer": optimizer.state_dict(),
                 "scheduler": scheduler.state_dict()},
-                os.path.join(config_autoencoder.results_dir, f"autoencoder_model_epoch_{epoch}.pth.tar"))
+                os.path.join(config.results_dir, f"autoencoder_model_epoch_{epoch}.pth.tar"))
 
 
     torch.save({"state_dict": speeds_generator.state_dict(),
                 "optimizer": optimizer_speeds.state_dict()},
-                os.path.join(config_autoencoder.results_dir, f"speeds_model_epoch_{epoch}.pth.tar"))
+                os.path.join(config.results_dir, f"speeds_model_epoch_{epoch}.pth.tar"))
     
     print('Evaluation...')
     
     for j, data_test in enumerate(dataloader_test, 0):  
-         targets_test = data_test.to(config_autoencoder.device, dtype=torch.float)
+         targets_test = data_test.to(config.device, dtype=torch.float)
          
          speeds_pred=speeds_generator(targets_test).cpu().detach().numpy()
          speeds_avg_test=np.mean(speeds_pred,0)
@@ -482,11 +480,11 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
          # compute the model output
 
          
-         reconstructions_test = netG(torch.tensor(subsampled_volumes_test_normalized).to(config_autoencoder.device,
+         reconstructions_test = netG(torch.tensor(subsampled_volumes_test_normalized).to(config.device,
                                                                                    dtype=torch.float))
                                                                                     
          ground_truths_test=torch.squeeze(targets_test).cpu().detach().numpy()
-         ground_truth_normalized_test=torch.tensor(np.array([normalize(ground_truth) for ground_truth in ground_truths_test])).to(config_autoencoder.device,
+         ground_truth_normalized_test=torch.tensor(np.array([normalize(ground_truth) for ground_truth in ground_truths_test])).to(config.device,
                                                                                   dtype=torch.float)
          # calculate loss
          
@@ -525,17 +523,17 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
                 "state_dict": netG.state_dict(),
                 "optimizer": optimizer.state_dict(),
                 "scheduler": scheduler.state_dict()},
-                os.path.join(config_autoencoder.results_dir, f"autoencoder_model_epoch_{epoch}.pth.tar"))
+                os.path.join(config.results_dir, f"autoencoder_model_epoch_{epoch}.pth.tar"))
 
 
     torch.save({"state_dict": speeds_generator.state_dict(),
                 "optimizer": optimizer_speeds.state_dict()},
-                os.path.join(config_autoencoder.results_dir, f"speeds_model_epoch_{epoch}.pth.tar"))
+                os.path.join(config.results_dir, f"speeds_model_epoch_{epoch}.pth.tar"))
     
     
     if is_best:
         print(speeds_avg*100000)
-        save_obj(speeds_avg*100000,os.path.join(config_autoencoder.results_dir, 'BEST_SPEEDS' ))
+        save_obj(speeds_avg*100000,os.path.join(config.results_dir, 'BEST_SPEEDS' ))
         best_psnr=current_psnr
         best_ssim=current_ssim
         torch.save({"epoch": epoch + 1,
@@ -544,15 +542,15 @@ for epoch in range(start_epoch, config_autoencoder.num_epochs):
                     "state_dict": netG.state_dict(),
                     "optimizer": optimizer.state_dict(),
                     "scheduler": scheduler.state_dict()},
-                    os.path.join(config_autoencoder.results_dir, f"BEST_MODEL_autoencoder_{epoch}.pth.tar"))
+                    os.path.join(config.results_dir, f"BEST_MODEL_autoencoder_{epoch}.pth.tar"))
         
         torch.save({"state_dict": speeds_generator.state_dict(),
                     "optimizer": optimizer_speeds.state_dict()},
-                    os.path.join(config_autoencoder.results_dir, f"BEST_MODEL_speeds_epoch_{epoch}.pth.tar"))
+                    os.path.join(config.results_dir, f"BEST_MODEL_speeds_epoch_{epoch}.pth.tar"))
         
         
     losses_val.append(current_loss)
     
     
-save_obj(losses,os.path.join(config_autoencoder.results_dir, 'train_losses' ))
-save_obj(losses_val,os.path.join(config_autoencoder.results_dir, 'test_losses' ))
+save_obj(losses,os.path.join(config.results_dir, 'train_losses' ))
+save_obj(losses_val,os.path.join(config.results_dir, 'test_losses' ))

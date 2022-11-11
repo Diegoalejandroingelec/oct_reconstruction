@@ -23,14 +23,14 @@ import time
 from scipy.io import loadmat
 from risley_varying_all_parameters import create_risley_pattern 
 
-sub_vol=(512,64,16)
+sub_vol=(512,200,16)
 bigger_sub_volumes_dim=(512,200,16)
 original_volume_dim=(512,1000,100)
 ngpu=1
 denoised_dataset_folder_path='../DATASET_DENOISED'
 results_dir='MODEL_EVALUATION'
-model_path='./END_TO_END_OPTIMIZATION/autoencoder_model_epoch_2.pth.tar'
-speeds_model_path='./END_TO_END_OPTIMIZATION/speeds_model_epoch_2.pth.tar'
+model_path='./BIG_VOLS_RESULTS/BEST_MODEL_autoencoder_0.pth.tar'
+speeds_model_path='./BIG_VOLS_RESULTS/BEST_MODEL_speeds_epoch_0.pth.tar'
 
 txt_test_path='../RASTER_SCAN_WITH_MOTION_DATASET/test_volumes_paths.txt'
 original_volumes_path='../sub_sampled_data/original_volumes/'
@@ -217,8 +217,8 @@ def predict_best_angular_speeds(volume,sub_vol,speeds_model):
        
               
                 
-    angular_speeds=np.array(angular_speeds)            
-    return np.mean(angular_speeds.reshape(angular_speeds.shape[0]*angular_speeds.shape[1],4),0)
+    angular_speeds=np.concatenate(angular_speeds)            
+    return np.mean(angular_speeds,0)
 
 
 
@@ -709,6 +709,8 @@ def evaluate_model(denoised_dataset_folder_path,
         print('Total RMSE AVG: ',np.mean(total_RMSE_list))
         print('Total MAE AVG: ',np.mean(total_MAE_list))
         print('Total SSIM AVG: ',np.mean(total_SSIM_list))
+
+#TODO : FIX UPLOAD WEIGHTS
 
 reconstruction_model=initialize_reconstruction_model(model_path)
 

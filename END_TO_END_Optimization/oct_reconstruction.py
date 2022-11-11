@@ -23,13 +23,13 @@ from scipy.io import loadmat
 from risley_varying_all_parameters import create_risley_pattern 
 
 
-bigger_sub_volumes_dim=(512,64,16)
+bigger_sub_volumes_dim=(512,200,16)
 original_volume_dim=(512,1000,100)
 ngpu=1
 denoised_dataset_folder_path='../DATASET_DENOISED'
 results_dir='MODEL_EVALUATION'
-model_path='./END_TO_END_OPTIMIZATION/autoencoder_model_epoch_2.pth.tar'
-speeds_model_path='./END_TO_END_OPTIMIZATION/speeds_model_epoch_2.pth.tar'
+model_path='./BIG_VOLS_RESULTS/BEST_MODEL_autoencoder_0.pth.tar'
+speeds_model_path='./BIG_VOLS_RESULTS/BEST_MODEL_speeds_epoch_0.pth.tar'
 
 txt_test_path='../RASTER_SCAN_WITH_MOTION_DATASET/test_volumes_paths.txt'
 original_volumes_path='../sub_sampled_data/original_volumes/'
@@ -57,8 +57,12 @@ def create_3D_mask(w1,w2,w3,w4,original_volume=None,create_with_motion=False):
                               line_width,
                               start_wavelength,
                               original_volume,
+                              x_translation=100,
+                              y_translation=8,
+                              x_factor_addition=0.3,
+                              y_factor_addition=0.15,
                               tf=8.192,
-                              PRF=650000,#2500000,
+                              PRF=3000000,#2500000,
                               a=10*(np.pi/180),
                               number_of_prisms=4,
                               maximum_transmittance=0.43,
@@ -485,6 +489,7 @@ def plot_error(data,name):
 
 def create_mask_spectrum(mask):
     pattern=mask[250,:,:]-np.mean(mask[250,:,:])
+    pattern=pattern.T
     DFT=np.fft.fftshift(np.fft.fft2(pattern))
     fontsize=60
     fontsizet=80

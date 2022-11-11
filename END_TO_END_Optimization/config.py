@@ -18,13 +18,13 @@ model_betas = (0.9, 0.999)
 workers = 2
 
 # Batch size during training
-batch_size = 8
+batch_size = 2
 
 # Batch size for testing
 batch_size_testing = 2
 
 # Number of GPUs available. Use 0 for CPU mode.
-ngpu = 2
+ngpu = 1
 
 sub_volumes_dim=(512,200,16)
 original_dims=(512,1000,100)
