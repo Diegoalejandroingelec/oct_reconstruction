@@ -205,9 +205,13 @@ def reconstruct_volume_batches(volume,reconstruction_model,speeds_generator,sub_
                     
 
                 if len(batch_for_inference)==batch_size_for_inference:
+                    
+                    batch_for_inference_normalized=np.array([normalize(sub_v) for sub_v in batch_for_inference])
+                    
+                    
                     batch_for_inference=np.array(batch_for_inference)
                     
-                    speeds_pred=speeds_generator(torch.tensor(batch_for_inference).to(device,dtype=torch.float)).cpu().detach().numpy()
+                    speeds_pred=speeds_generator(torch.tensor(batch_for_inference_normalized).to(device,dtype=torch.float)).cpu().detach().numpy()
                     print(speeds_pred*100000)
                     if (reconstruct_with_motion):
                         mask,sub_sampled_volume=create_3D_mask(w1=speeds_pred[0,0]*100000,
@@ -272,8 +276,11 @@ def reconstruct_volume_batches(volume,reconstruction_model,speeds_generator,sub_
             d_end=volume.shape[2]-d_div_factor
             
     if len(batch_for_inference)>0:
+        
+        batch_for_inference_normalized=np.array([normalize(sub_v) for sub_v in batch_for_inference])
+
         batch_for_inference=np.array(batch_for_inference)
-        speeds_pred=speeds_generator(torch.tensor(batch_for_inference).to(device,dtype=torch.float)).cpu().detach().numpy()
+        speeds_pred=speeds_generator(torch.tensor(batch_for_inference_normalized).to(device,dtype=torch.float)).cpu().detach().numpy()
         print(speeds_pred*100000)
         if (reconstruct_with_motion):
             mask,sub_sampled_volume=create_3D_mask(w1=speeds_pred[0,0]*100000,
@@ -513,6 +520,12 @@ def create_mask_spectrum(mask):
     cb.ax.tick_params(labelsize=fontsize)
     cb.ax.set_ylabel('Magnitude (dB)',fontsize=fontsize)
     fig.savefig('mask spectrum', dpi=400, facecolor='white')
+def visualize_3D_spectrum(mask):
+    import napari
+    img=mask*255
+    DFT=np.fft.fftshift(np.fft.fftn(img))/float(np.size(img));
+    magnitude=20*np.log(np.abs(DFT))
+    viewer = napari.view_image(magnitude)
     
 def evaluate_model(denoised_dataset_folder_path,
                    txt_test_path,

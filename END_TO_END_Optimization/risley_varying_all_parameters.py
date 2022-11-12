@@ -741,68 +741,78 @@ def create_risley_pattern(w,
 # laser_time_between_sweeps=7.314285714285714e-05
 # y_factor=50
 # x_factor=50
-# begin = time.time()
-
-
-# path='../../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1253.mat'
-# def read_data(path):
-#     data = loadmat(path)
-#     oct_volume = data['images']
-#     return oct_volume
-
-# original_volume=read_data(path)[:,0:64,0:16]
-# w=62555.4063372
-# w2=-20201.0559296
-# w3=-12271.6073769
-# w4=12274.0445477  
-# expected_dims=(512,200,16)   
-# band_width=176
-# line_width=band_width/expected_dims[0]
-# start_wavelength=962 
 
 
 
-# mask_risley,tr=create_risley_pattern(w,
-#                           w2,
-#                           w3,
-#                           w4,
-#                           expected_dims,
-#                           line_width,
-#                           start_wavelength,
-#                           original_volume,
-#                           x_translation=100,
-#                           y_translation=8,
-#                           x_factor_addition=0.3,
-#                           y_factor_addition=0.15,
-#                           tf=8.192,
-#                           PRF=5000000,#650000,
-#                           a=10*(np.pi/180),
-#                           number_of_prisms=4,
-#                           maximum_transmittance=0.43,
-#                           minimum_transmittance=0.0,
-#                           sigma=150,
-#                           transmittance_distribution_fn='ga',
-#                           number_of_laser_sweeps=10,
-#                           steps_before_centering=10,
-#                           hand_tremor_period=1/9,
-#                           laser_time_between_sweeps=7.314285714285714e-05,
-#                           x_factor=50,
-#                           y_factor=50,
-#                           generate_volume_with_motion=False,
-#                           apply_motion=False,
-#                           plot_mask=False)
-# end = time.time()
-# print(f"Transmittance {tr}")
-# print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
-# plt.rcParams["figure.figsize"] = (100,80)
-# plt.imshow(mask_risley[:,:,8],cmap='gray')
+'''
+
+
+begin = time.time()
+
+
+path='../../oct_original_volumes/AMD/Farsiu_Ophthalmology_2013_AMD_Subject_1253.mat'
+def read_data(path):
+    data = loadmat(path)
+    oct_volume = data['images']
+    return oct_volume
+
+original_volume=read_data(path)[:,0:64,0:16]
+w=62555.4063372
+w2=-20201.0559296
+w3=-12271.6073769
+w4=12274.0445477  
+expected_dims=(512,1000,100)#(512,200,16)   
+band_width=176
+line_width=band_width/expected_dims[0]
+start_wavelength=962 
+
+
+
+mask_risley,tr=create_risley_pattern(w,
+                          w2,
+                          w3,
+                          w4,
+                          expected_dims,
+                          line_width,
+                          start_wavelength,
+                          original_volume,
+                          x_translation=500,
+                          y_translation=50,
+                          x_factor_addition=9.5,
+                          y_factor_addition=1.5,
+                          tf=12,#8.192,
+                          PRF=8000000,#650000,
+                          a=10*(np.pi/180),
+                          number_of_prisms=4,
+                          maximum_transmittance=0.43,
+                          minimum_transmittance=0.0,
+                          sigma=150,
+                          transmittance_distribution_fn='ga',
+                          number_of_laser_sweeps=250,
+                          steps_before_centering=10,
+                          hand_tremor_period=1/9,
+                          laser_time_between_sweeps=7.314285714285714e-05,
+                          x_factor=50,
+                          y_factor=50,
+                          generate_volume_with_motion=False,
+                          apply_motion=False,
+                          plot_mask=False)
+end = time.time()
+print(f"Transmittance {tr}")
+print(f"TIME ELAPSED FOR GENERATING RISLEY MASK: {end - begin}")
+plt.rcParams["figure.figsize"] = (100,80)
+plt.imshow(mask_risley[:,:,8],cmap='gray')
 
 
 
 
 
-# import napari
-# viewer = napari.view_image(mask_risley*255)
+import napari
+viewer = napari.view_image(mask_risley*255)
+
+'''
+
+
 # viewer1 = napari.view_image(original_volume)
 
 # viewer2 = napari.view_image(np.multiply(original_volume,mask_risley))

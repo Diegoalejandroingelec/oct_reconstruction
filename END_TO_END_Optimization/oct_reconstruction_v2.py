@@ -23,17 +23,21 @@ import time
 from scipy.io import loadmat
 from risley_varying_all_parameters import create_risley_pattern 
 
+
 sub_vol=(512,200,16)
 bigger_sub_volumes_dim=(512,200,16)
 original_volume_dim=(512,1000,100)
-ngpu=1
+ngpu=2
 denoised_dataset_folder_path='../DATASET_DENOISED'
-results_dir='MODEL_EVALUATION'
-model_path='./BIG_VOLS_RESULTS/BEST_MODEL_autoencoder_0.pth.tar'
-speeds_model_path='./BIG_VOLS_RESULTS/BEST_MODEL_speeds_epoch_0.pth.tar'
+results_dir='MODEL_EVALUATION_2'
 
-txt_test_path='../RASTER_SCAN_WITH_MOTION_DATASET/test_volumes_paths.txt'
-original_volumes_path='../sub_sampled_data/original_volumes/'
+model_path='END_TO_END_OPTIMIZATION/BEST_MODEL_autoencoder_0.pth.tar'
+speeds_model_path='END_TO_END_OPTIMIZATION/BEST_MODEL_speeds_epoch_0.pth.tar'
+
+
+txt_test_path='../3D_autoencoder_pytorch/fast_test_paths.txt'
+original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
+
 comparison_size=100
 compare_with_roi=True
 denoised_ground_truth_for_comparison=True
@@ -62,15 +66,15 @@ def create_3D_mask(w1,w2,w3,w4,original_volume=None,create_with_motion=False):
                               y_translation=50,
                               x_factor_addition=9.5,
                               y_factor_addition=1.5,
-                              tf=8.192,
-                              PRF=5000000,#2500000,
+                              tf=12,
+                              PRF=8000000,#2500000,
                               a=10*(np.pi/180),
                               number_of_prisms=4,
                               maximum_transmittance=0.43,
                               minimum_transmittance=0.0,
                               sigma=150,
                               transmittance_distribution_fn='ga',
-                              number_of_laser_sweeps=217,
+                              number_of_laser_sweeps=250,
                               steps_before_centering=10,
                               hand_tremor_period=1/9,
                               laser_time_between_sweeps=7.314285714285714e-05,
@@ -179,7 +183,8 @@ def predict_best_angular_speeds(volume,sub_vol,speeds_model):
             for h in range(int(np.ceil(volume.shape[0]/h_div_factor))):
         
                 sub_volume=volume[h_end:h_end+h_div_factor,w_end:w_end+w_div_factor,d_end:d_end+d_div_factor]
-                batch_for_inference.append(sub_volume)
+                sub_volume_normalized,_=normalize(sub_volume)
+                batch_for_inference.append(sub_volume_normalized)
        
 
                     
@@ -506,6 +511,7 @@ def plot_error(data,name):
 
 def create_mask_spectrum(mask):
     pattern=mask[250,:,:]-np.mean(mask[250,:,:])
+    pattern=pattern.T
     DFT=np.fft.fftshift(np.fft.fft2(pattern))
     fontsize=60
     fontsizet=80
@@ -529,6 +535,13 @@ def create_mask_spectrum(mask):
     cb.ax.tick_params(labelsize=fontsize)
     cb.ax.set_ylabel('Magnitude (dB)',fontsize=fontsize)
     fig.savefig('mask spectrum', dpi=400, facecolor='white')
+
+def visualize_3D_spectrum(mask):
+    import napari
+    img=mask*255
+    DFT=np.fft.fftshift(np.fft.fftn(img))/float(np.size(img));
+    magnitude=20*np.log(np.abs(DFT))
+    viewer = napari.view_image(magnitude)
     
 def evaluate_model(denoised_dataset_folder_path,
                    txt_test_path,
@@ -591,6 +604,7 @@ def evaluate_model(denoised_dataset_folder_path,
                 sub_sampled_volume=np.multiply(mask,original_volume).astype(np.uint8)
             
             #create_mask_spectrum(mask)
+            #visualize_3D_spectrum(mask)
             
             ####### Normalize matrix###############################
             sub_sampled_volume_normalized,max_value=normalize(sub_sampled_volume)

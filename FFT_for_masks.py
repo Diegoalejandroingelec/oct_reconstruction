@@ -23,7 +23,7 @@ import napari
 
 # mask=create_blue_noise_mask_2(expected_dims=(512,1000,100),subsampling_percentage=0.75)
 
-# mask=np.load('./blue_noise_cubes/blue_noise_vube_64_64_64.npy')
+mask=np.load('./blue_noise_cubes/blue_noise_vube_64_64_64.npy')
 # mask=np.concatenate((mask,mask),axis=0)
 # mask=np.concatenate((mask,mask),axis=1)
 # mask=np.concatenate((mask,mask),axis=2)
@@ -32,7 +32,7 @@ import napari
 #mask=np.load('./example_masks/RISLEY_4_PRISMS_GAUSSIAN_100.npy')
 # mask=np.load('./example_masks/RISLEY_4_PRISMS_GAUSSIAN_200.npy')
 # mask=np.load('./example_masks/RISLEY_4_PRISMS_SEMI_GAUSSIAN_100.npy')
-mask=np.load('./example_masks/BLUE_NOISE_SHIFTING_ONE_DIRECTION.npy')
+#mask=np.load('./example_masks/BLUE_NOISE_SHIFTING_ONE_DIRECTION.npy')
 
 
 
