@@ -196,8 +196,8 @@ def generate_2D_pattern(t1,
     A8=A8+A7
     
     
-    x_max=np.max(A8[1,:])
-    y_max=np.max(A8[0,:])
+    x_max=np.max(np.abs(A8[1,:]))
+    y_max=np.max(np.abs(A8[0,:]))
     
     if(x_max==0 or y_max==0):
         print(w,w2,w3,w4)
@@ -211,14 +211,14 @@ def generate_2D_pattern(t1,
     x = x+x_translation#32#100
     y = y+y_translation#8
     
-    # plot_fn(x,
-    #         y,
-    #         title='Pattern',
-    #         fontsize=10,
-    #         xlabel='Pixels',
-    #         ylabel='Pixels',
-    #         img_size=(80//4,25//4),
-    #         draw_FOV=True)
+    plot_fn(x,
+            y,
+            title='Pattern',
+            fontsize=10,
+            xlabel='Pixels',
+            ylabel='Pixels',
+            img_size=(80//4,25//4),
+            draw_FOV=True)
 
     risley_pattern_2D=np.zeros((expected_dims[1],expected_dims[2]))
     
