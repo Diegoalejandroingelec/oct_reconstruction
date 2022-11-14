@@ -211,14 +211,14 @@ def generate_2D_pattern(t1,
     x = x+x_translation#32#100
     y = y+y_translation#8
     
-    plot_fn(x,
-            y,
-            title='Pattern',
-            fontsize=10,
-            xlabel='Pixels',
-            ylabel='Pixels',
-            img_size=(80//4,25//4),
-            draw_FOV=True)
+    # plot_fn(x,
+    #         y,
+    #         title='Pattern',
+    #         fontsize=10,
+    #         xlabel='Pixels',
+    #         ylabel='Pixels',
+    #         img_size=(80//4,25//4),
+    #         draw_FOV=True)
 
     risley_pattern_2D=np.zeros((expected_dims[1],expected_dims[2]))
     
