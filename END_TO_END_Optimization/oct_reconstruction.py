@@ -646,7 +646,7 @@ def evaluate_model(denoised_dataset_folder_path,
                 total_MAE_list.append(total_MAE)
                 total_SSIM_list.append(total_SSIM)
             
-            if(i%10==0):
+            if(i%1==0):
                 print('PSNR AVG: ',np.mean(PSNR_list))
                 print('RMSE AVG: ',np.mean(RMSE_list))
                 print('MAE AVG: ',np.mean(MAE_list))

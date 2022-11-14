@@ -694,7 +694,7 @@ def create_risley_pattern(w,
     #print('-----------TOTAL TRANSMITTANCE------------------',total_transmittance)
     
     if(apply_motion):
-        return mask_risley.astype(np.uint8),volume_sampled_with_motion
+        return mask_risley.astype(np.uint8),volume_sampled_with_motion,total_transmittance
     else:
         return mask_risley.astype(np.uint8),total_transmittance
 

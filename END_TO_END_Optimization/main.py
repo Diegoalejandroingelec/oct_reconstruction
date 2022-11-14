@@ -24,7 +24,7 @@ from risley_varying_all_parameters import create_risley_pattern
 
 
 
-train_with_motion=False
+train_with_motion = config.train_with_motion
 
 def create_3D_mask(w1,w2,w3,w4,original_volume=None,train_with_motion=False):
     
@@ -65,7 +65,7 @@ def create_3D_mask(w1,w2,w3,w4,original_volume=None,train_with_motion=False):
                               apply_motion=train_with_motion,
                               plot_mask=False)
     if(train_with_motion):
-        return mask_risley[0],mask_risley[1]
+        return mask_risley[0],mask_risley[1],mask_risley[2]
     else:
         return mask_risley[0],mask_risley[1]
 
@@ -458,7 +458,7 @@ for epoch in range(start_epoch, config.num_epochs):
          speeds_avg_test=np.mean(speeds_pred,0)
          
          if (train_with_motion):
-             mask_test,subsampled_volume_test=create_3D_mask(w1=speeds_avg_test[0]*100000,
+             mask_test,subsampled_volume_test,total_transmittance=create_3D_mask(w1=speeds_avg_test[0]*100000,
                              w2=speeds_avg_test[1]*100000,
                              w3=speeds_avg_test[2]*100000,
                              w4=speeds_avg_test[3]*100000,

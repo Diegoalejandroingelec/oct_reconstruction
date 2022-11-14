@@ -25,14 +25,14 @@ from risley_varying_all_parameters import create_risley_pattern
 
 
 sub_vol=(512,200,16)
-bigger_sub_volumes_dim=(512,200,16)
+bigger_sub_volumes_dim=(512,1000,16)
 original_volume_dim=(512,1000,100)
-ngpu=2
+ngpu=1
 denoised_dataset_folder_path='../DATASET_DENOISED'
 results_dir='MODEL_EVALUATION_2'
 
-model_path='END_TO_END_OPTIMIZATION/BEST_MODEL_autoencoder_0.pth.tar'
-speeds_model_path='END_TO_END_OPTIMIZATION/BEST_MODEL_speeds_epoch_0.pth.tar'
+model_path='./END_TO_END_OPTIMIZATION/BEST_MODEL_autoencoder_3.pth.tar'
+speeds_model_path='./END_TO_END_OPTIMIZATION/BEST_MODEL_speeds_epoch_3.pth.tar'
 
 
 txt_test_path='../3D_autoencoder_pytorch/fast_test_paths.txt'
@@ -425,7 +425,7 @@ def initialize_reconstruction_model(model_path):
     model_state_dict.update(new_state_dict)
     reconstruction_model.load_state_dict(model_state_dict)
     
-    summary(reconstruction_model, bigger_sub_volumes_dim)
+    #summary(reconstruction_model, bigger_sub_volumes_dim)
     return reconstruction_model
 
 def initialize_speeds_generator_model(model_path):
@@ -604,7 +604,7 @@ def evaluate_model(denoised_dataset_folder_path,
                 sub_sampled_volume=np.multiply(mask,original_volume).astype(np.uint8)
             
             #create_mask_spectrum(mask)
-            #visualize_3D_spectrum(mask)
+            visualize_3D_spectrum(mask)
             
             ####### Normalize matrix###############################
             sub_sampled_volume_normalized,max_value=normalize(sub_sampled_volume)

@@ -36,11 +36,15 @@ device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else 
 lr_scheduler_step_size = num_epochs // 2
 lr_scheduler_gamma = 0.1
 
+
+train_with_motion=True
+
+
 results_dir='END_TO_END_OPTIMIZATION_big'
-resume_model_path='./END_TO_END_OPTIMIZATION/BEST_MODEL_autoencoder_0.pth.tar'
+resume_model_path=''
 
 ############RESUME MODEL SPEEDS##########
-resume_model_speeds_path='./END_TO_END_OPTIMIZATION/BEST_MODEL_speeds_epoch_0.pth.tar'
+resume_model_speeds_path=''
 ################TRAINING#################
 subsampled_volumes_path='../TEST_DATASET/training_subsampled_volumes.h5'
 original_volumes_path='../TEST_DATASET/training_ground_truth.h5'
