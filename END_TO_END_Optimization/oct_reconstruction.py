@@ -404,8 +404,8 @@ def initialize_reconstruction_model(model_path):
     
     # Load checkpoint state dict. Extract the fitted model weights
     model_state_dict = reconstruction_model.state_dict()
-    new_state_dict = {k.replace('module.', ''): v for k, v in checkpoint["state_dict"].items() if
-                      k.replace('module.', '') in model_state_dict.keys() and v.size() == model_state_dict[k.replace('module.', '')].size()}
+    new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
+                      k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
     # Overwrite the pretrained model weights to the current model
     model_state_dict.update(new_state_dict)
     reconstruction_model.load_state_dict(model_state_dict)
@@ -420,8 +420,8 @@ def initialize_speeds_generator_model(model_path):
         
     checkpoint = torch.load(model_path, map_location=lambda storage, loc: storage)
     model_state_dict = speeds_generator_model.state_dict()
-    new_state_dict = {k.replace('module.', ''): v for k, v in checkpoint["state_dict"].items() if
-                      k.replace('module.', '') in model_state_dict.keys() and v.size() == model_state_dict[k.replace('module.', '')].size()}
+    new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
+                      k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
     
     # Overwrite the pretrained model weights to the current model
     model_state_dict.update(new_state_dict)
