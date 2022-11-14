@@ -27,12 +27,12 @@ bigger_sub_volumes_dim=(512,200,16)
 original_volume_dim=(512,1000,100)
 ngpu=1
 denoised_dataset_folder_path='../DATASET_DENOISED'
-results_dir='MODEL_EVALUATION'
-model_path='./BIG_VOLS_RESULTS/BEST_MODEL_autoencoder_0.pth.tar'
-speeds_model_path='./BIG_VOLS_RESULTS/BEST_MODEL_speeds_epoch_0.pth.tar'
+results_dir='MODEL_EVALUATION_reconstruvtion_v1'
+model_path='./END_TO_END_OPTIMIZATION_HIGHER_TRANSMITTANCE/BEST_MODEL_autoencoder_3.pth.tar'
+speeds_model_path='./END_TO_END_OPTIMIZATION_HIGHER_TRANSMITTANCE/BEST_MODEL_speeds_epoch_3.pth.tar'
 
-txt_test_path='../RASTER_SCAN_WITH_MOTION_DATASET/test_volumes_paths.txt'
-original_volumes_path='../sub_sampled_data/original_volumes/'
+txt_test_path='../3D_autoencoder_pytorch/fast_test_paths.txt'
+original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 comparison_size=100
 compare_with_roi=True
 denoised_ground_truth_for_comparison=True
