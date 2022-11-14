@@ -28,8 +28,8 @@ original_volume_dim=(512,1000,100)
 ngpu=1
 denoised_dataset_folder_path='../DATASET_DENOISED'
 results_dir='MODEL_EVALUATION_reconstruvtion_v1'
-model_path='./END_TO_END_OPTIMIZATION_HIGHER_TRANSMITTANCE/BEST_MODEL_autoencoder_3.pth.tar'
-speeds_model_path='./END_TO_END_OPTIMIZATION_HIGHER_TRANSMITTANCE/BEST_MODEL_speeds_epoch_3.pth.tar'
+model_path='./END_TO_END_OPTIMIZATION/BEST_MODEL_autoencoder_3.pth.tar'
+speeds_model_path='./END_TO_END_OPTIMIZATION/BEST_MODEL_speeds_epoch_3.pth.tar'
 
 txt_test_path='../3D_autoencoder_pytorch/fast_test_paths.txt'
 original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
@@ -232,7 +232,7 @@ def reconstruct_volume_batches(volume,reconstruction_model,speeds_generator,sub_
                     #create_mask_spectrum(mask)
                     
                     batch_for_inference=sub_sampled_volume.copy()
-                    batch_for_inference,_=normalize(batch_for_inference)
+                    batch_for_inference=normalize(batch_for_inference)
                     batch_for_inference=torch.from_numpy(batch_for_inference).to(device, dtype=torch.float)
                     reconstructed_batch =  reconstruction_model(batch_for_inference).cpu().detach().numpy()
                     
@@ -301,7 +301,7 @@ def reconstruct_volume_batches(volume,reconstruction_model,speeds_generator,sub_
         #create_mask_spectrum(mask)
         
         batch_for_inference=sub_sampled_volume.copy()
-        batch_for_inference,_=normalize(batch_for_inference)
+        batch_for_inference=normalize(batch_for_inference)
         batch_for_inference=torch.from_numpy(batch_for_inference).to(device, dtype=torch.float)
         reconstructed_batch =  reconstruction_model(batch_for_inference).cpu().detach().numpy()
         
@@ -330,7 +330,7 @@ def reconstruct_volume_batches(volume,reconstruction_model,speeds_generator,sub_
 def normalize(volume):
     max_value=(np.max(volume.astype(np.float32))/2)
     normalized_volume=(volume.astype(np.float32)-max_value)/max_value
-    return normalized_volume,max_value
+    return normalized_volume
     
 def compute_MAE(original,reconstruction):
     mae = nn.L1Loss()
