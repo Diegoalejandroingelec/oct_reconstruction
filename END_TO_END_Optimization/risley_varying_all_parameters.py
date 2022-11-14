@@ -198,6 +198,10 @@ def generate_2D_pattern(t1,
     
     x_max=np.max(A8[1,:])
     y_max=np.max(A8[0,:])
+    
+    if(x_max==0 or y_max==0):
+        print(w,w2,w3,w4)
+    
     x_factor=np.abs((expected_dims[1]/2)/x_max)
     y_factor=np.abs((expected_dims[2]/2)/y_max)
     

@@ -588,7 +588,7 @@ def evaluate_model(denoised_dataset_folder_path,
             # speeds_pred=speeds_generator(torch.tensor(original_volume).to(device,dtype=torch.float)).cpu().detach().numpy()
             print(speeds_pred*100000)
             if (reconstruct_with_motion):
-                mask,sub_sampled_volume=create_3D_mask(w1=speeds_pred[0]*100000,
+                mask,sub_sampled_volume,transmittance=create_3D_mask(w1=speeds_pred[0]*100000,
                                 w2=speeds_pred[1]*100000,
                                 w3=speeds_pred[2]*100000,
                                 w4=speeds_pred[3]*100000,
