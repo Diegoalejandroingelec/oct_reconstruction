@@ -62,7 +62,7 @@ def create_3D_mask(w1,w2,w3,w4,original_volume=None,create_with_motion=False):
                               x_factor_addition=0.3,
                               y_factor_addition=0.15,
                               tf=8.192,
-                              PRF=3000000,#2500000,
+                              PRF=5000000,#2500000,
                               a=10*(np.pi/180),
                               number_of_prisms=4,
                               maximum_transmittance=0.43,
