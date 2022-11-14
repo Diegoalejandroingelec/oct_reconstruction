@@ -319,10 +319,10 @@ for epoch in range(start_epoch, config.num_epochs):
         if(train_with_motion):
             subsampled_volumes_normalized=[]
             for cube in targets:
-                mask,subsampled_volume,total_transmittance=create_3D_mask(w1=5345.970392227173,#speeds_avg[0]*100000,
-                                w2=-1411.4984311163425,#speeds_avg[1]*100000,
-                                w3=2420.051209628582,#speeds_avg[2]*100000,
-                                w4=-6126.0636895895,#speeds_avg[3]*100000,
+                mask,subsampled_volume,total_transmittance=create_3D_mask(w1=speeds_avg[0]*100000,
+                                w2=speeds_avg[1]*100000,
+                                w3=speeds_avg[2]*100000,
+                                w4=speeds_avg[3]*100000,
                                 original_volume=cube.cpu().detach().numpy(),
                                 train_with_motion=True)
                 subsampled_volumes_normalized.append(normalize(subsampled_volume))
