@@ -604,7 +604,7 @@ def evaluate_model(denoised_dataset_folder_path,
                 sub_sampled_volume=np.multiply(mask,original_volume).astype(np.uint8)
             
             #create_mask_spectrum(mask)
-            visualize_3D_spectrum(mask)
+            #visualize_3D_spectrum(mask)
             
             ####### Normalize matrix###############################
             sub_sampled_volume_normalized,max_value=normalize(sub_sampled_volume)
