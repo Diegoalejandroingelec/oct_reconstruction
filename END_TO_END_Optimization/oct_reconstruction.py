@@ -325,7 +325,7 @@ def reconstruct_volume_batches(volume,reconstruction_model,speeds_generator,sub_
                 big_mask[h_start:h_finish,w_start:w_finish,d_start:d_finish]=mask[:,30:,:]
                 
                 
-    return reconstructed_volume, big_mask, np.multiply(big_mask,reconstructed_volume)
+    return reconstructed_volume, big_mask, np.multiply(big_mask,volume)
 
 def normalize(volume):
     max_value=(np.max(volume.astype(np.float32))/2)
