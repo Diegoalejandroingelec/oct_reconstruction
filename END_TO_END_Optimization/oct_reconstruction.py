@@ -21,7 +21,7 @@ from skimage import img_as_float
 import time
 from scipy.io import loadmat
 from risley_varying_all_parameters import create_risley_pattern 
-
+import config
 
 bigger_sub_volumes_dim=(512,200,16)
 original_volume_dim=(512,1000,100)
@@ -230,6 +230,7 @@ def reconstruct_volume_batches(volume,reconstruction_model,speeds_generator,sub_
                         sub_sampled_volume=np.multiply(mask,batch_for_inference).astype(np.uint8)
                     
                     #create_mask_spectrum(mask)
+                    #visualize_3D_spectrum(mask)
                     
                     batch_for_inference=sub_sampled_volume.copy()
                     batch_for_inference=normalize(batch_for_inference)
@@ -325,7 +326,7 @@ def reconstruct_volume_batches(volume,reconstruction_model,speeds_generator,sub_
                 big_mask[h_start:h_finish,w_start:w_finish,d_start:d_finish]=mask[:,30:,:]
                 
                 
-    return reconstructed_volume, big_mask, np.multiply(big_mask,volume)
+    return reconstructed_volume, big_mask, np.multiply(big_mask,volume).astype(np.uint8)
 
 def normalize(volume):
     max_value=(np.max(volume.astype(np.float32))/2)
@@ -391,7 +392,7 @@ def initialize_reconstruction_model(model_path):
     if (device.type == 'cuda') and (ngpu > 1):
         reconstruction_model = nn.DataParallel(reconstruction_model, list(range(ngpu)))
     
-    
+
     # # Apply the trained weights_init 
     # reconstruction_model.apply(weights_init)
     
@@ -404,8 +405,15 @@ def initialize_reconstruction_model(model_path):
     
     # Load checkpoint state dict. Extract the fitted model weights
     model_state_dict = reconstruction_model.state_dict()
-    new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
-                      k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
+    
+    if(config.local):
+        new_state_dict = {k.replace('module.', ''): v for k, v in checkpoint["state_dict"].items() if
+                          k.replace('module.', '') in model_state_dict.keys() and v.size() == model_state_dict[k.replace('module.', '')].size()}
+        
+    else:
+        new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
+                          k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
+        
     # Overwrite the pretrained model weights to the current model
     model_state_dict.update(new_state_dict)
     reconstruction_model.load_state_dict(model_state_dict)
@@ -420,8 +428,15 @@ def initialize_speeds_generator_model(model_path):
         
     checkpoint = torch.load(model_path, map_location=lambda storage, loc: storage)
     model_state_dict = speeds_generator_model.state_dict()
-    new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
-                      k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
+    
+    if(config.local):
+        new_state_dict = {k.replace('module.', ''): v for k, v in checkpoint["state_dict"].items() if
+                          k.replace('module.', '') in model_state_dict.keys() and v.size() == model_state_dict[k.replace('module.', '')].size()}
+        
+    else:
+        new_state_dict = {k: v for k, v in checkpoint["state_dict"].items() if
+                          k in model_state_dict.keys() and v.size() == model_state_dict[k].size()}
+
     
     # Overwrite the pretrained model weights to the current model
     model_state_dict.update(new_state_dict)
@@ -520,12 +535,15 @@ def create_mask_spectrum(mask):
     cb.ax.tick_params(labelsize=fontsize)
     cb.ax.set_ylabel('Magnitude (dB)',fontsize=fontsize)
     fig.savefig('mask spectrum', dpi=400, facecolor='white')
+
 def visualize_3D_spectrum(mask):
     import napari
     img=mask*255
+    img=img-np.mean(img)
     DFT=np.fft.fftshift(np.fft.fftn(img))/float(np.size(img));
     magnitude=20*np.log(np.abs(DFT))
     viewer = napari.view_image(magnitude)
+    viewer_mask = napari.view_image(img)
     
 def evaluate_model(denoised_dataset_folder_path,
                    txt_test_path,

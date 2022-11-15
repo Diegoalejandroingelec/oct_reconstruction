@@ -784,15 +784,15 @@ mask_risley,tr=create_risley_pattern(w,
                           y_translation=50,
                           x_factor_addition=9.5,
                           y_factor_addition=1.5,
-                          tf=12,#8.192,
-                          PRF=8000000,#650000,
+                          tf=20,#8.192,
+                          PRF=5000000,#650000,
                           a=10*(np.pi/180),
                           number_of_prisms=4,
                           maximum_transmittance=0.43,
                           minimum_transmittance=0.0,
                           sigma=150,
                           transmittance_distribution_fn='ga',
-                          number_of_laser_sweeps=250,
+                          number_of_laser_sweeps=534,
                           steps_before_centering=10,
                           hand_tremor_period=1/9,
                           laser_time_between_sweeps=7.314285714285714e-05,
@@ -814,8 +814,8 @@ plt.imshow(mask_risley[:,:,8],cmap='gray')
 import napari
 viewer = napari.view_image(mask_risley*255)
 
-'''
 
+'''
 
 # viewer1 = napari.view_image(original_volume)
 

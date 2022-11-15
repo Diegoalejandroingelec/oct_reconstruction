@@ -38,7 +38,7 @@ lr_scheduler_gamma = 0.1
 
 
 train_with_motion=True
-
+local= True
 
 results_dir='END_TO_END_OPTIMIZATION_big'
 resume_model_path=''
