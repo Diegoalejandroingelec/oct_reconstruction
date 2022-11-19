@@ -18,10 +18,10 @@ model_betas = (0.9, 0.999)
 workers = 2
 
 # Batch size during training
-batch_size = 2
+batch_size = 1
 
 # Batch size for testing
-batch_size_testing = 2
+batch_size_testing = 1
 
 # Number of GPUs available. Use 0 for CPU mode.
 ngpu = 1
@@ -40,7 +40,7 @@ lr_scheduler_gamma = 0.1
 train_with_motion=True
 local= True
 
-results_dir='END_TO_END_OPTIMIZATION_big'
+results_dir='TEST_SUPREMO'
 resume_model_path=''
 
 ############RESUME MODEL SPEEDS##########

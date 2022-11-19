@@ -747,10 +747,7 @@ def create_risley_pattern(w,
 # x_factor=50
 
 
-
 '''
-
-
 begin = time.time()
 
 
@@ -761,10 +758,10 @@ def read_data(path):
     return oct_volume
 
 original_volume=read_data(path)[:,0:64,0:16]
-w=62555.4063372
-w2=-20201.0559296
-w3=-12271.6073769
-w4=12274.0445477  
+w=-7026.82882547#62555.4063372
+w2=16787.04768419#-20201.0559296
+w3=16572.90756702#-12271.6073769
+w4=-8387.36444712#12274.0445477  
 expected_dims=(512,1000,100)#(512,200,16)   
 band_width=176
 line_width=band_width/expected_dims[0]
@@ -811,19 +808,62 @@ plt.imshow(mask_risley[:,:,8],cmap='gray')
 
 
 
-import napari
-viewer = napari.view_image(mask_risley*255)
+def visualize_3D_spectrum(mask):
+    import napari
+    img=mask*255
+    img=img-np.mean(img)
+    DFT=np.fft.fftshift(np.fft.fftn(img))/float(np.size(img));
+    magnitude=20*np.log(np.abs(DFT))
+    viewer = napari.view_image(magnitude)
+    viewer_1 = napari.view_image(img)
 
 
-'''
+def create_mask_spectrum(mask):
+    layer=30
+    pattern=mask[layer,:,:]-np.mean(mask[layer,:,:])
+    pattern=pattern.T
+    
+    print(pattern.shape)
+    #DFT=np.fft.fftshift(np.fft.fft2(pattern))
+    DFT=np.fft.fftshift(np.fft.fftn(pattern));
+    fontsize=60
+    fontsizet=80
+    fig, (ax2, ax1) = plt.subplots(2,1)
+    fig.tight_layout(pad=-2.5)
+    fig.set_size_inches(50, 40)
+    ax2.imshow(pattern*255,cmap='gray')
+    ax2.set_title('Risley Beam Steering Pattern Optimized',fontsize=fontsizet)
+    magnitude=(20*np.log(np.abs(DFT)))
+    im = ax1.imshow(magnitude,
+                cmap="viridis",
+                interpolation="nearest",
+                vmin=0.0,
+                vmax=np.percentile(20*np.log(np.abs(DFT)),99)
+               )
+    ax1.set_title('Magnitude Spectrum',fontsize=fontsizet)
+    ax2.axis('off')
+    ax1.axis('off')
+    cax = fig.add_axes([ax1.get_position().x1+0.01,
+                        ax1.get_position().y0,0.02,
+                        ax1.get_position().height])
+    cb = plt.colorbar(im,cax=cax,extend="max")
+    cb.ax.tick_params(labelsize=fontsize)
+    cb.ax.set_ylabel('Magnitude (dB)',fontsize=fontsize)
+    fig.savefig('mask spectrum', dpi=400, facecolor='white')
+# mask_risley=np.load('mask_risley_optimized.npy')
+# visualize_3D_spectrum(mask_risley)
+mask_risley=np.load('mask_risley_optimized.npy')
+create_mask_spectrum(mask_risley)
 
+#import napari
+#viewer = napari.view_image(mask_risley*255)
 # viewer1 = napari.view_image(original_volume)
 
 # viewer2 = napari.view_image(np.multiply(original_volume,mask_risley))
 #volume_aligned=np.multiply(original_volume,mask_risley)
 
 
-
+'''
 # import numpy as np
 # import napari
 # r='/home/diego/Documents/Delaware/tensorflow/training_3D_images/subsampling/TRANSMITTANCE_VIDEOS/'

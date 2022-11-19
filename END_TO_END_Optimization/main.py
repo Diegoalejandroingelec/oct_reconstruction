@@ -311,6 +311,7 @@ for epoch in range(start_epoch, config.num_epochs):
         # NORMALIZE IMAGE BEFORE PREDICTING SPEEDS
         gt_normalized=torch.tensor(np.array([normalize(gt.cpu().detach().numpy()) for gt in targets]),requires_grad=True).to(config.device,dtype=torch.float)
         speeds=speeds_generator(gt_normalized).cpu().detach().numpy()
+        
         speeds_avg=np.mean(speeds,0)
         
         
@@ -365,7 +366,7 @@ for epoch in range(start_epoch, config.num_epochs):
                                                           
         
         # update model weights
-        
+        break
         if(train_speeds):
             loss_speeds=speed_criterion(reconstructions,torch.unsqueeze(ground_truth_normalized,1))
             loss_speeds.backward()
@@ -429,6 +430,7 @@ for epoch in range(start_epoch, config.num_epochs):
 
                 
             losses.append(loss.item())
+
     # Update LR
     scheduler.step()
     
@@ -448,23 +450,29 @@ for epoch in range(start_epoch, config.num_epochs):
     torch.save({"state_dict": speeds_generator.state_dict(),
                 "optimizer": optimizer_speeds.state_dict()},
                 os.path.join(config.results_dir, f"speeds_model_epoch_{epoch}.pth.tar"))
-    
     print('Evaluation...')
     
     for j, data_test in enumerate(dataloader_test, 0):  
          targets_test = data_test.to(config.device, dtype=torch.float)
          
-         speeds_pred=speeds_generator(targets_test).cpu().detach().numpy()
+         targets_test_normalized=torch.tensor(np.array([normalize(gt.cpu().detach().numpy()) for gt in targets_test]),requires_grad=False).to(config.device,dtype=torch.float)
+         
+         speeds_pred=speeds_generator(targets_test_normalized).cpu().detach().numpy()
          speeds_avg_test=np.mean(speeds_pred,0)
          
          if (train_with_motion):
-             mask_test,subsampled_volume_test,total_transmittance=create_3D_mask(w1=speeds_avg_test[0]*100000,
-                             w2=speeds_avg_test[1]*100000,
-                             w3=speeds_avg_test[2]*100000,
-                             w4=speeds_avg_test[3]*100000,
-                             original_volume=np.squeeze(targets_test.cpu().detach().numpy()),
-                             train_with_motion=True)
-             subsampled_volumes_test_normalized=normalize(subsampled_volume_test)
+             
+             subsampled_volumes_test_normalized=[]
+             for cube in targets_test:
+                 mask_test,subsampled_volume_test,total_transmittance=create_3D_mask(w1=speeds_avg[0]*100000,
+                                 w2=speeds_avg[1]*100000,
+                                 w3=speeds_avg[2]*100000,
+                                 w4=speeds_avg[3]*100000,
+                                 original_volume=cube.cpu().detach().numpy(),
+                                 train_with_motion=True)
+                 subsampled_volumes_test_normalized.append(normalize(subsampled_volume_test))
+             subsampled_volumes_test_normalized=np.array(subsampled_volumes_test_normalized)
+             
          else:
              mask_test,total_transmittance=create_3D_mask(w1=speeds_avg_test[0]*100000,
                              w2=speeds_avg_test[1]*100000,
@@ -487,7 +495,7 @@ for epoch in range(start_epoch, config.num_epochs):
          ground_truth_normalized_test=torch.tensor(np.array([normalize(ground_truth) for ground_truth in ground_truths_test])).to(config.device,
                                                                                   dtype=torch.float)
          # calculate loss
-         
+         ground_truth_normalized_test=torch.unsqueeze(ground_truth_normalized_test,0)
          loss_test = criterion_for_testing(torch.squeeze(reconstructions_test), ground_truth_normalized_test)
          test_losses.append(loss_test.item())
          
