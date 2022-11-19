@@ -495,10 +495,11 @@ for epoch in range(start_epoch, config.num_epochs):
          ground_truth_normalized_test=torch.tensor(np.array([normalize(ground_truth) for ground_truth in ground_truths_test])).to(config.device,
                                                                                   dtype=torch.float)
          # calculate loss
-         ground_truth_normalized_test=torch.unsqueeze(ground_truth_normalized_test,0)
+         
          loss_test = criterion_for_testing(torch.squeeze(reconstructions_test), ground_truth_normalized_test)
          test_losses.append(loss_test.item())
          
+         ground_truth_normalized_test=torch.unsqueeze(ground_truth_normalized_test,0)
          for r_t, o_t in zip(reconstructions_test,ground_truth_normalized_test):
              reconstructed_8bit=np.squeeze(((r_t.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
              original_8bit=np.squeeze(((o_t.cpu().detach().numpy()*127.5)+127.5).astype(np.uint8))
