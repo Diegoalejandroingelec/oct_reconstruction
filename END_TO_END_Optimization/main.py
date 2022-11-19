@@ -366,7 +366,7 @@ for epoch in range(start_epoch, config.num_epochs):
                                                           
         
         # update model weights
-        break
+        
         if(train_speeds):
             loss_speeds=speed_criterion(reconstructions,torch.unsqueeze(ground_truth_normalized,1))
             loss_speeds.backward()
