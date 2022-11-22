@@ -28,15 +28,16 @@ original_volume_dim=(512,1000,100)
 ngpu=1
 denoised_dataset_folder_path='../DATASET_DENOISED'
 results_dir='MODEL_EVALUATION_reconstruvtion_v1'
-model_path='./END_TO_END_OPTIMIZATION/BEST_MODEL_autoencoder_3.pth.tar'
-speeds_model_path='./END_TO_END_OPTIMIZATION/BEST_MODEL_speeds_epoch_3.pth.tar'
+model_path='./END_TO_END_OPTIMIZATION_WITH_MOTION/autoencoder_model_epoch_1.pth.tar'
+speeds_model_path='./END_TO_END_OPTIMIZATION_WITH_MOTION/speeds_model_epoch_1.pth.tar'
+
 
 txt_test_path='../3D_autoencoder_pytorch/fast_test_paths.txt'
 original_volumes_path='../../OCT_ORIGINAL_VOLUMES/'
 comparison_size=100
 compare_with_roi=True
 denoised_ground_truth_for_comparison=True
-reconstruct_with_motion=False
+reconstruct_with_motion=True
 # Decide which device we want to run on
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
@@ -56,7 +57,7 @@ def create_3D_mask(w1,w2,w3,w4,original_volume=None,create_with_motion=False):
                               expected_dims,
                               line_width,
                               start_wavelength,
-                              original_volume,
+                              original_volume=np.squeeze(original_volume.copy()),
                               x_translation=100,
                               y_translation=8,
                               x_factor_addition=0.3,
@@ -79,7 +80,7 @@ def create_3D_mask(w1,w2,w3,w4,original_volume=None,create_with_motion=False):
                               apply_motion=create_with_motion,
                               plot_mask=False)
     if(create_with_motion):
-        return mask_risley[0],mask_risley[1]
+        return mask_risley[0],mask_risley[1],mask_risley[2]
     else:
         return mask_risley
 
@@ -214,7 +215,7 @@ def reconstruct_volume_batches(volume,reconstruction_model,speeds_generator,sub_
                     speeds_pred=speeds_generator(torch.tensor(batch_for_inference_normalized).to(device,dtype=torch.float)).cpu().detach().numpy()
                     print(speeds_pred*100000)
                     if (reconstruct_with_motion):
-                        mask,sub_sampled_volume=create_3D_mask(w1=speeds_pred[0,0]*100000,
+                        mask,sub_sampled_volume,transmittance=create_3D_mask(w1=speeds_pred[0,0]*100000,
                                         w2=speeds_pred[0,1]*100000,
                                         w3=speeds_pred[0,2]*100000,
                                         w4=speeds_pred[0,3]*100000,
@@ -235,7 +236,7 @@ def reconstruct_volume_batches(volume,reconstruction_model,speeds_generator,sub_
                     batch_for_inference=sub_sampled_volume.copy()
                     batch_for_inference=normalize(batch_for_inference)
                     batch_for_inference=torch.from_numpy(batch_for_inference).to(device, dtype=torch.float)
-                    reconstructed_batch =  reconstruction_model(batch_for_inference).cpu().detach().numpy()
+                    reconstructed_batch =  reconstruction_model(torch.unsqueeze(batch_for_inference,0)).cpu().detach().numpy()
                     
                     
                     squeezed_volumes=np.squeeze(reconstructed_batch,1)
@@ -304,7 +305,7 @@ def reconstruct_volume_batches(volume,reconstruction_model,speeds_generator,sub_
         batch_for_inference=sub_sampled_volume.copy()
         batch_for_inference=normalize(batch_for_inference)
         batch_for_inference=torch.from_numpy(batch_for_inference).to(device, dtype=torch.float)
-        reconstructed_batch =  reconstruction_model(batch_for_inference).cpu().detach().numpy()
+        reconstructed_batch =  reconstruction_model(torch.unsqueeze(batch_for_inference,0)).cpu().detach().numpy()
         
         
         squeezed_volumes=np.squeeze(reconstructed_batch)
